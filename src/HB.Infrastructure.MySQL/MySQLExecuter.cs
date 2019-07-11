@@ -27,7 +27,8 @@ namespace HB.Infrastructure.MySQL
             }
         }
 
-        private static void PrepareCommand(MySqlCommand command, MySqlConnection connection, MySqlTransaction transaction, 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>")]
+        private static void PrepareCommand(MySqlCommand command, MySqlConnection connection, MySqlTransaction transaction,
             CommandType commandType, string commandText, IEnumerable<IDataParameter> commandParameters)
         {
             //if the provided connection is not open, we will open it
@@ -111,7 +112,7 @@ namespace HB.Infrastructure.MySQL
                 {
                     reader.Close();
                 }
-                //TODO: 检查，整个解决方案，中所有的throw都要加log
+
                 throw;
             }
         }
@@ -146,10 +147,6 @@ namespace HB.Infrastructure.MySQL
                 command.Connection = connection;
 
                 rtObj = command.ExecuteScalar();
-            }
-            catch
-            {
-                throw;
             }
             finally
             {
@@ -195,10 +192,6 @@ namespace HB.Infrastructure.MySQL
 
                 rtInt = command.ExecuteNonQuery();
             }
-            catch  
-            {
-                throw;
-            }
             finally
             {
                 if (isOwnedConnection)
@@ -236,19 +229,17 @@ namespace HB.Infrastructure.MySQL
             {
                 rtInt = command.ExecuteNonQuery();
             }
-            catch 
-            {
-                throw;
-            }
             finally
             {
                 if (isOwnedConnection)
                 {
                     conn.Close();
                 }
+
+                command.Parameters.Clear();
+                command.Dispose();
             }
 
-            command.Parameters.Clear();
 
             return rtInt;
         }
@@ -279,18 +270,16 @@ namespace HB.Infrastructure.MySQL
             {
                 rtObj = command.ExecuteScalar();
             }
-            catch  
-            {
-                throw;
-            }
             finally
             {
                 if (isOwnedConnection)
                 {
                     conn.Close();
                 }
+
+                command.Parameters.Clear();
+                command.Dispose();
             }
-            command.Parameters.Clear();
 
             return rtObj;
         }
@@ -299,7 +288,7 @@ namespace HB.Infrastructure.MySQL
 
         #region SP Reader
 
-        public static IDataReader ExecuteSPReader(string connectString, string spName, IList<IDataParameter> dbParameters)
+        public static Tuple<IDbCommand,IDataReader> ExecuteSPReader(string connectString, string spName, IList<IDataParameter> dbParameters)
         {
             MySqlConnection conn = new MySqlConnection(connectString);
             conn.Open();
@@ -307,12 +296,13 @@ namespace HB.Infrastructure.MySQL
             return ExecuteSPReader(conn, null, true, spName, dbParameters);
         }
 
-        public static IDataReader ExecuteSPReader(MySqlTransaction mySqlTransaction, string spName, IList<IDataParameter> dbParameters)
+        public static Tuple<IDbCommand, IDataReader> ExecuteSPReader(MySqlTransaction mySqlTransaction, string spName, IList<IDataParameter> dbParameters)
         {
             return ExecuteSPReader(mySqlTransaction.Connection, mySqlTransaction, false, spName, dbParameters);
         }
 
-        private static IDataReader ExecuteSPReader(MySqlConnection connection, MySqlTransaction mySqlTransaction, bool isOwedConnection, string spName, IList<IDataParameter> dbParameters)
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "<Pending>")]
+        private static Tuple<IDbCommand, IDataReader> ExecuteSPReader(MySqlConnection connection, MySqlTransaction mySqlTransaction, bool isOwedConnection, string spName, IList<IDataParameter> dbParameters)
         {
             MySqlCommand command = new MySqlCommand();
 
@@ -347,80 +337,98 @@ namespace HB.Infrastructure.MySQL
 
             command.Parameters.Clear();
 
-            return reader;
+            return new Tuple<IDbCommand, IDataReader>(command,reader);
         }
 
         #endregion
 
         #region SQL
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>")]
         public static int ExecuteSqlNonQuery(string connectionString, string sqlString)
         {
             MySqlConnection conn = new MySqlConnection(connectionString);
 
-            MySqlCommand command = new MySqlCommand {
+            using (MySqlCommand command = new MySqlCommand
+            {
                 CommandType = CommandType.Text,
-                CommandText = sqlString
-            };
+                CommandText = MySQLUtility.SafeDbStatement(sqlString)
+            })
+            {
 
-            return ExecuteCommandNonQuery(conn, true, command);
+                return ExecuteCommandNonQuery(conn, true, command);
+            }
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>")]
         public static int ExecuteSqlNonQuery(MySqlTransaction mySqlTransaction, string sqlString)
         {
-            MySqlCommand command = new MySqlCommand {
+            using (MySqlCommand command = new MySqlCommand
+            {
                 CommandType = CommandType.Text,
-                CommandText = sqlString,
+                CommandText = MySQLUtility.SafeDbStatement(sqlString),
                 Transaction = mySqlTransaction
-            };
-
-            return ExecuteCommandNonQuery(mySqlTransaction.Connection, false, command);
+            })
+            {
+                return ExecuteCommandNonQuery(mySqlTransaction.Connection, false, command);
+            }
         }
 
-        public static IDataReader ExecuteSqlReader(string connectionString, string sqlString)
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "<Pending>")]
+        public static Tuple<IDbCommand, IDataReader> ExecuteSqlReader(string connectionString, string sqlString)
         {
-            //TODO: do we need a connection manager, that retry and makesure connection is avalible?
             MySqlConnection conn = new MySqlConnection(connectionString);
 
-            MySqlCommand command = new MySqlCommand {
+            MySqlCommand command = new MySqlCommand
+            {
                 CommandType = CommandType.Text,
-                CommandText = sqlString
+                CommandText = MySQLUtility.SafeDbStatement(sqlString)
             };
 
-            return ExecuteCommandReader(conn, true, command);
+            return new Tuple<IDbCommand, IDataReader>(command, ExecuteCommandReader(conn, true, command));
         }
 
-        public static IDataReader ExecuteSqlReader(MySqlTransaction mySqlTransaction, string sqlString)
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "<Pending>")]
+        public static Tuple<IDbCommand,IDataReader> ExecuteSqlReader(MySqlTransaction mySqlTransaction, string sqlString)
         {
-            MySqlCommand command = new MySqlCommand {
+            MySqlCommand command = new MySqlCommand
+            {
                 CommandType = CommandType.Text,
-                CommandText = sqlString,
+                CommandText = MySQLUtility.SafeDbStatement(sqlString),
                 Transaction = mySqlTransaction
             };
-
-            return ExecuteCommandReader(mySqlTransaction.Connection, false, command);
+            return new Tuple<IDbCommand, IDataReader>(command, ExecuteCommandReader(mySqlTransaction.Connection, false, command));
         }
+
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>")]
         public static object ExecuteSqlScalar(string connectionString, string sqlString)
         {
             MySqlConnection conn = new MySqlConnection(connectionString);
 
-            MySqlCommand command = new MySqlCommand {
+            using (MySqlCommand command = new MySqlCommand
+            {
                 CommandType = CommandType.Text,
-                CommandText = sqlString
-            };
-
-            return ExecuteCommandScalar(conn, true, command);
+                CommandText = MySQLUtility.SafeDbStatement(sqlString)
+            })
+            {
+                return ExecuteCommandScalar(conn, true, command);
+            }
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>")]
         public static object ExecuteSqlScalar(MySqlTransaction mySqlTransaction, string sqlString)
         {
-            MySqlCommand command = new MySqlCommand {
+            using (MySqlCommand command = new MySqlCommand
+            {
                 CommandType = CommandType.Text,
-                CommandText = sqlString,
+                CommandText = MySQLUtility.SafeDbStatement(sqlString),
                 Transaction = mySqlTransaction
-            };
-
-            return ExecuteCommandScalar(mySqlTransaction.Connection, false, command);
+            })
+            {
+                return ExecuteCommandScalar(mySqlTransaction.Connection, false, command);
+            }
         }
 
         #endregion
@@ -485,6 +493,6 @@ namespace HB.Infrastructure.MySQL
 
         //#endregion
 
-       
+
     }
 }

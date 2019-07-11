@@ -22,7 +22,7 @@ namespace HB.Framework.Database.Engine
         /// <param name="spName"></param>
         /// <param name="dbParameters"></param>
         /// <returns></returns>
-        Task<IDataReader> ExecuteSPReaderAsync(IDbTransaction trans, string dbName, string spName, IList<IDataParameter> dbParameters, bool useMaster );
+        Task<Tuple<IDbCommand, IDataReader>> ExecuteSPReaderAsync(IDbTransaction trans, string dbName, string spName, IList<IDataParameter> dbParameters, bool useMaster );
 
         Task<object> ExecuteSPScalarAsync(IDbTransaction trans, string dbName, string spName, IList<IDataParameter> parameters, bool useMaster );
 

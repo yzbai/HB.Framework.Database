@@ -397,7 +397,7 @@ namespace HB.Framework.Database.SQL
 
             StringBuilder innerBuilder = new StringBuilder();
             DatabaseEntityDef definition = _entityDefFactory.GetDef<T>();
-            string tempTableName = "HBA" + DateTimeOffset.UtcNow.Ticks.ToString();
+            string tempTableName = "HBA" + DateTimeOffset.UtcNow.Ticks.ToString(GlobalSettings.Culture);
 
             IList<IDataParameter> parameters = new List<IDataParameter>();
             int number = 0;
@@ -409,7 +409,7 @@ namespace HB.Framework.Database.SQL
 
                 foreach (DatabaseEntityPropertyDef info in definition.Properties)
                 {
-                    string parameterizedName = info.DbParameterizedName + number.ToString();
+                    string parameterizedName = info.DbParameterizedName + number.ToString(GlobalSettings.Culture);
 
                     if (info.IsTableProperty)
                     {
@@ -477,7 +477,7 @@ namespace HB.Framework.Database.SQL
 
             StringBuilder innerBuilder = new StringBuilder();
             DatabaseEntityDef definition = _entityDefFactory.GetDef<T>();
-            string tempTableName = "HBU" + DateTimeOffset.UtcNow.Ticks.ToString();
+            string tempTableName = "HBU" + DateTimeOffset.UtcNow.Ticks.ToString(GlobalSettings.Culture);
             IList<IDataParameter> parameters = new List<IDataParameter>();
             int number = 0;
 
@@ -487,7 +487,7 @@ namespace HB.Framework.Database.SQL
                 
                 foreach (DatabaseEntityPropertyDef info in definition.Properties)
                 {
-                    string parameterizedName = info.DbParameterizedName + number.ToString();
+                    string parameterizedName = info.DbParameterizedName + number.ToString(GlobalSettings.Culture);
 
                     if (info.IsTableProperty)
                     {
@@ -538,7 +538,7 @@ namespace HB.Framework.Database.SQL
 
             StringBuilder innerBuilder = new StringBuilder();
             DatabaseEntityDef definition = _entityDefFactory.GetDef<T>();
-            string tempTableName = "HBD" + DateTimeOffset.UtcNow.Ticks.ToString();
+            string tempTableName = "HBD" + DateTimeOffset.UtcNow.Ticks.ToString(GlobalSettings.Culture);
 
             foreach (T entity in entities)
             {

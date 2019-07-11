@@ -148,7 +148,7 @@ namespace HB.Framework.Database.SQL
         {
             List<string> escapedParams = new List<string>();
 
-            foreach (object sqlParam in sqlParams)
+            foreach (object sqlParam in ThrowIf.Null(sqlParams, nameof(sqlParams)))
             {
                 if (sqlParam == null)
                 {

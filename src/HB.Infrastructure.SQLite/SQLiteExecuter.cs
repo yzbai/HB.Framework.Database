@@ -75,7 +75,7 @@ namespace HB.Infrastructure.SQLite
                 {
                     reader.Close();
                 }
-                //TODO: 检查，整个解决方案，中所有的throw都要加log
+
                 throw;
             }
         }
@@ -110,10 +110,6 @@ namespace HB.Infrastructure.SQLite
                 command.Connection = connection;
 
                 rtObj = command.ExecuteScalar();
-            }
-            catch
-            {
-                throw;
             }
             finally
             {
@@ -159,10 +155,10 @@ namespace HB.Infrastructure.SQLite
 
                 rtInt = command.ExecuteNonQuery();
             }
-            catch  
-            {
-                throw;
-            }
+            //catch (Exception ex)  
+            //{
+            //    throw ex;
+            //}
             finally
             {
                 if (isOwnedConnection)
@@ -178,73 +174,91 @@ namespace HB.Infrastructure.SQLite
 
         #region SQL
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>")]
         public static int ExecuteSqlNonQuery(string connectionString, string sqlString)
         {
             SqliteConnection conn = new SqliteConnection(connectionString);
 
-            SqliteCommand command = new SqliteCommand {
+            using (SqliteCommand command = new SqliteCommand
+            {
                 CommandType = CommandType.Text,
-                CommandText = sqlString
-            };
-
-            return ExecuteCommandNonQuery(conn, true, command);
+                CommandText = SQLiteUtility.SafeDbStatement(sqlString)
+            })
+            {
+                return ExecuteCommandNonQuery(conn, true, command);
+            }
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>")]
         public static int ExecuteSqlNonQuery(SqliteTransaction sqliteTransaction, string sqlString)
         {
-            SqliteCommand command = new SqliteCommand {
+            using (SqliteCommand command = new SqliteCommand
+            {
                 CommandType = CommandType.Text,
-                CommandText = sqlString,
+                CommandText = SQLiteUtility.SafeDbStatement(sqlString),
                 Transaction = sqliteTransaction
-            };
-
-            return ExecuteCommandNonQuery(sqliteTransaction.Connection, false, command);
+            })
+            {
+                return ExecuteCommandNonQuery(sqliteTransaction.Connection, false, command);
+            }
         }
 
-        public static IDataReader ExecuteSqlReader(string connectionString, string sqlString)
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "<Pending>")]
+        public static Tuple<IDbCommand, IDataReader> ExecuteSqlReader(string connectionString, string sqlString)
         {
-            //TODO: do we need a connection manager, that retry and makesure connection is avalible?
             SqliteConnection conn = new SqliteConnection(connectionString);
 
-            SqliteCommand command = new SqliteCommand {
+            SqliteCommand command = new SqliteCommand
+            {
                 CommandType = CommandType.Text,
-                CommandText = sqlString
+                CommandText = SQLiteUtility.SafeDbStatement(sqlString)
             };
 
-            return ExecuteCommandReader(conn, true, command);
+            return new Tuple<IDbCommand, IDataReader>(command, ExecuteCommandReader(conn, true, command));
         }
 
-        public static IDataReader ExecuteSqlReader(SqliteTransaction sqliteTransaction, string sqlString)
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "<Pending>")]
+        public static Tuple<IDbCommand, IDataReader> ExecuteSqlReader(SqliteTransaction sqliteTransaction, string sqlString)
         {
-            SqliteCommand command = new SqliteCommand {
+            SqliteCommand command = new SqliteCommand
+            {
                 CommandType = CommandType.Text,
-                CommandText = sqlString,
+                CommandText = SQLiteUtility.SafeDbStatement(sqlString),
                 Transaction = sqliteTransaction
             };
 
-            return ExecuteCommandReader(sqliteTransaction.Connection, false, command);
+            return new Tuple<IDbCommand, IDataReader>(command, ExecuteCommandReader(sqliteTransaction.Connection, false, command));
         }
+
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>")]
         public static object ExecuteSqlScalar(string connectionString, string sqlString)
         {
             SqliteConnection conn = new SqliteConnection(connectionString);
 
-            SqliteCommand command = new SqliteCommand {
+            using (SqliteCommand command = new SqliteCommand
+            {
                 CommandType = CommandType.Text,
-                CommandText = sqlString
-            };
-
-            return ExecuteCommandScalar(conn, true, command);
+                CommandText = SQLiteUtility.SafeDbStatement(sqlString)
+            })
+            {
+                return ExecuteCommandScalar(conn, true, command);
+            }
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>")]
         public static object ExecuteSqlScalar(SqliteTransaction sqliteTransaction, string sqlString)
         {
-            SqliteCommand command = new SqliteCommand {
+            using (SqliteCommand command = new SqliteCommand
+            {
                 CommandType = CommandType.Text,
-                CommandText = sqlString,
+                CommandText = SQLiteUtility.SafeDbStatement(sqlString),
                 Transaction = sqliteTransaction
-            };
-
-            return ExecuteCommandScalar(sqliteTransaction.Connection, false, command);
+            })
+            {
+                return ExecuteCommandScalar(sqliteTransaction.Connection, false, command);
+            }
         }
 
         #endregion

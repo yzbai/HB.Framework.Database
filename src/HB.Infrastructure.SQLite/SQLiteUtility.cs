@@ -194,7 +194,7 @@ namespace HB.Infrastructure.SQLite
             }
             //TODO:增加对值的过滤，预防SQL注入
             return dbValueStatement.ToString(GlobalSettings.Culture)
-                .Replace("'", "''")
+                //.Replace("'", "''")
                 .Replace("--", "")
                 .Replace("/*", "")
                 .Replace("*/", "");

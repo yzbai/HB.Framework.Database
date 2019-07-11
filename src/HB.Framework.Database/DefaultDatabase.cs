@@ -173,7 +173,7 @@ namespace HB.Framework.Database
             });
         }
 
-        private bool CheckMigration(int startVersion, int endVersion, IOrderedEnumerable<Migration> curOrderedMigrations)
+        private static bool CheckMigration(int startVersion, int endVersion, IOrderedEnumerable<Migration> curOrderedMigrations)
         {
             int curVersion = curOrderedMigrations.ElementAt(0).OldVersion;
 
@@ -240,25 +240,20 @@ namespace HB.Framework.Database
             #endregion
 
             IList<TSelect> result = null;
+            IDbCommand command = null;
             IDataReader reader = null;
             DatabaseEntityDef selectDef = _entityDefFactory.GetDef<TSelect>();
 
             try
             {
-                IDbCommand command = _sqlBuilder.CreateRetrieveCommand(selectCondition, fromCondition, whereCondition);
+                command = _sqlBuilder.CreateRetrieveCommand(selectCondition, fromCondition, whereCondition);
                 reader = _databaseEngine.ExecuteCommandReader(transContext?.Transaction, selectDef.DatabaseName, command, transContext != null);
                 result = _modelMapper.ToList<TSelect>(reader);
             }
-            //catch (DbException ex)
-            //{
-            //    throw ex;
-            //}
             finally
             {
-                if (reader != null)
-                {
-                    reader.Dispose();
-                }
+                reader?.Dispose();
+                command?.Dispose();
             }
 
             return result;
@@ -304,12 +299,13 @@ namespace HB.Framework.Database
             #endregion
 
             IList<T> result = null;
+            IDbCommand command = null;
             IDataReader reader = null;
             DatabaseEntityDef entityDef = _entityDefFactory.GetDef<T>();
 
             try
             {
-                IDbCommand command = _sqlBuilder.CreateRetrieveCommand<T>(selectCondition, fromCondition, whereCondition);
+                command = _sqlBuilder.CreateRetrieveCommand<T>(selectCondition, fromCondition, whereCondition);
                 reader = _databaseEngine.ExecuteCommandReader(transContext?.Transaction, entityDef.DatabaseName, command, transContext != null);
                 result = _modelMapper.ToList<T>(reader);
             }
@@ -320,10 +316,8 @@ namespace HB.Framework.Database
             //}
             finally
             {
-                if (reader != null)
-                {
-                    reader.Dispose();
-                }
+                reader?.Dispose();
+                command?.Dispose();
             }
 
             return result;
@@ -381,9 +375,9 @@ namespace HB.Framework.Database
                 object countObj = _databaseEngine.ExecuteCommandScalar(transContext?.Transaction, entityDef.DatabaseName, command, transContext != null);
                 count = Convert.ToInt32(countObj, GlobalSettings.Culture);
             }
-            catch (DbException ex)
+            catch
             {
-                throw ex;// _logger.LogCritical(ex.Message);
+                throw;
             }
 
             return count;
@@ -540,27 +534,20 @@ namespace HB.Framework.Database
             }
 
             IList<Tuple<TSource, TTarget>> result = null;
+            IDbCommand command = null;
             IDataReader reader = null;
             DatabaseEntityDef entityDef = _entityDefFactory.GetDef<TSource>();
 
             try
             {
-                IDbCommand command = _sqlBuilder.CreateRetrieveCommand<TSource, TTarget>(fromCondition, whereCondition);
+                command = _sqlBuilder.CreateRetrieveCommand<TSource, TTarget>(fromCondition, whereCondition);
                 reader = _databaseEngine.ExecuteCommandReader(transContext?.Transaction, entityDef.DatabaseName, command, transContext != null);
                 result = _modelMapper.ToList<TSource, TTarget>(reader);
             }
-            //catch (DbException ex)
-            //{
-            //    result = new List<Tuple<TSource, TTarget>>();
-
-            //    _logger.LogCritical(ex.Message);
-            //}
             finally
             {
-                if (reader != null)
-                {
-                    reader.Dispose();
-                }
+                reader?.Dispose();
+                command?.Dispose();
             }
 
             return result;
@@ -635,12 +622,13 @@ namespace HB.Framework.Database
 
 
             IList<Tuple<TSource, TTarget1, TTarget2>> result = null;
+            IDbCommand command = null;
             IDataReader reader = null;
             DatabaseEntityDef entityDef = _entityDefFactory.GetDef<TSource>();
 
             try
             {
-                IDbCommand command = _sqlBuilder.CreateRetrieveCommand<TSource, TTarget1, TTarget2>(fromCondition, whereCondition);
+                command = _sqlBuilder.CreateRetrieveCommand<TSource, TTarget1, TTarget2>(fromCondition, whereCondition);
                 reader = _databaseEngine.ExecuteCommandReader(transContext?.Transaction, entityDef.DatabaseName, command, transContext != null);
                 result = _modelMapper.ToList<TSource, TTarget1, TTarget2>(reader);
             }
@@ -652,10 +640,8 @@ namespace HB.Framework.Database
             //}
             finally
             {
-                if (reader != null)
-                {
-                    reader.Dispose();
-                }
+                reader?.Dispose();
+                command?.Dispose();
             }
 
 
@@ -720,13 +706,14 @@ namespace HB.Framework.Database
                 return DatabaseResult.NotWriteable();
             }
 
+            IDbCommand command = null;
             IDataReader reader = null;
 
             try
             {
-                IDbCommand dbCommand = _sqlBuilder.CreateAddCommand(item, "default");
+                command = _sqlBuilder.CreateAddCommand(item, "default");
 
-                reader = _databaseEngine.ExecuteCommandReader(transContext?.Transaction, entityDef.DatabaseName, dbCommand, true);
+                reader = _databaseEngine.ExecuteCommandReader(transContext?.Transaction, entityDef.DatabaseName, command, true);
 
                 _modelMapper.ToObject(reader, item);
 
@@ -739,10 +726,8 @@ namespace HB.Framework.Database
             }
             finally
             {
-                if (reader != null)
-                {
-                    reader.Dispose();
-                }
+                reader?.Dispose();
+                command?.Dispose();
             }
         }
 
@@ -873,18 +858,19 @@ namespace HB.Framework.Database
                 return DatabaseResult.NotWriteable();
             }
 
+            IDbCommand command = null;
             IDataReader reader = null;
 
             try
             {
                 DatabaseResult result = DatabaseResult.Succeeded();
 
-                IDbCommand dbCommand = _sqlBuilder.CreateBatchAddStatement(items, lastUser);
+                command = _sqlBuilder.CreateBatchAddStatement(items, lastUser);
 
                 reader = _databaseEngine.ExecuteCommandReader(
                     transContext.Transaction,
                     entityDef.DatabaseName,
-                    dbCommand,
+                    command,
                     true);
 
                 while (reader.Read())
@@ -911,10 +897,8 @@ namespace HB.Framework.Database
             }
             finally
             {
-                if (reader != null)
-                {
-                    reader.Dispose();
-                }
+                reader?.Dispose();
+                command?.Dispose();
             }
         }
 
@@ -942,16 +926,17 @@ namespace HB.Framework.Database
                 return DatabaseResult.NotWriteable();
             }
 
+            IDbCommand command = null;
             IDataReader reader = null;
 
             try
             {
-                IDbCommand dbCommand = _sqlBuilder.CreateBatchUpdateStatement(items, lastUser);
+                command = _sqlBuilder.CreateBatchUpdateStatement(items, lastUser);
 
                 reader = _databaseEngine.ExecuteCommandReader(
                     transContext.Transaction,
                     entityDef.DatabaseName,
-                    dbCommand,
+                    command,
                     true);
 
                 int count = 0;
@@ -980,10 +965,8 @@ namespace HB.Framework.Database
             }
             finally
             {
-                if (reader != null)
-                {
-                    reader.Dispose();
-                }
+                reader?.Dispose();
+                command?.Dispose();
             }
         }
 
@@ -1006,16 +989,17 @@ namespace HB.Framework.Database
                 return DatabaseResult.NotWriteable();
             }
 
+            IDbCommand command = null;
             IDataReader reader = null;
 
             try
             {
-                IDbCommand dbCommand = _sqlBuilder.CreateBatchDeleteStatement(items, lastUser);
+                command = _sqlBuilder.CreateBatchDeleteStatement(items, lastUser);
 
                 reader = _databaseEngine.ExecuteCommandReader(
                     transContext.Transaction,
                     entityDef.DatabaseName,
-                    dbCommand,
+                    command,
                     true);
 
                 int count = 0;
@@ -1044,10 +1028,8 @@ namespace HB.Framework.Database
             }
             finally
             {
-                if (reader != null)
-                {
-                    reader.Dispose();
-                }
+                reader?.Dispose();
+                command?.Dispose();
             }
         }
 

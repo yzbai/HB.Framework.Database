@@ -18,6 +18,7 @@ namespace HB.Infrastructure.MySQL
 
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2208:Instantiate argument exceptions correctly", Justification = "<Pending>")]
         public IDatabaseEngine Build()
         {
             if (_mysqlOptions == null)

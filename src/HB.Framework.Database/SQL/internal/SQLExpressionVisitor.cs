@@ -21,7 +21,7 @@ namespace HB.Framework.Database.SQL
                 case ExpressionType.MemberAccess:
                     return VisitMemberAccess(exp as MemberExpression, context);
                 case ExpressionType.Constant:
-                    return VisitConstant(exp as ConstantExpression, context);
+                    return VisitConstant(exp as ConstantExpression);
                 case ExpressionType.Add:
                 case ExpressionType.AddChecked:
                 case ExpressionType.Subtract:
@@ -56,7 +56,7 @@ namespace HB.Framework.Database.SQL
                 case ExpressionType.TypeAs:
                     return VisitUnary(exp as UnaryExpression, context);
                 case ExpressionType.Parameter:
-                    return VisitParameter(exp as ParameterExpression, context);
+                    return VisitParameter(exp as ParameterExpression);
                 case ExpressionType.Call:
                     return VisitMethodCall(exp as MethodCallExpression, context);
                 case ExpressionType.New:
@@ -65,7 +65,7 @@ namespace HB.Framework.Database.SQL
                 case ExpressionType.NewArrayBounds:
                     return VisitNewArray(exp as NewArrayExpression, context);
                 case ExpressionType.MemberInit:
-                    return VisitMemberInit(exp as MemberInitExpression, context);
+                    return VisitMemberInit(exp as MemberInitExpression);
                 default:
                     return exp.ToString();
             }
@@ -232,7 +232,7 @@ namespace HB.Framework.Database.SQL
             return getter();
         }
 
-        private static object VisitMemberInit(MemberInitExpression exp, SQLExpressionVisitorContenxt context)
+        private static object VisitMemberInit(MemberInitExpression exp/*, SQLExpressionVisitorContenxt context*/)
         {
             return Expression.Lambda(exp).Compile().DynamicInvoke();
         }
@@ -262,13 +262,13 @@ namespace HB.Framework.Database.SQL
 
         }
 
-        private static object VisitParameter(ParameterExpression p, SQLExpressionVisitorContenxt context)
+        private static object VisitParameter(ParameterExpression p/*, SQLExpressionVisitorContenxt context*/)
         {
             //return p.Name;
             return p.Type;
         }
 
-        private static object VisitConstant(ConstantExpression c, SQLExpressionVisitorContenxt context)
+        private static object VisitConstant(ConstantExpression c/*, SQLExpressionVisitorContenxt context*/)
         {
             if (c.Value == null)
             {
@@ -465,7 +465,7 @@ namespace HB.Framework.Database.SQL
 
                     statement = string.Format(GlobalSettings.Culture, "{0} {1} ({2})", quotedColName, m.Method.Name, sIn.ToString());
 
-                    if (Convert.ToBoolean(args[0]))
+                    if (Convert.ToBoolean(args[0], GlobalSettings.Culture))
                     {
                         //TODO: only for mysql, others later
                         context.OrderByStatementBySQLUtilIn = string.Format(GlobalSettings.Culture, " ORDER BY FIELD({0}, {1}) ", quotedColName, sIn.ToString());

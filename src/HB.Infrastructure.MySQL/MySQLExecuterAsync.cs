@@ -10,6 +10,7 @@ namespace HB.Infrastructure.MySQL
     {
         #region Privates
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>")]
         private static async Task PrepareCommandAsync(MySqlCommand command, MySqlConnection connection, MySqlTransaction transaction,
             CommandType commandType, string commandText, IEnumerable<IDataParameter> commandParameters)
         {
@@ -83,7 +84,7 @@ namespace HB.Infrastructure.MySQL
 
                 return reader;
             }
-            catch 
+            catch
             {
                 if (isOwnedConnection)
                 {
@@ -130,10 +131,6 @@ namespace HB.Infrastructure.MySQL
 
                 rtObj = await command.ExecuteScalarAsync().ConfigureAwait(false);
             }
-            catch 
-            {
-                throw;
-            }
             finally
             {
                 if (isOwnedConnection)
@@ -177,10 +174,6 @@ namespace HB.Infrastructure.MySQL
 
                 rtInt = await command.ExecuteNonQueryAsync().ConfigureAwait(false);
             }
-            catch
-            {
-                throw;
-            }
             finally
             {
                 if (isOwnedConnection)
@@ -218,10 +211,6 @@ namespace HB.Infrastructure.MySQL
             {
                 rtInt = await command.ExecuteNonQueryAsync().ConfigureAwait(false);
             }
-            catch 
-            {
-                throw;
-            }
             finally
             {
                 if (isOwnedConnection)
@@ -231,6 +220,7 @@ namespace HB.Infrastructure.MySQL
             }
 
             command.Parameters.Clear();
+            command.Dispose();
 
             return rtInt;
         }
@@ -261,10 +251,6 @@ namespace HB.Infrastructure.MySQL
             {
                 rtObj = await command.ExecuteScalarAsync().ConfigureAwait(false);
             }
-            catch
-            {
-                throw;
-            }
             finally
             {
                 if (isOwnedConnection)
@@ -273,6 +259,7 @@ namespace HB.Infrastructure.MySQL
                 }
             }
             command.Parameters.Clear();
+            command.Dispose();
 
             return rtObj;
         }
@@ -281,7 +268,7 @@ namespace HB.Infrastructure.MySQL
 
         #region SP Reader
 
-        public static async Task<IDataReader> ExecuteSPReaderAsync(string connectString, string spName, IList<IDataParameter> dbParameters)
+        public static async Task<Tuple<IDbCommand, IDataReader>> ExecuteSPReaderAsync(string connectString, string spName, IList<IDataParameter> dbParameters)
         {
             MySqlConnection conn = new MySqlConnection(connectString);
             await conn.OpenAsync().ConfigureAwait(false);
@@ -289,12 +276,13 @@ namespace HB.Infrastructure.MySQL
             return await ExecuteSPReaderAsync(conn, null, true, spName, dbParameters).ConfigureAwait(false);
         }
 
-        public static Task<IDataReader> ExecuteSPReaderAsync(MySqlTransaction mySqlTransaction, string spName, IList<IDataParameter> dbParameters)
+        public static Task<Tuple<IDbCommand, IDataReader>> ExecuteSPReaderAsync(MySqlTransaction mySqlTransaction, string spName, IList<IDataParameter> dbParameters)
         {
             return ExecuteSPReaderAsync(mySqlTransaction.Connection, mySqlTransaction, false, spName, dbParameters);
         }
 
-        private static async Task<IDataReader> ExecuteSPReaderAsync(MySqlConnection connection, MySqlTransaction mySqlTransaction, bool isOwedConnection, string spName, IList<IDataParameter> dbParameters)
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "<Pending>")]
+        private static async Task<Tuple<IDbCommand, IDataReader>> ExecuteSPReaderAsync(MySqlConnection connection, MySqlTransaction mySqlTransaction, bool isOwedConnection, string spName, IList<IDataParameter> dbParameters)
         {
             MySqlCommand command = new MySqlCommand();
 
@@ -329,7 +317,7 @@ namespace HB.Infrastructure.MySQL
 
             command.Parameters.Clear();
 
-            return reader;
+            return new Tuple<IDbCommand, IDataReader>(command, reader);
         }
 
         #endregion

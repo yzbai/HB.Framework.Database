@@ -4,7 +4,7 @@ using System.Text;
 
 namespace HB.Infrastructure.SQLite.Test
 {
-    public class Mocker
+    public static class Mocker
     {
         private static Random random = new Random();
 

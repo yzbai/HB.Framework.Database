@@ -6,8 +6,8 @@ namespace HB.Framework.Database
 {
     public static class SystemInfoNames
     {
-        public static string Version = "Version";
-        public static string DatabaseName = "DatabaseName";
+        public const string Version = "Version";
+        public const string DatabaseName = "DatabaseName";
     }
     public class SystemInfo
     {
@@ -22,10 +22,10 @@ namespace HB.Framework.Database
 
         public int Version {
             get {
-                return Convert.ToInt32(_sysDict[SystemInfoNames.Version]);
+                return Convert.ToInt32(_sysDict[SystemInfoNames.Version], GlobalSettings.Culture);
             }
             set {
-                _sysDict[SystemInfoNames.Version] = value.ToString();
+                _sysDict[SystemInfoNames.Version] = value.ToString(GlobalSettings.Culture);
             }
         }
 

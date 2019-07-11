@@ -12,10 +12,11 @@ namespace HB.Infrastructure.SQLite
     {
         #region 事务
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "<Pending>")]
         public async Task<IDbTransaction> BeginTransactionAsync(string dbName, IsolationLevel isolationLevel = IsolationLevel.ReadCommitted)
         {
             SqliteConnection conn = new SqliteConnection(GetConnectionString(dbName, true));
-            await conn.OpenAsync();
+            await conn.OpenAsync().ConfigureAwait(false);
 
             return conn.BeginTransaction(isolationLevel);
         }
@@ -24,7 +25,11 @@ namespace HB.Infrastructure.SQLite
         {
             SqliteTransaction sqliteTransaction = transaction as SqliteTransaction;
 
+            SqliteConnection connection = sqliteTransaction.Connection;
+
             sqliteTransaction.Commit();
+
+            connection.Close();
 
             return Task.FromResult(0);
         }
@@ -33,7 +38,11 @@ namespace HB.Infrastructure.SQLite
         {
             SqliteTransaction sqliteTransaction = transaction as SqliteTransaction;
 
+            SqliteConnection connection = sqliteTransaction.Connection;
+
             sqliteTransaction.Rollback();
+
+            connection.Close();
 
             return Task.FromResult(0);
         }
@@ -86,7 +95,7 @@ namespace HB.Infrastructure.SQLite
             throw new NotImplementedException();
         }
 
-        public Task<IDataReader> ExecuteSPReaderAsync(IDbTransaction trans, string dbName, string spName, IList<IDataParameter> dbParameters, bool useMaster)
+        public Task<Tuple<IDbCommand, IDataReader>> ExecuteSPReaderAsync(IDbTransaction trans, string dbName, string spName, IList<IDataParameter> dbParameters, bool useMaster)
         {
             throw new NotImplementedException();
         }

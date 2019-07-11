@@ -93,10 +93,6 @@ namespace HB.Infrastructure.SQLite
 
                 rtObj = await command.ExecuteScalarAsync().ConfigureAwait(false);
             }
-            catch 
-            {
-                throw;
-            }
             finally
             {
                 if (isOwnedConnection)
@@ -139,10 +135,6 @@ namespace HB.Infrastructure.SQLite
                 command.Connection = conn;
 
                 rtInt = await command.ExecuteNonQueryAsync().ConfigureAwait(false);
-            }
-            catch
-            {
-                throw;
             }
             finally
             {

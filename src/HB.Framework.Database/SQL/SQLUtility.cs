@@ -17,14 +17,17 @@ namespace HB.Framework.Database.SQL
         /// <param name="value"></param>
         /// <param name="list"></param>
         /// <returns></returns>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0059:Unnecessary assignment of a value", Justification = "<Pending>")]
         public static bool In<T>(T value, bool returnByOrder, params object[] list)
         {
+            bool do_not_delete_used_in_expression_analysis = returnByOrder;
+
             if (value == null)
             {
                 return false;
             }
 
-            foreach (var obj in list)
+            foreach (var obj in ThrowIf.Null(list, nameof(list)))
             {
                 if (obj == null)
                 {

@@ -118,6 +118,8 @@ namespace HB.Framework.Database
         DatabaseResult BatchDelete<T>(IEnumerable<T> items, string lastUser, TransactionContext transContext) where T : DatabaseEntity, new();
         DatabaseResult BatchUpdate<T>(IEnumerable<T> items, string lastUser, TransactionContext transContext) where T : DatabaseEntity, new();
 
+
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Naming", "CA1716:Identifiers should not match keywords", Justification = "<Pending>")]
         SelectExpression<T> Select<T>() where T : DatabaseEntity, new();
         FromExpression<T> From<T>() where T : DatabaseEntity, new();
         WhereExpression<T> Where<T>() where T : DatabaseEntity, new();

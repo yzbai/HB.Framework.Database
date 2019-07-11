@@ -7,6 +7,7 @@ namespace HB.Framework.Database.SQL
     /// <summary>
     /// 工具类：输出 以逗号链接的值 字符串。（ex: value1,value2,value3）.
     /// </summary>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes", Justification = "<Pending>")]
     internal class SQLInValues
     {
         private readonly IEnumerable values;

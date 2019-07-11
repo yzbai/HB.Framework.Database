@@ -67,13 +67,13 @@ namespace HB.Framework.Database.Entity
                     {
                         entitySchema.TableName = "tb_";
 
-                        if(type.Name.EndsWith(attribute.SuffixToRemove))
+                        if(type.Name.EndsWith(attribute.SuffixToRemove, GlobalSettings.Comparison))
                         {
-                            entitySchema.TableName += type.Name.Substring(0, type.Name.Length - attribute.SuffixToRemove.Length).ToLower();
+                            entitySchema.TableName += type.Name.Substring(0, type.Name.Length - attribute.SuffixToRemove.Length).ToLower(GlobalSettings.Culture);
                         }
                         else
                         {
-                            entitySchema.TableName += type.Name.ToLower();
+                            entitySchema.TableName += type.Name.ToLower(GlobalSettings.Culture);
                         }
                     }
                     else
@@ -114,7 +114,7 @@ namespace HB.Framework.Database.Entity
 
                 if (entitySchema.TableName.IsNullOrEmpty())
                 {
-                    entitySchema.TableName = "tb_" + type.Name.ToLower();
+                    entitySchema.TableName = "tb_" + type.Name.ToLower(GlobalSettings.Culture);
                 }
 
                 resusltEntitySchemaDict.Add(type.FullName, entitySchema);

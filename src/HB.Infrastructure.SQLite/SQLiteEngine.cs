@@ -147,6 +147,7 @@ namespace HB.Infrastructure.SQLite
 
         #region 事务
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "<Pending>")]
         public IDbTransaction BeginTransaction(string dbName, IsolationLevel isolationLevel)
         {
             SqliteConnection conn = new SqliteConnection(GetConnectionString(dbName, true));
@@ -157,12 +158,16 @@ namespace HB.Infrastructure.SQLite
 
         public void Commit(IDbTransaction transaction)
         {
+            IDbConnection dbConnection = transaction.Connection;
             transaction.Commit();
+            dbConnection.Close();
         }
 
         public void Rollback(IDbTransaction transaction)
         {
+            IDbConnection dbConnection = transaction.Connection;
             transaction.Rollback();
+            dbConnection.Close();
         }
 
 
@@ -170,6 +175,8 @@ namespace HB.Infrastructure.SQLite
         #endregion
 
         #region SystemInfo
+
+        private static string systemInfoTableName = "tb_sys_info";
 
         private static string tbSysInfoCreate =
 @"CREATE TABLE ""tb_sys_info"" (
@@ -184,41 +191,52 @@ INSERT INTO ""tb_sys_info""(""Name"", ""Value"") VALUES('DatabaseName', '{0}');"
 
         private static string tbSysInfoUpdateVersion = @"UPDATE ""tb_sys_info"" SET ""Value"" = '{0}' WHERE ""Name"" = 'Version';";
 
+        private static string isTableExistsStatement = "SELECT count(1) FROM sqlite_master where type='table' and name='{0}';";
+
         public IEnumerable<string> GetDatabaseNames()
         {
             return _options.Schemas.Select(s => s.SchemaName);
         }
 
+        public bool IsTableExists(string databaseName, string tableName, IDbTransaction transaction)
+        {
+            string sql = string.Format(GlobalSettings.Culture, isTableExistsStatement, tableName);
+
+            object result = ExecuteSqlScalar(transaction, databaseName, sql, false);
+
+            return Convert.ToBoolean(result, GlobalSettings.Culture);
+        }
+
         public SystemInfo GetSystemInfo(string databaseName, IDbTransaction transaction)
         {
-            IDataReader reader = null;
-
-            try
+            if (!IsTableExists(databaseName, systemInfoTableName, transaction))
             {
-                reader = ExecuteSqlReader(transaction, databaseName, tbSysInfoRetrieve, false);
-
-                SystemInfo systemInfo = new SystemInfo { DatabaseName = databaseName };
-
-                while (reader.Read())
+                return new SystemInfo
                 {
-                    systemInfo.Add(reader["Name"].ToString(), reader["Value"].ToString());
-                }
-
-                return systemInfo;
-            }
-            catch (Exception)
-            {
-                return new SystemInfo {
                     DatabaseName = databaseName,
                     Version = 0
                 };
             }
+
+            Tuple<IDbCommand, IDataReader> tuple = null;
+
+            try
+            {
+                tuple = ExecuteSqlReader(transaction, databaseName, tbSysInfoRetrieve, false);
+
+                SystemInfo systemInfo = new SystemInfo { DatabaseName = databaseName };
+
+                while (tuple.Item2.Read())
+                {
+                    systemInfo.Add(tuple.Item2["Name"].ToString(), tuple.Item2["Value"].ToString());
+                }
+
+                return systemInfo;
+            }
             finally
             {
-                if (reader != null)
-                {
-                    reader.Close();
-                }
+                tuple.Item2?.Dispose();
+                tuple.Item1?.Dispose();
             }
         }
 
@@ -227,11 +245,11 @@ INSERT INTO ""tb_sys_info""(""Name"", ""Value"") VALUES('DatabaseName', '{0}');"
             if (version == 1)
             {
                 //创建SystemInfo
-                ExecuteSqlNonQuery(transaction, databaseName, string.Format(tbSysInfoCreate, databaseName));
+                ExecuteSqlNonQuery(transaction, databaseName, string.Format(GlobalSettings.Culture, tbSysInfoCreate, databaseName));
             }
             else
             {
-                ExecuteSqlNonQuery(transaction, databaseName, string.Format(tbSysInfoUpdateVersion, version));
+                ExecuteSqlNonQuery(transaction, databaseName, string.Format(GlobalSettings.Culture, tbSysInfoUpdateVersion, version));
             }
         }
 
@@ -246,7 +264,7 @@ INSERT INTO ""tb_sys_info""(""Name"", ""Value"") VALUES('DatabaseName', '{0}');"
         /// <param name="spName"></param>
         /// <param name="dbParameters"></param>
         /// <returns></returns>
-        public IDataReader ExecuteSPReader(IDbTransaction Transaction, string dbName, string spName, IList<IDataParameter> dbParameters, bool useMaster)
+        public Tuple<IDbCommand,IDataReader> ExecuteSPReader(IDbTransaction Transaction, string dbName, string spName, IList<IDataParameter> dbParameters, bool useMaster)
         {
             throw new NotImplementedException("SQLite Not Support Stored Procedure");
         }
@@ -326,7 +344,7 @@ INSERT INTO ""tb_sys_info""(""Name"", ""Value"") VALUES('DatabaseName', '{0}');"
         /// <summary>
         /// 使用后必须Dispose，必须使用using.
         /// </summary>
-        public IDataReader ExecuteSqlReader(IDbTransaction Transaction, string dbName, string SQL, bool useMaster)
+        public Tuple<IDbCommand, IDataReader> ExecuteSqlReader(IDbTransaction Transaction, string dbName, string SQL, bool useMaster)
         {
             if (Transaction == null)
             {

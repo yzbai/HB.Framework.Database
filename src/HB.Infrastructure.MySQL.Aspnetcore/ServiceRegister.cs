@@ -21,7 +21,7 @@ namespace Microsoft.Extensions.DependencyInjection
         public static IServiceCollection AddMySQL(this IServiceCollection services, Action<MySQLOptions> databaseEngineOptionsSetup)
         {
             MySQLOptions options = new MySQLOptions();
-            databaseEngineOptionsSetup(options);
+            ThrowIf.Null(databaseEngineOptionsSetup, nameof(databaseEngineOptionsSetup))(options);
 
             AddMySQLInternal(services, options);
 

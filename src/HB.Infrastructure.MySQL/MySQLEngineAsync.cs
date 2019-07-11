@@ -12,7 +12,7 @@ namespace HB.Infrastructure.MySQL
     {
         #region SP 能力
 
-        public Task<IDataReader> ExecuteSPReaderAsync(IDbTransaction Transaction, string dbName, string spName, IList<IDataParameter> dbParameters, bool useMaster = false)
+        public Task<Tuple<IDbCommand, IDataReader>> ExecuteSPReaderAsync(IDbTransaction Transaction, string dbName, string spName, IList<IDataParameter> dbParameters, bool useMaster = false)
         {
             if (Transaction == null)
             {
@@ -92,26 +92,35 @@ namespace HB.Infrastructure.MySQL
 
         #region 事务
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "<Pending>")]
         public async Task<IDbTransaction> BeginTransactionAsync(string dbName, IsolationLevel isolationLevel = IsolationLevel.ReadCommitted)
         {
             MySqlConnection conn = new MySqlConnection(GetConnectionString(dbName, true));
-            await conn.OpenAsync();
+            await conn.OpenAsync().ConfigureAwait(false);
 
             return await conn.BeginTransactionAsync(isolationLevel).ConfigureAwait(false);
         }
 
-        public Task CommitAsync(IDbTransaction transaction)
+        public async Task CommitAsync(IDbTransaction transaction)
         {
             MySqlTransaction mySqlTransaction = transaction as MySqlTransaction;
 
-            return mySqlTransaction.CommitAsync();
+            MySqlConnection connection = mySqlTransaction.Connection;
+
+            await mySqlTransaction.CommitAsync().ConfigureAwait(false);
+
+            connection.Close();
         }
 
-        public Task RollbackAsync(IDbTransaction transaction)
+        public async Task RollbackAsync(IDbTransaction transaction)
         {
             MySqlTransaction mySqlTransaction = transaction as MySqlTransaction;
 
-            return mySqlTransaction.RollbackAsync();
+            MySqlConnection connection = mySqlTransaction.Connection;
+
+            await mySqlTransaction.RollbackAsync().ConfigureAwait(false);
+
+            connection.Close();
         }
 
 
