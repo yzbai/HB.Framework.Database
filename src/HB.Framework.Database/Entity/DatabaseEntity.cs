@@ -11,7 +11,7 @@ namespace HB.Framework.Database.Entity
     /// 配合DatabaseTypeConverter，可以存储任意自定义字段
     /// </summary>
     //[Serializable]
-    public class DatabaseEntity : CommonEntity
+    public class DatabaseEntity : ValidatableObject
     {
         [AutoIncrementPrimaryKey]
         [EntityProperty("Id")]
