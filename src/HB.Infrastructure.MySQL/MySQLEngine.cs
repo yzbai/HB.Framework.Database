@@ -292,6 +292,7 @@ namespace HB.Infrastructure.MySQL
         #region 事务
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "<Pending>")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Code Quality", "IDE0067:Dispose objects before losing scope", Justification = "<Pending>")]
         public IDbTransaction BeginTransaction(string dbName, IsolationLevel isolationLevel = IsolationLevel.ReadCommitted)
         {
             MySqlConnection conn = new MySqlConnection(GetConnectionString(dbName, true));
@@ -318,9 +319,9 @@ namespace HB.Infrastructure.MySQL
 
         #region SystemInfo
 
-        private static string systemInfoTableName = "tb_sys_info";
+        private const string systemInfoTableName = "tb_sys_info";
 
-        private static string tbSysInfoCreate =
+        private const string tbSysInfoCreate =
 @"CREATE TABLE `tb_sys_info` (
 	`Id` int (11) NOT NULL AUTO_INCREMENT, 
 	`Name` varchar(100) DEFAULT NULL, 
@@ -331,11 +332,11 @@ namespace HB.Infrastructure.MySQL
 INSERT INTO `tb_sys_info`(`Name`, `Value`) VALUES('Version', '1');
 INSERT INTO `tb_sys_info`(`Name`, `Value`) VALUES('DatabaseName', '{0}');";
 
-        private static string tbSysInfoRetrieve = @"SELECT * FROM `tb_sys_info`;";
+        private const string tbSysInfoRetrieve = @"SELECT * FROM `tb_sys_info`;";
 
-        private static string tbSysInfoUpdateVersion = @"UPDATE `tb_sys_info` SET `Value` = '{0}' WHERE `Name` = 'Version';";
+        private const string tbSysInfoUpdateVersion = @"UPDATE `tb_sys_info` SET `Value` = '{0}' WHERE `Name` = 'Version';";
 
-        private static string isTableExistsStatement = "SELECT count(1) FROM information_schema.TABLES WHERE table_name ='{0}';";
+        private const string isTableExistsStatement = "SELECT count(1) FROM information_schema.TABLES WHERE table_name ='{0}';";
 
         public IEnumerable<string> GetDatabaseNames()
         {

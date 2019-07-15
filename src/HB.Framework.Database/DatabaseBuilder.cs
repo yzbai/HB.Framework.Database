@@ -9,7 +9,7 @@ namespace HB.Framework.Database
 {
     public class DatabaseBuilder
     {
-        private IDatabaseEngine _databaseEngine;
+        private readonly IDatabaseEngine _databaseEngine;
 
         public DatabaseBuilder(IDatabaseEngine databaseEngine)
         {

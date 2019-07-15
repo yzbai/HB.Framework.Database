@@ -8,12 +8,11 @@ namespace HB.Framework.Database.SQL
 {
     public class SelectExpression<T> where T : DatabaseEntity, new()
     {
-        private StringBuilder _statementBuilder = new StringBuilder();
+        private readonly StringBuilder _statementBuilder = new StringBuilder();
 
         private bool _firstAssign = true;
 
-        private readonly IDatabaseEngine _databaseEngine;
-        private SQLExpressionVisitorContenxt expressionContext = null;
+        private readonly SQLExpressionVisitorContenxt expressionContext = null;
 
         public bool WithSelectString { get; set; } = true;
 
@@ -29,7 +28,6 @@ namespace HB.Framework.Database.SQL
 
         internal SelectExpression(IDatabaseEngine databaseEngine, IDatabaseEntityDefFactory entityDefFactory)
         {
-            _databaseEngine = databaseEngine;
             expressionContext = new SQLExpressionVisitorContenxt(databaseEngine, entityDefFactory);
         }
 

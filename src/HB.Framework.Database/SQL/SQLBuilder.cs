@@ -377,9 +377,10 @@ namespace HB.Framework.Database.SQL
 
             DatabaseEntityPropertyDef lastUserProperty = definition.GetProperty("LastUser");
 
-            List<IDataParameter> parameters = new List<IDataParameter>();
-
-            parameters.Add(_databaseEngine.CreateParameter(lastUserProperty.DbParameterizedName, DbParameterValue_Statement(lastUser, lastUserProperty), lastUserProperty.DbFieldType));
+            List<IDataParameter> parameters = new List<IDataParameter>
+            {
+                _databaseEngine.CreateParameter(lastUserProperty.DbParameterizedName, DbParameterValue_Statement(lastUser, lastUserProperty), lastUserProperty.DbFieldType)
+            };
 
             return AssembleCommand<T, T>(false, deleteTemplate, null, condition, parameters);
         }

@@ -25,9 +25,7 @@ namespace HB.Framework.Database.SQL
 
         private readonly IDatabaseEntityDefFactory entityDefFactory;
 
-        private readonly IDatabaseEngine _databaseEngine;
-
-        private SQLExpressionVisitorContenxt expressionContext = null;
+        private readonly SQLExpressionVisitorContenxt expressionContext = null;
 
         public bool WithFromString { get; set; } = true;
 
@@ -46,7 +44,6 @@ namespace HB.Framework.Database.SQL
         internal FromExpression(IDatabaseEngine databaseEngine, IDatabaseEntityDefFactory entityDefFactory)
         {
             this.entityDefFactory = entityDefFactory;
-            _databaseEngine = databaseEngine;
             expressionContext = new SQLExpressionVisitorContenxt(databaseEngine, entityDefFactory);
         }
 

@@ -6,7 +6,7 @@ namespace HB.Framework.Database.SQL
 {
     internal class SQLExpressionVisitorContenxt
     {
-        private IList<KeyValuePair<string, object>> parameters = new List<KeyValuePair<string, object>>();
+        private readonly IList<KeyValuePair<string, object>> parameters = new List<KeyValuePair<string, object>>();
 
         public string Seperator { get; set; } = " ";
 

@@ -148,6 +148,7 @@ namespace HB.Infrastructure.SQLite
         #region 事务
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "<Pending>")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Code Quality", "IDE0067:Dispose objects before losing scope", Justification = "<Pending>")]
         public IDbTransaction BeginTransaction(string dbName, IsolationLevel isolationLevel)
         {
             SqliteConnection conn = new SqliteConnection(GetConnectionString(dbName, true));

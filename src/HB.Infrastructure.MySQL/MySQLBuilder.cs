@@ -8,7 +8,7 @@ namespace HB.Infrastructure.MySQL
 {
     public class MySQLBuilder
     {
-        private MySQLOptions _mysqlOptions;
+        private readonly MySQLOptions _mysqlOptions;
 
         private MySQLBuilder() { }
 

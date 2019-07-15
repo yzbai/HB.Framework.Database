@@ -8,7 +8,7 @@ namespace HB.Infrastructure.SQLite
 {
     public class SQLiteBuilder
     {
-        private SQLiteOptions _sqliteOptions;
+        private readonly SQLiteOptions _sqliteOptions;
 
         private SQLiteBuilder() { }
 

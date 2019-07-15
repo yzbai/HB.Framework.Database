@@ -21,14 +21,14 @@ namespace HB.Framework.Database
     /// </summary>
     internal partial class DefaultDatabase : IDatabase
     {
-        private static object _lockerObj = new object();
+        private static readonly object _lockerObj = new object();
 
         private bool _initialized = false;
 
         private readonly IDatabaseSettings _databaseSettings;
         private readonly IDatabaseEngine _databaseEngine;
         private readonly IDatabaseEntityDefFactory _entityDefFactory;
-        private IDatabaseEntityMapper _modelMapper;
+        private readonly IDatabaseEntityMapper _modelMapper;
         private ISQLBuilder _sqlBuilder;
         //private ILogger<DefaultDatabase> _logger;
 

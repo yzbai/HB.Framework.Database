@@ -29,7 +29,7 @@ namespace HB.Framework.Database
             }
         }
 
-        private IDictionary<string, string> _sysDict = new Dictionary<string, string>();
+        private readonly IDictionary<string, string> _sysDict = new Dictionary<string, string>();
 
         public SystemInfo()
         {

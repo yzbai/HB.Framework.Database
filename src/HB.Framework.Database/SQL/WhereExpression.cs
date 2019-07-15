@@ -14,8 +14,8 @@ namespace HB.Framework.Database.SQL
     /// <typeparam name="T"></typeparam>
     public class WhereExpression<T>/* : SQLExpression*/
     {
-        private IDatabaseEngine databaseEngine;
-        private SQLExpressionVisitorContenxt expressionContext = null;
+        private readonly IDatabaseEngine databaseEngine;
+        private readonly SQLExpressionVisitorContenxt expressionContext = null;
         private Expression<Func<T, bool>> _whereExpression = null;
         private readonly List<string> _orderByProperties = new List<string>();
 
@@ -33,8 +33,10 @@ namespace HB.Framework.Database.SQL
         internal WhereExpression(IDatabaseEngine databaseEngine, IDatabaseEntityDefFactory entityDefFactory)
         {
             this.databaseEngine = databaseEngine;
-            expressionContext = new SQLExpressionVisitorContenxt(databaseEngine, entityDefFactory);
-            expressionContext.ParamPlaceHolderPrefix = databaseEngine.ParameterizedChar + "w__";
+            expressionContext = new SQLExpressionVisitorContenxt(databaseEngine, entityDefFactory)
+            {
+                ParamPlaceHolderPrefix = databaseEngine.ParameterizedChar + "w__"
+            };
         }
 
         public IList<KeyValuePair<string, object>> GetParameters()
