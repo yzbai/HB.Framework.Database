@@ -28,9 +28,9 @@ namespace HB.Framework.Database.Entity
         private readonly IDictionary<string, EntitySchema> _entitySchemaDict;
         private readonly IDictionary<Type, DatabaseEntityDef> _defDict = new Dictionary<Type, DatabaseEntityDef>();
 
-        public DefaultDatabaseEntityDefFactory(IDatabaseSettings databaseSettings, IDatabaseEngine databaseEngine, IDatabaseTypeConverterFactory typeConverterFactory)
+        public DefaultDatabaseEntityDefFactory(IDatabaseEngine databaseEngine, IDatabaseTypeConverterFactory typeConverterFactory)
         {
-            _databaseSettings = databaseSettings;
+            _databaseSettings = databaseEngine.DatabaseSettings;
             _databaseEngine = databaseEngine;
             _typeConverterFactory = typeConverterFactory;
 

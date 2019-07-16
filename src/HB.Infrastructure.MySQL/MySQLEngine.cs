@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using MySqlConnector.Logging;
 using HB.Framework.Database;
 using System.Linq;
+using Microsoft.Extensions.Options;
 
 namespace HB.Infrastructure.MySQL
 {
@@ -29,11 +30,11 @@ namespace HB.Infrastructure.MySQL
 
         private MySQLEngine() { }
 
-        public MySQLEngine(MySQLOptions options) : this()
+        public MySQLEngine(IOptions<MySQLOptions> options) : this()
         {
             //MySqlConnectorLogManager.Provider = new MicrosoftExtensionsLoggingLoggerProvider(loggerFactory);
 
-            _options = options;
+            _options = options.Value;
 
             SetConnectionStrings();
         }

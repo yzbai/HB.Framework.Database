@@ -7,6 +7,7 @@ using System.Linq.Expressions;
 using HB.Framework.Database.Entity;
 using HB.Framework.Database.Engine;
 using System.Data.Common;
+using Microsoft.Extensions.Logging;
 
 namespace HB.Framework.Database
 {
@@ -30,23 +31,23 @@ namespace HB.Framework.Database
         private readonly IDatabaseEntityDefFactory _entityDefFactory;
         private readonly IDatabaseEntityMapper _modelMapper;
         private readonly ISQLBuilder _sqlBuilder;
-        //private ILogger<DefaultDatabase> _logger;
+        private readonly ILogger _logger;
 
         //public IDatabaseEngine DatabaseEngine { get { return _databaseEngine; } }
 
-        public DefaultDatabase(IDatabaseSettings databaseSettings, IDatabaseEngine databaseEngine, IDatabaseEntityDefFactory modelDefFactory, IDatabaseEntityMapper modelMapper, ISQLBuilder sqlBuilder/*, ILogger<DefaultDatabase> logger*/)
+        public DefaultDatabase(ILogger<DefaultDatabase> logger, IDatabaseEngine databaseEngine, IDatabaseEntityDefFactory modelDefFactory, IDatabaseEntityMapper modelMapper, ISQLBuilder sqlBuilder/*, ILogger<DefaultDatabase> logger*/)
         {
-            if (databaseSettings.Version < 0)
-            {
-                throw new ArgumentException("Database Version should greater than 0");
-            }
-
-            _databaseSettings = databaseSettings;
+            _databaseSettings = databaseEngine.DatabaseSettings;
             _databaseEngine = databaseEngine;
             _entityDefFactory = modelDefFactory;
             _modelMapper = modelMapper;
             _sqlBuilder = sqlBuilder;
-            //_logger = logger;
+            _logger = logger;
+
+            if (_databaseSettings.Version < 0)
+            {
+                throw new ArgumentException("Database Version should greater than 0");
+            }
         }
 
         #region Initialize
@@ -111,6 +112,8 @@ namespace HB.Framework.Database
         private int CreateTable(DatabaseEntityDef def, TransactionContext transContext)
         {
             string sql = GetTableCreateStatement(def.EntityType, false);
+
+            _logger.LogInformation($"Entity Table {def.TableName} going to create. SQL : {sql}");
 
             return _databaseEngine.ExecuteSqlNonQuery(transContext.Transaction, def.DatabaseName, sql);
         }
