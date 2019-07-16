@@ -177,9 +177,9 @@ namespace HB.Infrastructure.SQLite
 
         #region SystemInfo
 
-        private static string systemInfoTableName = "tb_sys_info";
+        private const string systemInfoTableName = "tb_sys_info";
 
-        private static string tbSysInfoCreate =
+        private const string tbSysInfoCreate =
 @"CREATE TABLE ""tb_sys_info"" (
     ""Id"" INTEGER PRIMARY KEY AUTOINCREMENT,
 	""Name"" TEXT UNIQUE, 
@@ -188,11 +188,11 @@ namespace HB.Infrastructure.SQLite
 INSERT INTO ""tb_sys_info""(""Name"", ""Value"") VALUES('Version', '1');
 INSERT INTO ""tb_sys_info""(""Name"", ""Value"") VALUES('DatabaseName', '{0}');";
 
-        private static string tbSysInfoRetrieve = @"SELECT * FROM ""tb_sys_info"";";
+        private const string tbSysInfoRetrieve = @"SELECT * FROM ""tb_sys_info"";";
 
-        private static string tbSysInfoUpdateVersion = @"UPDATE ""tb_sys_info"" SET ""Value"" = '{0}' WHERE ""Name"" = 'Version';";
+        private const string tbSysInfoUpdateVersion = @"UPDATE ""tb_sys_info"" SET ""Value"" = '{0}' WHERE ""Name"" = 'Version';";
 
-        private static string isTableExistsStatement = "SELECT count(1) FROM sqlite_master where type='table' and name='{0}';";
+        private const string isTableExistsStatement = "SELECT count(1) FROM sqlite_master where type='table' and name='{0}';";
 
         public IEnumerable<string> GetDatabaseNames()
         {

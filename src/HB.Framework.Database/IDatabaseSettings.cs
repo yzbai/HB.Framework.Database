@@ -24,5 +24,7 @@ namespace HB.Framework.Database
 
         IList<EntitySchema> Entities { get;}
 
+        IList<string> AssembliesIncludeEntity { get; }
+
     }
 }

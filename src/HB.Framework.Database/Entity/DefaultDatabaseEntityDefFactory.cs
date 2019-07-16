@@ -34,7 +34,15 @@ namespace HB.Framework.Database.Entity
             _databaseEngine = databaseEngine;
             _typeConverterFactory = typeConverterFactory;
 
-            _allEntityTypes = ReflectUtil.GetAllTypeByCondition(t => t.IsSubclassOf(typeof(DatabaseEntity)));
+            if (_databaseSettings.AssembliesIncludeEntity.IsNullOrEmpty())
+            {
+                _allEntityTypes = ReflectUtil.GetAllTypeByCondition(t => t.IsSubclassOf(typeof(DatabaseEntity)));
+            }
+            else
+            {
+                _allEntityTypes = ReflectUtil.GetAllTypeByCondition(_databaseSettings.AssembliesIncludeEntity, t => t.IsSubclassOf(typeof(DatabaseEntity)));
+            }
+
             _entitySchemaDict = ConstructeSchemaDict();
 
             WarmUp();

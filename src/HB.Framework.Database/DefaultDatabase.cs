@@ -29,7 +29,7 @@ namespace HB.Framework.Database
         private readonly IDatabaseEngine _databaseEngine;
         private readonly IDatabaseEntityDefFactory _entityDefFactory;
         private readonly IDatabaseEntityMapper _modelMapper;
-        private ISQLBuilder _sqlBuilder;
+        private readonly ISQLBuilder _sqlBuilder;
         //private ILogger<DefaultDatabase> _logger;
 
         //public IDatabaseEngine DatabaseEngine { get { return _databaseEngine; } }

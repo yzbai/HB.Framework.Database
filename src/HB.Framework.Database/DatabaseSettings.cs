@@ -13,6 +13,8 @@ namespace HB.Framework.Database
         public IList<EntitySchema> Entities { get; } = new List<EntitySchema>();
 
         public bool AutomaticCreateTable => true;
+
+        public IList<string> AssembliesIncludeEntity { get; } = new List<string>();
     }
 
     public class SchemaInfo
