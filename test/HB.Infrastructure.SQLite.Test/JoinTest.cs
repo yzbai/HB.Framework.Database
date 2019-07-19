@@ -1,5 +1,6 @@
 ﻿using HB.Framework.Database;
 using HB.Framework.Database.Entity;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -68,16 +69,20 @@ namespace HB.Infrastructure.SQLite.Test
 
         private IDatabase GetDatabase()
         {
-            SQLiteOptions sqliteOptions = new SQLiteOptions();
+            IServiceCollection services = new ServiceCollection();
 
-            sqliteOptions.DatabaseSettings.Version = 1;
-            sqliteOptions.Schemas.Add(new SchemaInfo {
-                SchemaName = "test.db",
-                IsMaster = true,
-                ConnectionString = "Data Source=c:\\Share\\test.db;"
+            services.AddSQLite(sqliteOptions => {
+                sqliteOptions.DatabaseSettings.Version = 1;
+                sqliteOptions.Schemas.Add(new SchemaInfo
+                {
+                    SchemaName = "test.db",
+                    IsMaster = true,
+                    ConnectionString = "Data Source=c:\\Share\\test.db;"
+                });
             });
 
-            IDatabase database = new DatabaseBuilder(new SQLiteBuilder(sqliteOptions).Build()).Build();
+
+            IDatabase database = services.BuildServiceProvider().GetRequiredService<IDatabase>();
 
             database.Initialize();
 

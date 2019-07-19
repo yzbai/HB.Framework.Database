@@ -13,8 +13,7 @@
 
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\HB.Infrastructure.MySQL.Aspnetcore\HB.Infrastructure.MySQL.Aspnetcore.csproj" />
-    <ProjectReference Include="..\..\src\HB.Infrastructure.SQLite.Aspnetcore\HB.Infrastructure.SQLite.Aspnetcore.csproj" />
+    <ProjectReference Include="..\..\src\HB.Infrastructure.SQLite\HB.Infrastructure.SQLite.csproj" />
   </ItemGroup>
 
 </Project>

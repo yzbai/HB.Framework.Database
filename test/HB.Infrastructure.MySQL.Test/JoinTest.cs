@@ -1,5 +1,6 @@
 ﻿using HB.Framework.Database.Entity;
 using HB.Infrastructure.MySQL;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -68,16 +69,21 @@ namespace HB.Framework.Database.Test
 
         private IDatabase GetDatabase()
         {
-            MySQLOptions mySQLOptions = new MySQLOptions();
+            IServiceCollection services = new ServiceCollection();
 
-            mySQLOptions.DatabaseSettings.Version = 1;
-            mySQLOptions.Schemas.Add(new SchemaInfo {
-                SchemaName = "test_db",
-                IsMaster = true,
-                ConnectionString = "server=127.0.0.1;port=3306;user=admin;password=_admin;database=test_db;SslMode=None"
+            services.AddMySQL(mySQLOptions => {
+                mySQLOptions.DatabaseSettings.Version = 1;
+                mySQLOptions.Schemas.Add(new SchemaInfo
+                {
+                    SchemaName = "test_db",
+                    IsMaster = true,
+                    ConnectionString = "server=127.0.0.1;port=3306;user=admin;password=_admin;database=test_db;SslMode=None"
+                });
             });
 
-            IDatabase database = new DatabaseBuilder(new MySQLBuilder(mySQLOptions).Build()).Build();
+            
+
+            IDatabase database = services.BuildServiceProvider().GetRequiredService<IDatabase>();
 
             database.Initialize();
 

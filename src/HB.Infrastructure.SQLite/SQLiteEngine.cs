@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Data;
 using Microsoft.Data.Sqlite;
 using System.Linq;
+using Microsoft.Extensions.Options;
 
 namespace HB.Infrastructure.SQLite
 {
@@ -23,11 +24,11 @@ namespace HB.Infrastructure.SQLite
 
         private SQLiteEngine() { }
 
-        public SQLiteEngine(SQLiteOptions options) : this()
+        public SQLiteEngine(IOptions<SQLiteOptions> options) : this()
         {
             //MySqlConnectorLogManager.Provider = new MicrosoftExtensionsLoggingLoggerProvider(loggerFactory);
 
-            _options = options;
+            _options = options.Value;
 
             SetConnectionStrings();
         }
