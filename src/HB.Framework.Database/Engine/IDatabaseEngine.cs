@@ -20,7 +20,7 @@ namespace HB.Framework.Database.Engine
     {
         #region 管理功能
 
-        IDatabaseSettings DatabaseSettings { get; }
+        DatabaseSettings DatabaseSettings { get; }
 
         DatabaseEngineType EngineType { get; }
 

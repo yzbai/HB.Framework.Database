@@ -26,7 +26,7 @@ namespace HB.Framework.Database
 
         private bool _initialized = false;
 
-        private readonly IDatabaseSettings _databaseSettings;
+        private readonly DatabaseSettings _databaseSettings;
         private readonly IDatabaseEngine _databaseEngine;
         private readonly IDatabaseEntityDefFactory _entityDefFactory;
         private readonly IDatabaseEntityMapper _modelMapper;

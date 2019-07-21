@@ -22,7 +22,7 @@ namespace HB.Infrastructure.MySQL
         private readonly MySQLOptions _options;
         private Dictionary<string, string> _connectionStringDict;
 
-        public IDatabaseSettings DatabaseSettings => _options.DatabaseSettings;
+        public DatabaseSettings DatabaseSettings => _options.DatabaseSettings;
 
         public DatabaseEngineType EngineType => DatabaseEngineType.MySQL;
 
