@@ -1,14 +1,11 @@
-﻿using HB.Framework.Database.Engine;
+﻿using HB.Framework.Database;
+using HB.Framework.Database.Engine;
+using Microsoft.Extensions.Options;
 using MySql.Data.MySqlClient;
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
-using MySqlConnector.Logging;
-using HB.Framework.Database;
 using System.Linq;
-using Microsoft.Extensions.Options;
 
 namespace HB.Infrastructure.MySQL
 {
@@ -20,7 +17,8 @@ namespace HB.Infrastructure.MySQL
         #region 自身 & 构建
 
         private readonly MySQLOptions _options;
-        private Dictionary<string, string> _connectionStringDict;
+
+        private Dictionary<string, string> _connectionStringDict = new Dictionary<string, string>();
 
         public DatabaseSettings DatabaseSettings => _options.DatabaseSettings;
 
@@ -28,9 +26,7 @@ namespace HB.Infrastructure.MySQL
 
         public string FirstDefaultDatabaseName { get; private set; }
 
-        private MySQLEngine() { }
-
-        public MySQLEngine(IOptions<MySQLOptions> options) : this()
+        public MySQLEngine(IOptions<MySQLOptions> options)
         {
             //MySqlConnectorLogManager.Provider = new MicrosoftExtensionsLoggingLoggerProvider(loggerFactory);
 
@@ -41,27 +37,25 @@ namespace HB.Infrastructure.MySQL
 
         private void SetConnectionStrings()
         {
-            _connectionStringDict = new Dictionary<string, string>();
-
-            foreach (SchemaInfo schemaInfo in _options.Schemas)
+            foreach (DatabaseConnectionSettings schemaInfo in _options.Schemas)
             {
                 if (FirstDefaultDatabaseName.IsNullOrEmpty())
                 {
-                    FirstDefaultDatabaseName = schemaInfo.SchemaName;
+                    FirstDefaultDatabaseName = schemaInfo.DatabaseName;
                 }
 
                 if (schemaInfo.IsMaster)
                 {
-                    _connectionStringDict[schemaInfo.SchemaName + "_1"] = schemaInfo.ConnectionString;
+                    _connectionStringDict[schemaInfo.DatabaseName + "_1"] = schemaInfo.ConnectionString;
 
-                    if (!_connectionStringDict.ContainsKey(schemaInfo.SchemaName + "_0"))
+                    if (!_connectionStringDict.ContainsKey(schemaInfo.DatabaseName + "_0"))
                     {
-                        _connectionStringDict[schemaInfo.SchemaName + "_0"] = schemaInfo.ConnectionString;
+                        _connectionStringDict[schemaInfo.DatabaseName + "_0"] = schemaInfo.ConnectionString;
                     }
                 }
                 else
                 {
-                    _connectionStringDict[schemaInfo.SchemaName + "_0"] = schemaInfo.ConnectionString;
+                    _connectionStringDict[schemaInfo.DatabaseName + "_0"] = schemaInfo.ConnectionString;
                 }
             }
         }
@@ -87,7 +81,7 @@ namespace HB.Infrastructure.MySQL
         /// <param name="spName"></param>
         /// <param name="dbParameters"></param>
         /// <returns></returns>
-        public Tuple<IDbCommand,IDataReader> ExecuteSPReader(IDbTransaction Transaction, string dbName, string spName, IList<IDataParameter> dbParameters, bool useMaster)
+        public Tuple<IDbCommand, IDataReader> ExecuteSPReader(IDbTransaction? Transaction, string dbName, string spName, IList<IDataParameter> dbParameters, bool useMaster)
         {
             if (Transaction == null)
             {
@@ -99,7 +93,7 @@ namespace HB.Infrastructure.MySQL
             }
         }
 
-        public object ExecuteSPScalar(IDbTransaction Transaction, string dbName, string spName, IList<IDataParameter> parameters, bool useMaster)
+        public object ExecuteSPScalar(IDbTransaction? Transaction, string dbName, string spName, IList<IDataParameter> parameters, bool useMaster)
         {
             if (Transaction == null)
             {
@@ -111,7 +105,7 @@ namespace HB.Infrastructure.MySQL
             }
         }
 
-        public int ExecuteSPNonQuery(IDbTransaction Transaction, string dbName, string spName, IList<IDataParameter> parameters)
+        public int ExecuteSPNonQuery(IDbTransaction? Transaction, string dbName, string spName, IList<IDataParameter> parameters)
         {
             if (Transaction == null)
             {
@@ -127,7 +121,7 @@ namespace HB.Infrastructure.MySQL
 
         #region Command执行功能
 
-        public int ExecuteCommandNonQuery(IDbTransaction Transaction, string dbName, IDbCommand dbCommand)
+        public int ExecuteCommandNonQuery(IDbTransaction? Transaction, string dbName, IDbCommand dbCommand)
         {
             if (Transaction == null)
             {
@@ -145,7 +139,7 @@ namespace HB.Infrastructure.MySQL
         /// <param name="Transaction"></param>
         /// <param name="dbCommand"></param>
         /// <returns></returns>
-        public IDataReader ExecuteCommandReader(IDbTransaction Transaction, string dbName, IDbCommand dbCommand, bool useMaster)
+        public IDataReader ExecuteCommandReader(IDbTransaction? Transaction, string dbName, IDbCommand dbCommand, bool useMaster)
         {
             if (Transaction == null)
             {
@@ -157,7 +151,7 @@ namespace HB.Infrastructure.MySQL
             }
         }
 
-        public object ExecuteCommandScalar(IDbTransaction Transaction, string dbName, IDbCommand dbCommand, bool useMaster)
+        public object ExecuteCommandScalar(IDbTransaction? Transaction, string dbName, IDbCommand dbCommand, bool useMaster)
         {
             if (Transaction == null)
             {
@@ -173,7 +167,7 @@ namespace HB.Infrastructure.MySQL
 
         #region SQL 执行能力
 
-        public int ExecuteSqlNonQuery(IDbTransaction Transaction, string dbName, string SQL)
+        public int ExecuteSqlNonQuery(IDbTransaction? Transaction, string dbName, string SQL)
         {
             if (Transaction == null)
             {
@@ -188,7 +182,7 @@ namespace HB.Infrastructure.MySQL
         /// <summary>
         /// 使用后必须Dispose，必须使用using.
         /// </summary>
-        public Tuple<IDbCommand, IDataReader> ExecuteSqlReader(IDbTransaction Transaction, string dbName, string SQL, bool useMaster)
+        public Tuple<IDbCommand, IDataReader> ExecuteSqlReader(IDbTransaction? Transaction, string dbName, string SQL, bool useMaster)
         {
             if (Transaction == null)
             {
@@ -200,7 +194,7 @@ namespace HB.Infrastructure.MySQL
             }
         }
 
-        public object ExecuteSqlScalar(IDbTransaction Transaction, string dbName, string SQL, bool useMaster)
+        public object ExecuteSqlScalar(IDbTransaction? Transaction, string dbName, string SQL, bool useMaster)
         {
             if (Transaction == null)
             {
@@ -218,7 +212,8 @@ namespace HB.Infrastructure.MySQL
 
         public IDataParameter CreateParameter(string name, object value, DbType dbType)
         {
-            MySqlParameter parameter = new MySqlParameter {
+            MySqlParameter parameter = new MySqlParameter
+            {
                 ParameterName = name,
                 Value = value,
                 DbType = dbType
@@ -228,7 +223,8 @@ namespace HB.Infrastructure.MySQL
 
         public IDataParameter CreateParameter(string name, object value)
         {
-            MySqlParameter parameter = new MySqlParameter {
+            MySqlParameter parameter = new MySqlParameter
+            {
                 ParameterName = name,
                 Value = value
             };
@@ -251,7 +247,7 @@ namespace HB.Infrastructure.MySQL
 
         public string ReservedChar { get { return MySQLUtility.ReservedChar; } }
 
-        
+
 
         public string GetQuotedStatement(string name)
         {
@@ -320,9 +316,9 @@ namespace HB.Infrastructure.MySQL
 
         #region SystemInfo
 
-        private const string systemInfoTableName = "tb_sys_info";
+        private const string _systemInfoTableName = "tb_sys_info";
 
-        private const string tbSysInfoCreate =
+        private const string _tbSysInfoCreate =
 @"CREATE TABLE `tb_sys_info` (
 	`Id` int (11) NOT NULL AUTO_INCREMENT, 
 	`Name` varchar(100) DEFAULT NULL, 
@@ -333,20 +329,20 @@ namespace HB.Infrastructure.MySQL
 INSERT INTO `tb_sys_info`(`Name`, `Value`) VALUES('Version', '1');
 INSERT INTO `tb_sys_info`(`Name`, `Value`) VALUES('DatabaseName', '{0}');";
 
-        private const string tbSysInfoRetrieve = @"SELECT * FROM `tb_sys_info`;";
+        private const string _tbSysInfoRetrieve = @"SELECT * FROM `tb_sys_info`;";
 
-        private const string tbSysInfoUpdateVersion = @"UPDATE `tb_sys_info` SET `Value` = '{0}' WHERE `Name` = 'Version';";
+        private const string _tbSysInfoUpdateVersion = @"UPDATE `tb_sys_info` SET `Value` = '{0}' WHERE `Name` = 'Version';";
 
-        private const string isTableExistsStatement = "SELECT count(1) FROM information_schema.TABLES WHERE table_name ='{0}';";
+        private const string _isTableExistsStatement = "SELECT count(1) FROM information_schema.TABLES WHERE table_name ='{0}';";
 
         public IEnumerable<string> GetDatabaseNames()
         {
-            return _options.Schemas.Select(s => s.SchemaName);
+            return _options.Schemas.Select(s => s.DatabaseName);
         }
 
         public bool IsTableExists(string databaseName, string tableName, IDbTransaction transaction)
         {
-            string sql = string.Format(GlobalSettings.Culture, isTableExistsStatement, tableName);
+            string sql = string.Format(GlobalSettings.Culture, _isTableExistsStatement, tableName);
 
             object result = ExecuteSqlScalar(transaction, databaseName, sql, false);
 
@@ -355,7 +351,7 @@ INSERT INTO `tb_sys_info`(`Name`, `Value`) VALUES('DatabaseName', '{0}');";
 
         public SystemInfo GetSystemInfo(string databaseName, IDbTransaction transaction)
         {
-            if (!IsTableExists(databaseName, systemInfoTableName, transaction))
+            if (!IsTableExists(databaseName, _systemInfoTableName, transaction))
             {
                 return new SystemInfo
                 {
@@ -364,11 +360,11 @@ INSERT INTO `tb_sys_info`(`Name`, `Value`) VALUES('DatabaseName', '{0}');";
                 };
             }
 
-            Tuple<IDbCommand, IDataReader> tuple = null;
+            Tuple<IDbCommand, IDataReader>? tuple = null;
 
             try
             {
-                tuple = ExecuteSqlReader(transaction, databaseName, tbSysInfoRetrieve, false);
+                tuple = ExecuteSqlReader(transaction, databaseName, _tbSysInfoRetrieve, false);
 
                 SystemInfo systemInfo = new SystemInfo { DatabaseName = databaseName };
 
@@ -381,8 +377,8 @@ INSERT INTO `tb_sys_info`(`Name`, `Value`) VALUES('DatabaseName', '{0}');";
             }
             finally
             {
-                tuple.Item2?.Dispose();
-                tuple.Item1?.Dispose();
+                tuple?.Item2?.Dispose();
+                tuple?.Item1?.Dispose();
             }
         }
 
@@ -391,11 +387,11 @@ INSERT INTO `tb_sys_info`(`Name`, `Value`) VALUES('DatabaseName', '{0}');";
             if (version == 1)
             {
                 //创建SystemInfo
-                ExecuteSqlNonQuery(transaction, databaseName, string.Format(GlobalSettings.Culture, tbSysInfoCreate, databaseName));
+                ExecuteSqlNonQuery(transaction, databaseName, string.Format(GlobalSettings.Culture, _tbSysInfoCreate, databaseName));
             }
             else
             {
-                ExecuteSqlNonQuery(transaction, databaseName, string.Format(GlobalSettings.Culture, tbSysInfoUpdateVersion, version));
+                ExecuteSqlNonQuery(transaction, databaseName, string.Format(GlobalSettings.Culture, _tbSysInfoUpdateVersion, version));
             }
         }
 

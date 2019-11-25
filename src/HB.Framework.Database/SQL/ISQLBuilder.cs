@@ -53,7 +53,7 @@ namespace HB.Framework.Database.SQL
             where T2 : DatabaseEntity, new()
             where T3 : DatabaseEntity, new();
 
-        IDbCommand CreateRetrieveCommand<TSelect, TFrom, TWhere>(SelectExpression<TSelect> selectCondition, FromExpression<TFrom> fromCondition, WhereExpression<TWhere> whereCondition)
+        IDbCommand CreateRetrieveCommand<TSelect, TFrom, TWhere>(SelectExpression<TSelect>? selectCondition, FromExpression<TFrom> fromCondition, WhereExpression<TWhere> whereCondition)
             where TSelect : DatabaseEntity, new()
             where TFrom : DatabaseEntity, new()
             where TWhere : DatabaseEntity, new();

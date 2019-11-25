@@ -45,37 +45,37 @@ namespace HB.Framework.Database.Engine
         /// <param name="spName"></param>
         /// <param name="dbParameters"></param>
         /// <returns></returns>
-        Tuple<IDbCommand, IDataReader> ExecuteSPReader(IDbTransaction trans, string dbName, string spName, IList<IDataParameter> dbParameters, bool useMaster);
+        Tuple<IDbCommand, IDataReader> ExecuteSPReader(IDbTransaction? trans, string dbName, string spName, IList<IDataParameter> dbParameters, bool useMaster);
 
-        object ExecuteSPScalar(IDbTransaction trans, string dbName, string spName, IList<IDataParameter> parameters, bool useMaster);
+        object ExecuteSPScalar(IDbTransaction? trans, string dbName, string spName, IList<IDataParameter> parameters, bool useMaster);
 
-        int ExecuteSPNonQuery(IDbTransaction trans, string dbName, string spName, IList<IDataParameter> parameters);
+        int ExecuteSPNonQuery(IDbTransaction? trans, string dbName, string spName, IList<IDataParameter> parameters);
 
         #endregion
 
         #region Command执行功能
 
-        int ExecuteCommandNonQuery(IDbTransaction trans, string dbName, IDbCommand dbCommand);
+        int ExecuteCommandNonQuery(IDbTransaction? trans, string dbName, IDbCommand dbCommand);
 
         /// <summary>
         /// 使用后必须Dispose，必须使用using
         /// </summary>
-        IDataReader ExecuteCommandReader(IDbTransaction trans, string dbName, IDbCommand dbCommand, bool useMaster);
+        IDataReader ExecuteCommandReader(IDbTransaction? trans, string dbName, IDbCommand dbCommand, bool useMaster);
 
-        object ExecuteCommandScalar(IDbTransaction trans, string dbName, IDbCommand dbCommand, bool useMaster);
+        object ExecuteCommandScalar(IDbTransaction? trans, string dbName, IDbCommand dbCommand, bool useMaster);
 
         #endregion
 
         #region SQL 执行能力
 
-        int ExecuteSqlNonQuery(IDbTransaction Transaction, string dbName, string SQL);
+        int ExecuteSqlNonQuery(IDbTransaction? Transaction, string dbName, string SQL);
 
         /// <summary>
         /// 使用后必须Dispose，必须使用using.
         /// </summary>
-        Tuple<IDbCommand, IDataReader> ExecuteSqlReader(IDbTransaction Transaction, string dbName, string SQL, bool useMaster);
+        Tuple<IDbCommand, IDataReader> ExecuteSqlReader(IDbTransaction? Transaction, string dbName, string SQL, bool useMaster);
 
-        object ExecuteSqlScalar(IDbTransaction Transaction, string dbName, string SQL, bool useMaster);
+        object ExecuteSqlScalar(IDbTransaction? Transaction, string dbName, string SQL, bool useMaster);
 
         #endregion
 

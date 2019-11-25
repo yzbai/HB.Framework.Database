@@ -7,19 +7,19 @@ namespace HB.Framework.Database
     public class Migration
     {
         public int OldVersion { get; set; }
+
         public int NewVersion { get; set; }
+
         public string SqlStatement { get; set; }
 
-        public string TargetSchema { get; set; }
+        public string TargetDatabaseName { get; set; }
 
-        public Migration() { }
-
-        public Migration(string targetSchema, int oldVersion, int newVersion, string sql)
+        public Migration(string targetDatabaseName, int oldVersion, int newVersion, string sql)
         {
-            if (targetSchema.IsNullOrEmpty())
-            {
-                throw new ArgumentNullException(nameof(targetSchema));
-            }
+            //if (targetDatabaseName.IsNullOrEmpty())
+            //{
+            //    throw new ArgumentNullException(nameof(targetDatabaseName));
+            //}
 
             if (oldVersion < 1)
             {
@@ -31,12 +31,12 @@ namespace HB.Framework.Database
                 throw new ArgumentException("Now days, you can only take 1 step further each time.");
             }
 
-            if (sql.IsNullOrEmpty())
-            {
-                throw new ArgumentNullException(nameof(sql));
-            }
+            //if (sql.IsNullOrEmpty())
+            //{
+            //    throw new ArgumentNullException(nameof(sql));
+            //}
 
-            TargetSchema = targetSchema;
+            TargetDatabaseName = targetDatabaseName;
             OldVersion = oldVersion;
             NewVersion = newVersion;
             SqlStatement = sql;

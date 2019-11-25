@@ -25,10 +25,10 @@ namespace HB.Framework.Database.Entity
         {
             IList<T> lst = new List<T>();
 
-            if (reader == null)
-            {
-                return lst;
-            }
+            //if (reader == null)
+            //{
+            //    return lst;
+            //}
 
             int len = reader.FieldCount;
             string[] propertyNames = new string[len];

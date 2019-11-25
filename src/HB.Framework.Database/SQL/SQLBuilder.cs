@@ -37,7 +37,7 @@ namespace HB.Framework.Database.SQL
             _sqlStatementDict = new ConcurrentDictionary<string, string>();
         }
 
-        private IDbCommand AssembleCommand<TFrom, TWhere>(bool isRetrieve, string selectClause, FromExpression<TFrom> fromCondition, WhereExpression<TWhere> whereCondition, IList<IDataParameter> parameters)
+        private IDbCommand AssembleCommand<TFrom, TWhere>(bool isRetrieve, string selectClause, FromExpression<TFrom>? fromCondition, WhereExpression<TWhere>? whereCondition, IList<IDataParameter>? parameters)
             where TFrom : DatabaseEntity, new()
             where TWhere : DatabaseEntity, new()
         {
@@ -260,7 +260,7 @@ namespace HB.Framework.Database.SQL
             return AssembleCommand(true, GetSelectClauseStatement<T1, T2, T3>(), fromCondition, whereCondition, null);
         }
 
-        public IDbCommand CreateRetrieveCommand<TSelect, TFrom, TWhere>(SelectExpression<TSelect> selectCondition, FromExpression<TFrom> fromCondition, WhereExpression<TWhere> whereCondition)
+        public IDbCommand CreateRetrieveCommand<TSelect, TFrom, TWhere>(SelectExpression<TSelect>? selectCondition, FromExpression<TFrom> fromCondition, WhereExpression<TWhere> whereCondition)
             where TSelect : DatabaseEntity, new()
             where TFrom : DatabaseEntity, new()
             where TWhere : DatabaseEntity, new()

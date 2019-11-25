@@ -5,18 +5,17 @@ using System.Text;
 
 namespace HB.Framework.Database
 {
-    public enum TransactionStatus
-    {
-        InTransaction,
-        Rollbacked,
-        Commited,
-        Failed
-    }
 
     public class TransactionContext
     {
         public IDbTransaction Transaction { get; set; }
 
         public TransactionStatus Status { get; set; }
+
+        public TransactionContext(IDbTransaction dbTransaction, TransactionStatus transactionStatus = TransactionStatus.InTransaction)
+        {
+            Transaction = dbTransaction;
+            Status = transactionStatus;
+        }
     }
 }

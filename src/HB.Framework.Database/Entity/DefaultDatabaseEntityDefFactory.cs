@@ -24,7 +24,7 @@ namespace HB.Framework.Database.Entity
         private readonly IDatabaseEngine _databaseEngine;
         private readonly IDatabaseTypeConverterFactory _typeConverterFactory;
 
-        private readonly IDictionary<string, EntitySchema> _entitySchemaDict;
+        private readonly IDictionary<string, EntityInfo> _entitySchemaDict;
         private readonly IDictionary<Type, DatabaseEntityDef> _defDict = new Dictionary<Type, DatabaseEntityDef>();
 
         public DefaultDatabaseEntityDefFactory(IDatabaseEngine databaseEngine, IDatabaseTypeConverterFactory typeConverterFactory)
@@ -54,19 +54,19 @@ namespace HB.Framework.Database.Entity
             allEntityTypes.ForEach(t => _defDict[t] = CreateEntityDef(t));
         }
 
-        private IDictionary<string, EntitySchema> ConstructeSchemaDict(IEnumerable<Type> allEntityTypes)
+        private IDictionary<string, EntityInfo> ConstructeSchemaDict(IEnumerable<Type> allEntityTypes)
         {
-            IDictionary<string, EntitySchema> fileConfiguredDict = _databaseSettings.Entities.ToDictionary(t => t.EntityTypeFullName);
+            IDictionary<string, EntityInfo> fileConfiguredDict = _databaseSettings.EntityInfos.ToDictionary(t => t.EntityTypeFullName);
 
-            IDictionary<string, EntitySchema> resusltEntitySchemaDict = new Dictionary<string, EntitySchema>();
+            IDictionary<string, EntityInfo> resusltEntitySchemaDict = new Dictionary<string, EntityInfo>();
 
             allEntityTypes.ForEach(type => {
 
                 EntitySchemaAttribute attribute = type.GetCustomAttribute<EntitySchemaAttribute>();
 
-                fileConfiguredDict.TryGetValue(type.FullName, out EntitySchema fileConfigured);
+                fileConfiguredDict.TryGetValue(type.FullName, out EntityInfo fileConfigured);
 
-                EntitySchema entitySchema = new EntitySchema { EntityTypeFullName = type.FullName };
+                EntityInfo entitySchema = new EntityInfo { EntityTypeFullName = type.FullName };
 
                 if (attribute != null)
                 {
@@ -167,7 +167,7 @@ namespace HB.Framework.Database.Entity
 
             #region 数据库
 
-            if (_entitySchemaDict.TryGetValue(entityType.FullName, out EntitySchema dbSchema))
+            if (_entitySchemaDict.TryGetValue(entityType.FullName, out EntityInfo dbSchema))
             {
                 entityDef.IsTableModel = true;
                 entityDef.DatabaseName = dbSchema.DatabaseName;

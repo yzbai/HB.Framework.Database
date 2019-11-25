@@ -35,7 +35,7 @@ namespace HB.Framework.Database
 
         //public IDatabaseEngine DatabaseEngine { get { return _databaseEngine; } }
 
-        public DefaultDatabase(ILogger<DefaultDatabase> logger, IDatabaseEngine databaseEngine, IDatabaseEntityDefFactory modelDefFactory, IDatabaseEntityMapper modelMapper, ISQLBuilder sqlBuilder/*, ILogger<DefaultDatabase> logger*/)
+        public DefaultDatabase(ILogger<DefaultDatabase> logger, IDatabaseEngine databaseEngine, IDatabaseEntityDefFactory modelDefFactory, IDatabaseEntityMapper modelMapper, ISQLBuilder sqlBuilder)
         {
             _databaseSettings = databaseEngine.DatabaseSettings;
             _databaseEngine = databaseEngine;
@@ -52,7 +52,7 @@ namespace HB.Framework.Database
 
         #region Initialize
 
-        public void Initialize(IList<Migration> migrations = null)
+        public void Initialize(IList<Migration>? migrations = null)
         {
             if (!_initialized)
             {
@@ -62,9 +62,15 @@ namespace HB.Framework.Database
                     {
                         _initialized = true;
 
-                        AutoCreateTablesIfBrandNew();
+                        if (_databaseSettings.AutomaticCreateTable)
+                        {
+                            AutoCreateTablesIfBrandNew();
+                        }
 
-                        Migarate(migrations);
+                        if (migrations.IsNotNullOrEmpty())
+                        {
+                            Migarate(migrations!);
+                        }
                     }
                 }
             }
@@ -72,11 +78,6 @@ namespace HB.Framework.Database
 
         private void AutoCreateTablesIfBrandNew()
         {
-            if (!_databaseSettings.AutomaticCreateTable)
-            {
-                return;
-            }
-
             _databaseEngine.GetDatabaseNames().ForEach(databaseName => {
 
                 TransactionContext transactionContext = BeginTransaction(databaseName, IsolationLevel.Serializable);
@@ -127,7 +128,12 @@ namespace HB.Framework.Database
 
         private void Migarate(IList<Migration> migrations)
         {
-            if (migrations != null && migrations.Any(m => m.NewVersion <= m.OldVersion))
+            if (migrations.Count == 0)
+            {
+                return;
+            }
+
+            if (migrations.Any(m => m.NewVersion <= m.OldVersion))
             {
                 throw new DatabaseException($"oldVersion should always lower than newVersions in Database Migrations");
             }
@@ -142,16 +148,11 @@ namespace HB.Framework.Database
 
                     if (sys.Version < _databaseSettings.Version)
                     {
-                        if (migrations == null)
-                        {
-                            throw new DatabaseException($"Lack Migrations for {sys.DatabaseName}");
-                        }
-
                         IOrderedEnumerable<Migration> curOrderedMigrations = migrations
-                            .Where(m => m.TargetSchema.Equals(sys.DatabaseName, GlobalSettings.ComparisonIgnoreCase))
+                            .Where(m => m.TargetDatabaseName.Equals(sys.DatabaseName, GlobalSettings.ComparisonIgnoreCase))
                             .OrderBy(m => m.OldVersion);
 
-                        if (curOrderedMigrations == null)
+                        if (curOrderedMigrations.IsNullOrEmpty())
                         {
                             throw new DatabaseException($"Lack Migrations for {sys.DatabaseName}");
                         }
@@ -242,9 +243,9 @@ namespace HB.Framework.Database
 
             #endregion
 
-            IList<TSelect> result = null;
-            IDbCommand command = null;
-            IDataReader reader = null;
+            IList<TSelect> result;
+            IDbCommand command;
+            IDataReader reader;
             DatabaseEntityDef selectDef = _entityDefFactory.GetDef<TSelect>();
 
             try

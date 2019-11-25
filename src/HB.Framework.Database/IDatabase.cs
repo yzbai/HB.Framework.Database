@@ -12,7 +12,7 @@ namespace HB.Framework.Database
     public interface IDatabase : IDatabaseAsync
     {
 
-        void Initialize(IList<Migration> migrations = null);
+        void Initialize(IList<Migration>? migrations = null);
 
         IList<TSelect> Retrieve<TSelect, TFrom, TWhere>(
             SelectExpression<TSelect> selectCondition,
