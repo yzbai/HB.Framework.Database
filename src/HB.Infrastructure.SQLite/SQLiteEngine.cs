@@ -37,25 +37,25 @@ namespace HB.Infrastructure.SQLite
         {
             _connectionStringDict = new Dictionary<string, string>();
 
-            foreach (DatabaseConnectionSettings schemaInfo in _options.Schemas)
+            foreach (SchemaInfo schemaInfo in _options.Schemas)
             {
                 if (FirstDefaultDatabaseName.IsNullOrEmpty())
                 {
-                    FirstDefaultDatabaseName = schemaInfo.DatabaseName;
+                    FirstDefaultDatabaseName = schemaInfo.SchemaName;
                 }
 
                 if (schemaInfo.IsMaster)
                 {
-                    _connectionStringDict[schemaInfo.DatabaseName + "_1"] = schemaInfo.ConnectionString;
+                    _connectionStringDict[schemaInfo.SchemaName + "_1"] = schemaInfo.ConnectionString;
 
-                    if (!_connectionStringDict.ContainsKey(schemaInfo.DatabaseName + "_0"))
+                    if (!_connectionStringDict.ContainsKey(schemaInfo.SchemaName + "_0"))
                     {
-                        _connectionStringDict[schemaInfo.DatabaseName + "_0"] = schemaInfo.ConnectionString;
+                        _connectionStringDict[schemaInfo.SchemaName + "_0"] = schemaInfo.ConnectionString;
                     }
                 }
                 else
                 {
-                    _connectionStringDict[schemaInfo.DatabaseName + "_0"] = schemaInfo.ConnectionString;
+                    _connectionStringDict[schemaInfo.SchemaName + "_0"] = schemaInfo.ConnectionString;
                 }
             }
         }
@@ -197,7 +197,7 @@ INSERT INTO ""tb_sys_info""(""Name"", ""Value"") VALUES('DatabaseName', '{0}');"
 
         public IEnumerable<string> GetDatabaseNames()
         {
-            return _options.Schemas.Select(s => s.DatabaseName);
+            return _options.Schemas.Select(s => s.SchemaName);
         }
 
         public bool IsTableExists(string databaseName, string tableName, IDbTransaction transaction)
@@ -285,7 +285,7 @@ INSERT INTO ""tb_sys_info""(""Name"", ""Value"") VALUES('DatabaseName', '{0}');"
 
         #region Command执行功能
 
-        public int ExecuteCommandNonQuery(IDbTransaction? Transaction, string dbName, IDbCommand dbCommand)
+        public int ExecuteCommandNonQuery(IDbTransaction Transaction, string dbName, IDbCommand dbCommand)
         {
             if (Transaction == null)
             {
@@ -303,7 +303,7 @@ INSERT INTO ""tb_sys_info""(""Name"", ""Value"") VALUES('DatabaseName', '{0}');"
         /// <param name="Transaction"></param>
         /// <param name="dbCommand"></param>
         /// <returns></returns>
-        public IDataReader ExecuteCommandReader(IDbTransaction? Transaction, string dbName, IDbCommand dbCommand, bool useMaster)
+        public IDataReader ExecuteCommandReader(IDbTransaction Transaction, string dbName, IDbCommand dbCommand, bool useMaster)
         {
             if (Transaction == null)
             {
@@ -315,7 +315,7 @@ INSERT INTO ""tb_sys_info""(""Name"", ""Value"") VALUES('DatabaseName', '{0}');"
             }
         }
 
-        public object ExecuteCommandScalar(IDbTransaction? Transaction, string dbName, IDbCommand dbCommand, bool useMaster)
+        public object ExecuteCommandScalar(IDbTransaction Transaction, string dbName, IDbCommand dbCommand, bool useMaster)
         {
             if (Transaction == null)
             {
@@ -331,7 +331,7 @@ INSERT INTO ""tb_sys_info""(""Name"", ""Value"") VALUES('DatabaseName', '{0}');"
 
         #region SQL 执行能力
 
-        public int ExecuteSqlNonQuery(IDbTransaction? Transaction, string dbName, string SQL)
+        public int ExecuteSqlNonQuery(IDbTransaction Transaction, string dbName, string SQL)
         {
             if (Transaction == null)
             {
@@ -346,7 +346,7 @@ INSERT INTO ""tb_sys_info""(""Name"", ""Value"") VALUES('DatabaseName', '{0}');"
         /// <summary>
         /// 使用后必须Dispose，必须使用using.
         /// </summary>
-        public Tuple<IDbCommand, IDataReader> ExecuteSqlReader(IDbTransaction? Transaction, string dbName, string SQL, bool useMaster)
+        public Tuple<IDbCommand, IDataReader> ExecuteSqlReader(IDbTransaction Transaction, string dbName, string SQL, bool useMaster)
         {
             if (Transaction == null)
             {
@@ -358,7 +358,7 @@ INSERT INTO ""tb_sys_info""(""Name"", ""Value"") VALUES('DatabaseName', '{0}');"
             }
         }
 
-        public object ExecuteSqlScalar(IDbTransaction? Transaction, string dbName, string SQL, bool useMaster)
+        public object ExecuteSqlScalar(IDbTransaction Transaction, string dbName, string SQL, bool useMaster)
         {
             if (Transaction == null)
             {

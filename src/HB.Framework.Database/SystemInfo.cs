@@ -1,40 +1,39 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text;
 
 namespace HB.Framework.Database
 {
-    /// <summary>
-    /// 存储在tb_sys_info的内部表
-    /// </summary>
+    public static class SystemInfoNames
+    {
+        public const string Version = "Version";
+        public const string DatabaseName = "DatabaseName";
+    }
     public class SystemInfo
     {
-        private const string _key_version = "Version";
-        private const string _key_databaseName = "DatabaseName";
-
-        private readonly IDictionary<string, string> _sysDict = new Dictionary<string, string>();
-
-        public string DatabaseName
-        {
-            get
-            {
-                return _sysDict[_key_databaseName];
+        public string DatabaseName {
+            get {
+                return _sysDict[SystemInfoNames.DatabaseName];
             }
-            set
-            {
-                _sysDict[_key_databaseName] = value;
+            set {
+                _sysDict[SystemInfoNames.DatabaseName] = value;
             }
         }
 
-        public int Version
+        public int Version {
+            get {
+                return Convert.ToInt32(_sysDict[SystemInfoNames.Version], GlobalSettings.Culture);
+            }
+            set {
+                _sysDict[SystemInfoNames.Version] = value.ToString(GlobalSettings.Culture);
+            }
+        }
+
+        private readonly IDictionary<string, string> _sysDict = new Dictionary<string, string>();
+
+        public SystemInfo()
         {
-            get
-            {
-                return Convert.ToInt32(_sysDict[_key_version], GlobalSettings.Culture);
-            }
-            set
-            {
-                _sysDict[_key_version] = value.ToString(GlobalSettings.Culture);
-            }
+
         }
 
         public void Add(string name, string value)

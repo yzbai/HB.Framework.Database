@@ -10,7 +10,7 @@ namespace HB.Infrastructure.MySQL
     {
         public DatabaseSettings DatabaseSettings { get; set; } = new DatabaseSettings();
 
-        public IList<DatabaseConnectionSettings> Schemas { get; } = new List<DatabaseConnectionSettings>();
+        public IList<SchemaInfo> Schemas { get; } = new List<SchemaInfo>();
 
         public MySQLOptions Value => this;
     }
