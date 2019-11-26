@@ -4,9 +4,8 @@ using System.Collections.Generic;
 using System.Reflection;
 using HB.Framework.Database.Engine;
 using System.Linq;
-using HB.Framework.Common.Entity;
 using System.IO;
-using HB.Framework.Common.Utility;
+using System.Runtime.Loader;
 
 namespace HB.Framework.Database.Entity
 {
@@ -37,6 +36,8 @@ namespace HB.Framework.Database.Entity
 
             if (_databaseSettings.AssembliesIncludeEntity.IsNullOrEmpty())
             {
+                               
+
                 allEntityTypes = ReflectUtil.GetAllTypeByCondition(t => t.IsSubclassOf(typeof(DatabaseEntity)));
             }
             else

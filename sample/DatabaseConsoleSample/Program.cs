@@ -3,6 +3,7 @@ using HB.Infrastructure.MySQL;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
+using System.Runtime.Loader;
 using System.Threading.Tasks;
 
 namespace DatabaseSample
@@ -11,6 +12,7 @@ namespace DatabaseSample
     {
         static async Task Main(string[] args)
         {
+            AssemblyLoadContext
             IDatabase database = GetDatabase();
 
             IList<BookEntity> books = MokeData.GetBooks();
