@@ -12,7 +12,22 @@ namespace HB.Framework.Database
             ThrowIf.Null(logger, nameof(logger));
             ThrowIf.Null(exception, nameof(exception));
 
-            logger.LogError($"Database Error: {exception.Error}, ErrorCode:{exception.ErrorCode}, EntityName:{exception.EntityName}, Operation:{exception.Operation}, Message:{exception.Message}");
+            StringBuilder stringBuilder = new StringBuilder();
+
+            foreach (string key in exception.Data.Keys)
+            {
+                stringBuilder.Append($"{key}:{exception.Data[key].ToString()}, ");
+            }
+
+            if (exception.InnerException != null)
+            {
+                foreach (string key in exception.InnerException.Data)
+                {
+                    stringBuilder.Append($"{key}:{exception.InnerException.Data[key].ToString()}, ");
+                }
+            }
+
+            logger.LogError($"Message:{exception.Message}, InnerMessage:{exception.InnerException?.Message} ## {stringBuilder.ToString()}");
         }
 
     }

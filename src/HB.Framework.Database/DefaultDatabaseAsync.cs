@@ -27,7 +27,7 @@ namespace HB.Framework.Database
             if (lst.Count > 1)
             {
                 string message = $"Scalar retrieve return more than one result. Select:{selectCondition.ToString()}, From:{fromCondition.ToString()}, Where:{whereCondition.ToString()}";
-                DatabaseException exception = new DatabaseException(DatabaseError.ScalarReturnMore, "ScalarAsync", typeof(T).FullName, message);
+                DatabaseException exception = new DatabaseException(DatabaseError.FoundTooMuch, "ScalarAsync", typeof(T).FullName, message);
                 _logger.LogDatabaseException(exception);
 
                 throw exception;
@@ -71,13 +71,12 @@ namespace HB.Framework.Database
             }
             catch (DatabaseException ex)
             {
-                ex.Error = DatabaseError.Failed;
-                ex.EntityName = selectDef.EntityFullName;
-                ex.Operation = "RetrieveAsync";
+                string message = $"select:{selectCondition.ToString()}, from:{fromCondition.ToString()}, where:{whereCondition.ToString()}";
+                DatabaseException exception = new DatabaseException(ex, "RetrieveAsync", selectDef.EntityFullName, message);
 
-                _logger.LogDatabaseException(ex);
+                _logger.LogDatabaseException(exception);
 
-                throw ex;
+                throw exception;
             }
             finally
             {
@@ -112,24 +111,23 @@ namespace HB.Framework.Database
             IList<T> result = null;
             IDbCommand command = null;
             IDataReader reader = null;
-            DatabaseEntityDef modelDef = _entityDefFactory.GetDef<T>();
+            DatabaseEntityDef entityDef = _entityDefFactory.GetDef<T>();
 
             try
             {
                 command = _sqlBuilder.CreateRetrieveCommand<T>(selectCondition, fromCondition, whereCondition);
 
-                reader = await _databaseEngine.ExecuteCommandReaderAsync(transContext?.Transaction, modelDef.DatabaseName, command, transContext != null).ConfigureAwait(false);
+                reader = await _databaseEngine.ExecuteCommandReaderAsync(transContext?.Transaction, entityDef.DatabaseName, command, transContext != null).ConfigureAwait(false);
                 result = _modelMapper.ToList<T>(reader);
             }
             catch (DatabaseException ex)
             {
-                ex.Error = DatabaseError.Failed;
-                ex.EntityName = modelDef.EntityFullName;
-                ex.Operation = "RetrieveAsync";
+                string message = $"select:{selectCondition.ToString()}, from:{fromCondition.ToString()}, where:{whereCondition.ToString()}";
+                DatabaseException exception = new DatabaseException(ex, "RetrieveAsync", entityDef.EntityFullName, message);
 
-                _logger.LogDatabaseException(ex);
+                _logger.LogDatabaseException(exception);
 
-                throw ex;
+                throw exception;
             }
             finally
             {
@@ -194,13 +192,12 @@ namespace HB.Framework.Database
             }
             catch (DatabaseException ex)
             {
-                ex.Error = DatabaseError.Failed;
-                ex.EntityName = entityDef.EntityFullName;
-                ex.Operation = "CountAsync";
+                string message = $"select:{selectCondition.ToString()}, from:{fromCondition.ToString()}, where:{whereCondition.ToString()}";
+                DatabaseException exception = new DatabaseException(ex, "CountAsync", entityDef.EntityFullName, message);
 
-                _logger.LogDatabaseException(ex);
+                _logger.LogDatabaseException(exception);
 
-                throw ex;
+                throw exception;
             }
 
             return count;
@@ -369,13 +366,12 @@ namespace HB.Framework.Database
             }
             catch (DatabaseException ex)
             {
-                ex.Error = DatabaseError.Failed;
-                ex.EntityName = entityDef.EntityFullName;
-                ex.Operation = "RetrieveAsync";
+                string message = $"from:{fromCondition.ToString()}, where:{whereCondition.ToString()}";
+                DatabaseException exception = new DatabaseException(ex, "RetrieveAsync", entityDef.EntityFullName, message);
 
-                _logger.LogDatabaseException(ex);
+                _logger.LogDatabaseException(exception);
 
-                throw ex;
+                throw exception;
             }
             finally
             {
@@ -414,7 +410,7 @@ namespace HB.Framework.Database
             if (lst.Count > 1)
             {
                 string message = $"Scalar retrieve return more than one result. From:{fromCondition.ToString()}, Where:{whereCondition.ToString()}";
-                DatabaseException exception = new DatabaseException(DatabaseError.ScalarReturnMore, "ScalarAsync", typeof(TSource).FullName, message);
+                DatabaseException exception = new DatabaseException(DatabaseError.FoundTooMuch, "ScalarAsync", typeof(TSource).FullName, message);
                 _logger.LogDatabaseException(exception);
 
                 throw exception;
@@ -469,13 +465,12 @@ namespace HB.Framework.Database
             }
             catch (DatabaseException ex)
             {
-                ex.Error = DatabaseError.Failed;
-                ex.EntityName = entityDef.EntityFullName;
-                ex.Operation = "RetrieveAsync";
+                string message = $"from:{fromCondition.ToString()}, where:{whereCondition.ToString()}";
+                DatabaseException exception = new DatabaseException(ex, "RetrieveAsync", entityDef.EntityFullName, message);
 
-                _logger.LogDatabaseException(ex);
+                _logger.LogDatabaseException(exception);
 
-                throw ex;
+                throw exception;
             }
             finally
             {
@@ -517,7 +512,7 @@ namespace HB.Framework.Database
             if (lst.Count > 1)
             {
                 string message = $"Scalar retrieve return more than one result. From:{fromCondition.ToString()}, Where:{whereCondition.ToString()}";
-                DatabaseException exception = new DatabaseException(DatabaseError.ScalarReturnMore, "ScalarAsync", typeof(TSource).FullName, message);
+                DatabaseException exception = new DatabaseException(DatabaseError.FoundTooMuch, "ScalarAsync", typeof(TSource).FullName, message);
                 _logger.LogDatabaseException(exception);
 
                 throw exception;
@@ -533,24 +528,15 @@ namespace HB.Framework.Database
         /// <summary>
         /// 增加,并且item被重新赋值
         /// </summary>
-        public async Task<DatabaseResult> AddAsync<T>(T item, TransactionContext transContext) where T : DatabaseEntity, new()
+        public async Task AddAsync<T>(T item, TransactionContext transContext) where T : DatabaseEntity, new()
         {
-            if (item == null)
-            {
-                return DatabaseResult.ArgumentNotValid()
-            }
+            ThrowIf.NullOrNotValid(item, nameof(item));
                 
-            if (!item.IsValid())
-            {
-                //TODO: 给所有使用到IsValid（）方法的地方，都加上GetValidateErrorMessage输出
-                return DatabaseResult.Failed($"entity check failed.{item.GetValidateErrorMessage()}");
-            }
-
             DatabaseEntityDef entityDef = _entityDefFactory.GetDef<T>();
 
             if (!entityDef.DatabaseWriteable)
             {
-                return DatabaseResult.NotWriteable();
+                throw new DatabaseException(DatabaseError.NotWriteable, "AddAsync", entityDef.EntityFullName, $"Entity:{SerializeUtil.ToJson(item)}");
             }
 
             IDbCommand dbCommand = null;
@@ -563,13 +549,15 @@ namespace HB.Framework.Database
                 reader = await _databaseEngine.ExecuteCommandReaderAsync(transContext?.Transaction, entityDef.DatabaseName, dbCommand, true).ConfigureAwait(false);
 
                 _modelMapper.ToObject(reader, item);
-
-                return DatabaseResult.Succeeded();
             }
-            catch (DbException ex)
+            catch (DatabaseException ex)
             {
-                //_logger.LogCritical(ex.Message);
-                return DatabaseResult.Failed(ex);
+                string message = $"Item:{SerializeUtil.ToJson(item)}";
+                DatabaseException exception = new DatabaseException(ex, "AddAsync", entityDef.EntityFullName, message);
+
+                _logger.LogDatabaseException(exception);
+
+                throw exception;
             }
             finally
             {
@@ -581,18 +569,15 @@ namespace HB.Framework.Database
         /// <summary>
         /// 删除, Version控制
         /// </summary>
-        public async Task<DatabaseResult> DeleteAsync<T>(T item, TransactionContext transContext) where T : DatabaseEntity, new()
+        public async Task DeleteAsync<T>(T item, TransactionContext transContext) where T : DatabaseEntity, new()
         {
-            if (!item.IsValid())
-            {
-                return DatabaseResult.Failed("entity check failed.");
-            }
+            ThrowIf.NullOrNotValid(item, nameof(item));
 
             DatabaseEntityDef entityDef = _entityDefFactory.GetDef<T>();
 
             if (!entityDef.DatabaseWriteable)
             {
-                return DatabaseResult.NotWriteable();
+                throw new DatabaseException(DatabaseError.NotWriteable, "DeleteAsync", entityDef.EntityFullName, $"Entity:{SerializeUtil.ToJson(item)}");
             }
 
             long id = item.Id;
@@ -607,19 +592,23 @@ namespace HB.Framework.Database
 
                 if (rows == 1)
                 {
-                    return DatabaseResult.Succeeded();
+                    return;
                 }
                 else if (rows == 0)
                 {
-                    return DatabaseResult.NotFound();
+                    throw new DatabaseException(DatabaseError.NotFound, "DeleteAsync", entityDef.EntityFullName, $"Entity:{SerializeUtil.ToJson(item)}");
                 }
 
-                throw new Exception("Multiple Rows Affected instead of one. Something go wrong.");
+                throw new DatabaseException(DatabaseError.FoundTooMuch, "DeleteAsync", entityDef.EntityFullName, $"Multiple Rows Affected instead of one. Something go wrong. Entity:{SerializeUtil.ToJson(item)}");
             }
-            catch (DbException ex)
+            catch (DatabaseException ex)
             {
-                //_logger.LogCritical(ex.Message);
-                return DatabaseResult.Failed(ex);
+                string message = $"Item:{SerializeUtil.ToJson(item)}";
+                DatabaseException exception = new DatabaseException(ex, "DeleteAsync", entityDef.EntityFullName, message);
+
+                _logger.LogDatabaseException(exception);
+
+                throw exception;
             }
         }
 
@@ -627,18 +616,15 @@ namespace HB.Framework.Database
         ///  修改，建议每次修改前先select，并放置在一个事务中。
         ///  版本控制，如果item中Version未赋值，会无法更改
         /// </summary>
-        public async Task<DatabaseResult> UpdateAsync<T>(T item, TransactionContext transContext) where T : DatabaseEntity, new()
+        public async Task UpdateAsync<T>(T item, TransactionContext transContext) where T : DatabaseEntity, new()
         {
-            if (!item.IsValid())
-            {
-                return DatabaseResult.Failed("entity check failed.");
-            }
+            ThrowIf.NullOrNotValid(item, nameof(item));
 
             DatabaseEntityDef entityDef = _entityDefFactory.GetDef<T>();
 
             if (!entityDef.DatabaseWriteable)
             {
-                return DatabaseResult.NotWriteable();
+                throw new DatabaseException(DatabaseError.NotWriteable, "UpdateAsync", entityDef.EntityFullName, $"Entity:{SerializeUtil.ToJson(item)}");
             }
 
             WhereExpression<T> condition = Where<T>();
@@ -659,19 +645,23 @@ namespace HB.Framework.Database
                 if (rows == 1)
                 {
                     item.Version++;
-                    return DatabaseResult.Succeeded();
+                    return;
                 }
                 else if (rows == 0)
                 {
-                    return DatabaseResult.NotFound();
+                    throw new DatabaseException(DatabaseError.NotFound, "UpdateAsync", entityDef.EntityFullName, $"Entity:{SerializeUtil.ToJson(item)}");
                 }
 
-                throw new Exception("Multiple Rows Affected instead of one. Something go wrong.");
+                throw new DatabaseException(DatabaseError.FoundTooMuch, "UpdateAsync", entityDef.EntityFullName, $"Multiple Rows Affected instead of one. Something go wrong. Entity:{SerializeUtil.ToJson(item)}");
             }
-            catch (DbException ex)
+            catch (DatabaseException ex)
             {
-                //_logger.LogCritical(ex.Message);
-                return DatabaseResult.Failed(ex);
+                string message = $"Item:{SerializeUtil.ToJson(item)}";
+                DatabaseException exception = new DatabaseException(ex, "UpdateAsync", entityDef.EntityFullName, message);
+
+                _logger.LogDatabaseException(exception);
+
+                throw exception;
             }
         }
 
@@ -679,33 +669,21 @@ namespace HB.Framework.Database
 
         #region 批量更改(Write)
 
-        public async Task<DatabaseResult> BatchAddAsync<T>(IEnumerable<T> items, string lastUser, TransactionContext transContext) where T : DatabaseEntity, new()
+        public async Task<IEnumerable<long>> BatchAddAsync<T>(IEnumerable<T> items, TransactionContext transContext) where T : DatabaseEntity, new()
         {
-            if (transContext == null)
+            ThrowIf.Null(transContext, nameof(transContext));
+            ThrowIf.NullOrNotValid(items, nameof(items));
+            
+            if (!items.Any())
             {
-                return DatabaseResult.ArgumentError(new ArgumentNullException(nameof(transContext)));
-            }
-
-            if (items == null)
-            {
-                return DatabaseResult.ArgumentError(new ArgumentNullException(nameof(items)));
-            }
-
-            if (items.Count() == 0)
-            {
-                return DatabaseResult.Succeeded();
-            }
-
-            if (!CheckEntities<T>(items))
-            {
-                return DatabaseResult.EntityNotValid("entities not valid.");
+                return null;
             }
 
             DatabaseEntityDef entityDef = _entityDefFactory.GetDef<T>();
 
             if (!entityDef.DatabaseWriteable)
             {
-                return DatabaseResult.NotWriteable(operation: "BatchAddAsync", entityName: entityDef.EntityFullName);
+                throw new DatabaseException(DatabaseError.NotWriteable, "BatchAddAsync", entityDef.EntityFullName, $"Items:{SerializeUtil.ToJson(items)}");
             }
 
             IDbCommand dbCommand = null;
@@ -713,9 +691,9 @@ namespace HB.Framework.Database
 
             try
             {
-                DatabaseResult result = DatabaseResult.Succeeded();
+                IList<long> newIds = new List<long>();
 
-                dbCommand = _sqlBuilder.CreateBatchAddStatement(items, lastUser);
+                dbCommand = _sqlBuilder.CreateBatchAddStatement(items, "default");
                 reader = await _databaseEngine.ExecuteCommandReaderAsync(
                     transContext.Transaction,
                     entityDef.DatabaseName,
@@ -724,26 +702,31 @@ namespace HB.Framework.Database
 
                 while (reader.Read())
                 {
-                    int newId = reader.GetInt32(0);
+                    //int newId = reader.GetInt32(0);
 
-                    if (newId <= 0)
-                    {
-                        return DatabaseResult.NewIdError(databaseName: entityDef.DatabaseName, operation: "BatchAddAsync", entityName: entityDef.EntityFullName, lastUser: lastUser);
-                    }
+                    //if (newId <= 0)
+                    //{
+                    //    return DatabaseResult.NewIdError(databaseName: entityDef.DatabaseName, operation: "BatchAddAsync", entityName: entityDef.EntityFullName, lastUser: lastUser);
+                    //}
 
-                    result.AddId(newId);
+                    newIds.Add(reader.GetInt64(0));
                 }
 
-                if (result.Ids.Count != items.Count())
+                if (newIds.Count != items.Count())
                 {
-                    return DatabaseResult.NumberNotMatched();
+                    throw new DatabaseException(DatabaseError.NotMatch, "BatchAddAsync", entityDef.EntityFullName, $"Items:{SerializeUtil.ToJson(items)}");
                 }
 
-                return result;
+                return newIds;
             }
-            catch (Exception ex)
+            catch (DatabaseException ex)
             {
-                return DatabaseResult.Fail(ex);
+                string message = $"Items:{SerializeUtil.ToJson(items)}";
+                DatabaseException exception = new DatabaseException(ex, "BatchAddAsync", entityDef.EntityFullName, message);
+
+                _logger.LogDatabaseException(exception);
+
+                throw exception;
             }
             finally
             {
@@ -757,36 +740,21 @@ namespace HB.Framework.Database
         /// </summary>
         /// <param name="items"></param>
         /// <returns></returns>
-        public async Task<DatabaseResult> BatchUpdateAsync<T>(IEnumerable<T> items, string lastUser, TransactionContext transContext) where T : DatabaseEntity, new()
+        public async Task BatchUpdateAsync<T>(IEnumerable<T> items, TransactionContext transContext) where T : DatabaseEntity, new()
         {
-            if (transContext == null)
-            {
-                return DatabaseResult.ArgumentError(new ArgumentNullException(nameof(transContext)));
-            }
+            ThrowIf.Null(transContext, nameof(transContext));
+            ThrowIf.NullOrNotValid(items, nameof(items));
 
-            if (items == null)
+            if (!items.Any())
             {
-                return DatabaseResult.ArgumentError(new ArgumentNullException(nameof(items)));
-            }
-
-            if (items.Count() == 0)
-            {
-                return DatabaseResult.Succeeded();
-            }
-
-            if (!CheckEntities(items))
-            {
-                return DatabaseResult.EntityNotValid("entities not valid.");
+                return;
             }
 
             DatabaseEntityDef entityDef = _entityDefFactory.GetDef<T>();
 
             if (!entityDef.DatabaseWriteable)
             {
-                return DatabaseResult.NotWriteable(
-                    databaseName: entityDef.DatabaseName,
-                    operation: "BatchUpdateAsync",
-                    entityName: entityDef.EntityFullName);
+                throw new DatabaseException(DatabaseError.NotWriteable, "BatchUpdateAsync", entityDef.EntityFullName, $"Items:{SerializeUtil.ToJson(items)}");
             }
 
             IDbCommand dbCommand = null;
@@ -794,7 +762,7 @@ namespace HB.Framework.Database
 
             try
             {
-                dbCommand = _sqlBuilder.CreateBatchUpdateStatement(items, lastUser);
+                dbCommand = _sqlBuilder.CreateBatchUpdateStatement(items, "default");
                 reader = await _databaseEngine.ExecuteCommandReaderAsync(
                     transContext.Transaction,
                     entityDef.DatabaseName,
@@ -809,24 +777,23 @@ namespace HB.Framework.Database
 
                     if (matched != 1)
                     {
-                        throw new DatabaseNotFoundException("BatchUpdate wrong, not found the {" + count + "}th data item. ");
+                        throw new DatabaseException(DatabaseError.NotFound, "BatchUpdateAsync", entityDef.EntityFullName,  $"BatchUpdate wrong, not found the {" + count + "}th data item. Items:{SerializeUtil.ToJson(items)}");
                     }
 
                     count++;
                 }
 
                 if (count != items.Count())
-                    throw new DatabaseNotFoundException("BatchUpdate wrong number return. Some data item not found.");
+                    throw new DatabaseException(DatabaseError.NotFound, "BatchUpdateAsync", entityDef.EntityFullName, $"BatchUpdate wrong number return. Some data item not found. Items:{SerializeUtil.ToJson(items)}");
+            }
+            catch (DatabaseException ex)
+            {
+                string message = $"Items:{SerializeUtil.ToJson(items)}";
+                DatabaseException exception = new DatabaseException(ex, "BatchUpdateAsync", entityDef.EntityFullName, message);
 
-                return DatabaseResult.Succeeded();
-            }
-            catch (DatabaseNotFoundException ex)
-            {
-                return DatabaseResult.NotFound(ex);
-            }
-            catch (Exception ex)
-            {
-                return DatabaseResult.Fail(ex);
+                _logger.LogDatabaseException(exception);
+
+                throw exception;
             }
             finally
             {
@@ -835,33 +802,21 @@ namespace HB.Framework.Database
             }
         }
 
-        public async Task<DatabaseResult> BatchDeleteAsync<T>(IEnumerable<T> items, string lastUser, TransactionContext transContext) where T : DatabaseEntity, new()
+        public async Task BatchDeleteAsync<T>(IEnumerable<T> items, TransactionContext transContext) where T : DatabaseEntity, new()
         {
-            if (transContext == null)
-            {
-                return DatabaseResult.ArgumentError(new ArgumentNullException(nameof(transContext)));
-            }
+            ThrowIf.Null(transContext, nameof(transContext));
+            ThrowIf.NullOrNotValid(items, nameof(items));
 
-            if (items == null)
+            if (!items.Any())
             {
-                return DatabaseResult.ArgumentError(new ArgumentNullException(nameof(items)));
-            }
-
-            if (items.Count() == 0)
-            {
-                return DatabaseResult.Succeeded();
-            }
-
-            if (!CheckEntities<T>(items))
-            {
-                return DatabaseResult.EntityNotValid("Entities not valid");
+                return;
             }
 
             DatabaseEntityDef entityDef = _entityDefFactory.GetDef<T>();
 
             if (!entityDef.DatabaseWriteable)
             {
-                return DatabaseResult.NotWriteable(databaseName: entityDef.DatabaseName, operation: "BatchDeleteAsync", entityName: entityDef.EntityFullName);
+                throw new DatabaseException(DatabaseError.NotWriteable, "BatchDeleteAsync", entityDef.EntityFullName, $"Items:{SerializeUtil.ToJson(items)}");
             }
 
             IDbCommand dbCommand = null;
@@ -869,7 +824,7 @@ namespace HB.Framework.Database
 
             try
             {
-                dbCommand = _sqlBuilder.CreateBatchDeleteStatement(items, lastUser);
+                dbCommand = _sqlBuilder.CreateBatchDeleteStatement(items, "default");
                 reader = await _databaseEngine.ExecuteCommandReaderAsync(
                     transContext.Transaction,
                     entityDef.DatabaseName,
@@ -884,25 +839,25 @@ namespace HB.Framework.Database
 
                     if (affected != 1)
                     {
-                        throw new DatabaseNotFoundException("BatchDelete wrong, not found the {" + count + "}th data item. ");
+                        throw new DatabaseException(DatabaseError.NotFound, "BatchDeleteAsync", entityDef.EntityFullName, $"BatchDelete wrong, not found the {" + count + "}th data item. Items:{SerializeUtil.ToJson(items)}");
                     }
 
                     count++;
                 }
 
                 if (count != items.Count())
-                    throw new DatabaseNotFoundException("BatchDelete wrong number return. Some data is not found.");
+                {
+                    throw new DatabaseException(DatabaseError.NotFound, "BatchDeleteAsync", entityDef.EntityFullName, $"BatchDelete wrong number return. Some data item not found. Items:{SerializeUtil.ToJson(items)}");
+                }
+            }
+            catch (DatabaseException ex)
+            {
+                string message = $"Items:{SerializeUtil.ToJson(items)}";
+                DatabaseException exception = new DatabaseException(ex, "BatchDeleteAsync", entityDef.EntityFullName, message);
 
-                return DatabaseResult.Succeeded();
-            }
-            catch (DatabaseNotFoundException ex)
-            {
-                return DatabaseResult.NotFound(ex);
-            }
-            catch (Exception ex)
-            {
-                //_logger.Error_BatchDelete_Thrown(ex, lastUser);
-                return DatabaseResult.Failed(ex);
+                _logger.LogDatabaseException(exception);
+
+                throw exception;
             }
             finally
             {
@@ -950,7 +905,7 @@ namespace HB.Framework.Database
 
             if (context.Status != TransactionStatus.InTransaction)
             {
-                throw new DatabaseException("use a already finished transactioncontenxt");
+                throw new DatabaseException( DatabaseError.TransactionError, "CommitAsync", "", "use a already finished transactioncontenxt");
             }
 
             try
@@ -993,7 +948,7 @@ namespace HB.Framework.Database
 
             if (context.Status != TransactionStatus.InTransaction)
             {
-                throw new DatabaseException("use a already finished transactioncontenxt");
+                throw new DatabaseException(DatabaseError.TransactionError, "RollbackAsync", "", "use a already finished transactioncontenxt");
             }
 
             try

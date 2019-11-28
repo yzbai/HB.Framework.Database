@@ -6,7 +6,7 @@
         /// <summary>
         /// 其他错误
         /// </summary>
-        Failed = 0,
+        InnerError = 0,
 
         /// <summary>
         /// 成功
@@ -26,8 +26,13 @@
         /// <summary>
         /// 错误：Scalar查询，返回多个
         /// </summary>
-        ScalarReturnMore = 4,
+        FoundTooMuch = 4,
 
         ArgumentNotValid = 5,
+        NotMatch = 6,
+
+        TransactionError = 7,
+        TableCreateError = 8,
+        MigrateError = 9
     }
 }

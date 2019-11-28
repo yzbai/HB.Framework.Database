@@ -60,13 +60,13 @@ namespace HB.Framework.Database
             where TTarget1 : DatabaseEntity, new()
             where TTarget2 : DatabaseEntity, new();
 
-        Task<DatabaseResult> AddAsync<T>(T item, TransactionContext transContext) where T : DatabaseEntity, new();
-        Task<DatabaseResult> DeleteAsync<T>(T item, TransactionContext transContext) where T : DatabaseEntity, new();
-        Task<DatabaseResult> UpdateAsync<T>(T item, TransactionContext transContext) where T : DatabaseEntity, new();
+        Task AddAsync<T>(T item, TransactionContext transContext) where T : DatabaseEntity, new();
+        Task DeleteAsync<T>(T item, TransactionContext transContext) where T : DatabaseEntity, new();
+        Task UpdateAsync<T>(T item, TransactionContext transContext) where T : DatabaseEntity, new();
 
-        Task<DatabaseResult> BatchAddAsync<T>(IEnumerable<T> items, string lastUser, TransactionContext transContext) where T : DatabaseEntity, new();
-        Task<DatabaseResult> BatchDeleteAsync<T>(IEnumerable<T> items, string lastUser, TransactionContext transContext) where T : DatabaseEntity, new();
-        Task<DatabaseResult> BatchUpdateAsync<T>(IEnumerable<T> items, string lastUser, TransactionContext transContext) where T : DatabaseEntity, new();
+        Task<IEnumerable<long>> BatchAddAsync<T>(IEnumerable<T> items, TransactionContext transContext) where T : DatabaseEntity, new();
+        Task BatchDeleteAsync<T>(IEnumerable<T> items, TransactionContext transContext) where T : DatabaseEntity, new();
+        Task BatchUpdateAsync<T>(IEnumerable<T> items, TransactionContext transContext) where T : DatabaseEntity, new();
 
         Task<TransactionContext> BeginTransactionAsync(string databaseName, IsolationLevel isolationLevel = IsolationLevel.ReadCommitted);
 

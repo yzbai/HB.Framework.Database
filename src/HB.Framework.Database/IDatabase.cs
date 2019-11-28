@@ -108,15 +108,15 @@ namespace HB.Framework.Database
 
 
 
-        DatabaseResult Add<T>(T item, TransactionContext transContext) where T : DatabaseEntity, new();
-        DatabaseResult Delete<T>(T item, TransactionContext transContext) where T : DatabaseEntity, new();
-        DatabaseResult Update<T>(T item, TransactionContext transContext) where T : DatabaseEntity, new();
+        void Add<T>(T item, TransactionContext transContext) where T : DatabaseEntity, new();
+        void Delete<T>(T item, TransactionContext transContext) where T : DatabaseEntity, new();
+        void Update<T>(T item, TransactionContext transContext) where T : DatabaseEntity, new();
 
         //DatabaseResult Set<T>(T item, DatabaseTransactionContext transactionContext = null) where T : DatabaseEntity, new();
 
-        DatabaseResult BatchAdd<T>(IEnumerable<T> items, string lastUser, TransactionContext transContext) where T : DatabaseEntity, new();
-        DatabaseResult BatchDelete<T>(IEnumerable<T> items, string lastUser, TransactionContext transContext) where T : DatabaseEntity, new();
-        DatabaseResult BatchUpdate<T>(IEnumerable<T> items, string lastUser, TransactionContext transContext) where T : DatabaseEntity, new();
+        IEnumerable<long> BatchAdd<T>(IEnumerable<T> items, TransactionContext transContext) where T : DatabaseEntity, new();
+        void BatchDelete<T>(IEnumerable<T> items, TransactionContext transContext) where T : DatabaseEntity, new();
+        void BatchUpdate<T>(IEnumerable<T> items, TransactionContext transContext) where T : DatabaseEntity, new();
 
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Naming", "CA1716:Identifiers should not match keywords", Justification = "<Pending>")]
