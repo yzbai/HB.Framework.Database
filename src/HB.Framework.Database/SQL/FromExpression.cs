@@ -23,9 +23,9 @@ namespace HB.Framework.Database.SQL
     {
         private readonly StringBuilder _statementBuilder = new StringBuilder();
 
-        private readonly IDatabaseEntityDefFactory entityDefFactory;
+        private readonly IDatabaseEntityDefFactory _entityDefFactory;
 
-        private readonly SQLExpressionVisitorContenxt expressionContext = null;
+        private readonly SQLExpressionVisitorContenxt _expressionContext = null;
 
         public bool WithFromString { get; set; } = true;
 
@@ -35,7 +35,7 @@ namespace HB.Framework.Database.SQL
         {
             StringBuilder resultBuilder = WithFromString ? new StringBuilder(" FROM ") : new StringBuilder(" ");
 
-            resultBuilder.Append(entityDefFactory.GetDef<T>().DbTableReservedName);
+            resultBuilder.Append(_entityDefFactory.GetDef<T>().DbTableReservedName);
             resultBuilder.Append(_statementBuilder);
 
             return resultBuilder.ToString();
@@ -43,8 +43,8 @@ namespace HB.Framework.Database.SQL
 
         internal FromExpression(IDatabaseEngine databaseEngine, IDatabaseEntityDefFactory entityDefFactory)
         {
-            this.entityDefFactory = entityDefFactory;
-            expressionContext = new SQLExpressionVisitorContenxt(databaseEngine, entityDefFactory);
+            this._entityDefFactory = entityDefFactory;
+            _expressionContext = new SQLExpressionVisitorContenxt(databaseEngine, entityDefFactory);
         }
 
         public FromExpression<T> InnerJoin<TTarget>(Expression<Func<T, TTarget, bool>> joinExpr) where TTarget : DatabaseEntity, new()
@@ -179,14 +179,14 @@ namespace HB.Framework.Database.SQL
 
         private FromExpression<T> InternalJoin<Target>(string joinType, Expression joinExpr)
         {
-            DatabaseEntityDef targetDef = entityDefFactory.GetDef(typeof(Target));
+            DatabaseEntityDef targetDef = _entityDefFactory.GetDef(typeof(Target));
 
             _statementBuilder.Append(" ");
             _statementBuilder.Append(joinType);
             _statementBuilder.Append(" ");
             _statementBuilder.Append(targetDef.DbTableReservedName);
             _statementBuilder.Append(" ON ");
-            _statementBuilder.Append(joinExpr.ToStatement(expressionContext));
+            _statementBuilder.Append(joinExpr.ToStatement(_expressionContext));
             _statementBuilder.Append(" ");
 
             return this;

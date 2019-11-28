@@ -30,7 +30,7 @@ namespace HB.Framework.Database.Entity
         /// </summary>
         public bool Unique { get; set; }
 
-        public Type ConverterType { get; set; } = null;
+        public Type Converter { get; set; } = null;
 
         public EntityPropertyAttribute()
         {

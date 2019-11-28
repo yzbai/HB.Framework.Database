@@ -12,19 +12,19 @@ namespace HB.Infrastructure.SQLite
     /// </summary>
     internal static partial class SQLiteExecuter
     {
-        private static void AttachParameters(SqliteCommand command, IEnumerable<IDataParameter> commandParameters)
-        {
-            foreach (IDataParameter p in commandParameters)
-            {
-                //check for derived output value with no value assigned
-                if ((p.Direction == ParameterDirection.InputOutput) && (p.Value == null))
-                {
-                    p.Value = DBNull.Value;
-                }
+        //private static void AttachParameters(SqliteCommand command, IEnumerable<IDataParameter> commandParameters)
+        //{
+        //    foreach (IDataParameter p in commandParameters)
+        //    {
+        //        //check for derived output value with no value assigned
+        //        if ((p.Direction == ParameterDirection.InputOutput) && (p.Value == null))
+        //        {
+        //            p.Value = DBNull.Value;
+        //        }
 
-                command.Parameters.Add(p);
-            }
-        }
+        //        command.Parameters.Add(p);
+        //    }
+        //}
 
         #region Comand Reader
 
@@ -179,28 +179,24 @@ namespace HB.Infrastructure.SQLite
         {
             SqliteConnection conn = new SqliteConnection(connectionString);
 
-            using (SqliteCommand command = new SqliteCommand
+            using SqliteCommand command = new SqliteCommand
             {
                 CommandType = CommandType.Text,
                 CommandText = SQLiteUtility.SafeDbStatement(sqlString)
-            })
-            {
-                return ExecuteCommandNonQuery(conn, true, command);
-            }
+            };
+            return ExecuteCommandNonQuery(conn, true, command);
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>")]
         public static int ExecuteSqlNonQuery(SqliteTransaction sqliteTransaction, string sqlString)
         {
-            using (SqliteCommand command = new SqliteCommand
+            using SqliteCommand command = new SqliteCommand
             {
                 CommandType = CommandType.Text,
                 CommandText = SQLiteUtility.SafeDbStatement(sqlString),
                 Transaction = sqliteTransaction
-            })
-            {
-                return ExecuteCommandNonQuery(sqliteTransaction.Connection, false, command);
-            }
+            };
+            return ExecuteCommandNonQuery(sqliteTransaction.Connection, false, command);
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>")]
@@ -237,28 +233,24 @@ namespace HB.Infrastructure.SQLite
         {
             SqliteConnection conn = new SqliteConnection(connectionString);
 
-            using (SqliteCommand command = new SqliteCommand
+            using SqliteCommand command = new SqliteCommand
             {
                 CommandType = CommandType.Text,
                 CommandText = SQLiteUtility.SafeDbStatement(sqlString)
-            })
-            {
-                return ExecuteCommandScalar(conn, true, command);
-            }
+            };
+            return ExecuteCommandScalar(conn, true, command);
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>")]
         public static object ExecuteSqlScalar(SqliteTransaction sqliteTransaction, string sqlString)
         {
-            using (SqliteCommand command = new SqliteCommand
+            using SqliteCommand command = new SqliteCommand
             {
                 CommandType = CommandType.Text,
                 CommandText = SQLiteUtility.SafeDbStatement(sqlString),
                 Transaction = sqliteTransaction
-            })
-            {
-                return ExecuteCommandScalar(sqliteTransaction.Connection, false, command);
-            }
+            };
+            return ExecuteCommandScalar(sqliteTransaction.Connection, false, command);
         }
 
         #endregion

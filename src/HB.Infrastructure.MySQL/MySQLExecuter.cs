@@ -113,7 +113,8 @@ namespace HB.Infrastructure.MySQL
                     reader.Close();
                 }
 
-                throw;
+                MySqlException to DatabaseExcetipn 
+                thr  ow;
             }
         }
 
@@ -349,29 +350,24 @@ namespace HB.Infrastructure.MySQL
         {
             MySqlConnection conn = new MySqlConnection(connectionString);
 
-            using (MySqlCommand command = new MySqlCommand
+            using MySqlCommand command = new MySqlCommand
             {
                 CommandType = CommandType.Text,
                 CommandText = MySQLUtility.SafeDbStatement(sqlString)
-            })
-            {
-
-                return ExecuteCommandNonQuery(conn, true, command);
-            }
+            };
+            return ExecuteCommandNonQuery(conn, true, command);
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>")]
         public static int ExecuteSqlNonQuery(MySqlTransaction mySqlTransaction, string sqlString)
         {
-            using (MySqlCommand command = new MySqlCommand
+            using MySqlCommand command = new MySqlCommand
             {
                 CommandType = CommandType.Text,
                 CommandText = MySQLUtility.SafeDbStatement(sqlString),
                 Transaction = mySqlTransaction
-            })
-            {
-                return ExecuteCommandNonQuery(mySqlTransaction.Connection, false, command);
-            }
+            };
+            return ExecuteCommandNonQuery(mySqlTransaction.Connection, false, command);
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>")]
@@ -407,28 +403,24 @@ namespace HB.Infrastructure.MySQL
         {
             MySqlConnection conn = new MySqlConnection(connectionString);
 
-            using (MySqlCommand command = new MySqlCommand
+            using MySqlCommand command = new MySqlCommand
             {
                 CommandType = CommandType.Text,
                 CommandText = MySQLUtility.SafeDbStatement(sqlString)
-            })
-            {
-                return ExecuteCommandScalar(conn, true, command);
-            }
+            };
+            return ExecuteCommandScalar(conn, true, command);
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>")]
         public static object ExecuteSqlScalar(MySqlTransaction mySqlTransaction, string sqlString)
         {
-            using (MySqlCommand command = new MySqlCommand
+            using MySqlCommand command = new MySqlCommand
             {
                 CommandType = CommandType.Text,
                 CommandText = MySQLUtility.SafeDbStatement(sqlString),
                 Transaction = mySqlTransaction
-            })
-            {
-                return ExecuteCommandScalar(mySqlTransaction.Connection, false, command);
-            }
+            };
+            return ExecuteCommandScalar(mySqlTransaction.Connection, false, command);
         }
 
         #endregion

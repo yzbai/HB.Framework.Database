@@ -19,7 +19,7 @@ namespace HB.Framework.Database.Test
             var configurationBuilder = new ConfigurationBuilder()
                 .AddEnvironmentVariables()
                 .SetBasePath(Environment.CurrentDirectory)
-                .AddJsonFile("appsettings.json", optional: false);
+                .AddJsonFile("appsettings.json", optional: true);
 
             Configuration = configurationBuilder.Build();
 
@@ -27,14 +27,25 @@ namespace HB.Framework.Database.Test
 
             services.AddOptions();
 
-            services.AddLogging(builder => {
+            services.AddLogging(builder =>
+            {
                 builder.SetMinimumLevel(LogLevel.Trace);
                 builder.AddConsole();
                 builder.AddDebug();
             });
 
             //Database
-            services.AddMySQL(Configuration.GetSection("MySQL"));
+            services.AddMySQL(options =>
+            {
+                options.DatabaseSettings.Version = 1;
+
+                options.Connections.Add(new DatabaseConnectionSettings
+                {
+                    DatabaseName = "test_db",
+                    ConnectionString = "server=127.0.0.1;port=3306;user=admin;password=_admin;database=test_db;SslMode=None;DefaultCommandTimeout=3000;",
+                    IsMaster = true
+                });
+            });
 
             Services = services.BuildServiceProvider();
         }

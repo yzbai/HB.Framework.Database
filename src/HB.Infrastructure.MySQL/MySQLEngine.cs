@@ -43,25 +43,25 @@ namespace HB.Infrastructure.MySQL
         {
             _connectionStringDict = new Dictionary<string, string>();
 
-            foreach (SchemaInfo schemaInfo in _options.Schemas)
+            foreach (DatabaseConnectionSettings schemaInfo in _options.Connections)
             {
                 if (FirstDefaultDatabaseName.IsNullOrEmpty())
                 {
-                    FirstDefaultDatabaseName = schemaInfo.SchemaName;
+                    FirstDefaultDatabaseName = schemaInfo.DatabaseName;
                 }
 
                 if (schemaInfo.IsMaster)
                 {
-                    _connectionStringDict[schemaInfo.SchemaName + "_1"] = schemaInfo.ConnectionString;
+                    _connectionStringDict[schemaInfo.DatabaseName + "_1"] = schemaInfo.ConnectionString;
 
-                    if (!_connectionStringDict.ContainsKey(schemaInfo.SchemaName + "_0"))
+                    if (!_connectionStringDict.ContainsKey(schemaInfo.DatabaseName + "_0"))
                     {
-                        _connectionStringDict[schemaInfo.SchemaName + "_0"] = schemaInfo.ConnectionString;
+                        _connectionStringDict[schemaInfo.DatabaseName + "_0"] = schemaInfo.ConnectionString;
                     }
                 }
                 else
                 {
-                    _connectionStringDict[schemaInfo.SchemaName + "_0"] = schemaInfo.ConnectionString;
+                    _connectionStringDict[schemaInfo.DatabaseName + "_0"] = schemaInfo.ConnectionString;
                 }
             }
         }
@@ -333,20 +333,20 @@ namespace HB.Infrastructure.MySQL
 INSERT INTO `tb_sys_info`(`Name`, `Value`) VALUES('Version', '1');
 INSERT INTO `tb_sys_info`(`Name`, `Value`) VALUES('DatabaseName', '{0}');";
 
-        private const string tbSysInfoRetrieve = @"SELECT * FROM `tb_sys_info`;";
+        private const string _tbSysInfoRetrieve = @"SELECT * FROM `tb_sys_info`;";
 
-        private const string tbSysInfoUpdateVersion = @"UPDATE `tb_sys_info` SET `Value` = '{0}' WHERE `Name` = 'Version';";
+        private const string _tbSysInfoUpdateVersion = @"UPDATE `tb_sys_info` SET `Value` = '{0}' WHERE `Name` = 'Version';";
 
-        private const string isTableExistsStatement = "SELECT count(1) FROM information_schema.TABLES WHERE table_name ='{0}';";
+        private const string _isTableExistsStatement = "SELECT count(1) FROM information_schema.TABLES WHERE table_name ='{0}' and table_schema='{1}';";
 
         public IEnumerable<string> GetDatabaseNames()
         {
-            return _options.Schemas.Select(s => s.SchemaName);
+            return _options.Connections.Select(s => s.DatabaseName);
         }
 
         public bool IsTableExists(string databaseName, string tableName, IDbTransaction transaction)
         {
-            string sql = string.Format(GlobalSettings.Culture, isTableExistsStatement, tableName);
+            string sql = string.Format(GlobalSettings.Culture, _isTableExistsStatement, tableName, databaseName);
 
             object result = ExecuteSqlScalar(transaction, databaseName, sql, false);
 
@@ -368,7 +368,7 @@ INSERT INTO `tb_sys_info`(`Name`, `Value`) VALUES('DatabaseName', '{0}');";
 
             try
             {
-                tuple = ExecuteSqlReader(transaction, databaseName, tbSysInfoRetrieve, false);
+                tuple = ExecuteSqlReader(transaction, databaseName, _tbSysInfoRetrieve, false);
 
                 SystemInfo systemInfo = new SystemInfo { DatabaseName = databaseName };
 
@@ -395,7 +395,7 @@ INSERT INTO `tb_sys_info`(`Name`, `Value`) VALUES('DatabaseName', '{0}');";
             }
             else
             {
-                ExecuteSqlNonQuery(transaction, databaseName, string.Format(GlobalSettings.Culture, tbSysInfoUpdateVersion, version));
+                ExecuteSqlNonQuery(transaction, databaseName, string.Format(GlobalSettings.Culture, _tbSysInfoUpdateVersion, version));
             }
         }
 

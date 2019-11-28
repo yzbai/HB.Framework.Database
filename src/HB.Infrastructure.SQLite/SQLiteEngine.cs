@@ -37,25 +37,25 @@ namespace HB.Infrastructure.SQLite
         {
             _connectionStringDict = new Dictionary<string, string>();
 
-            foreach (SchemaInfo schemaInfo in _options.Schemas)
+            foreach (DatabaseConnectionSettings schemaInfo in _options.Schemas)
             {
                 if (FirstDefaultDatabaseName.IsNullOrEmpty())
                 {
-                    FirstDefaultDatabaseName = schemaInfo.SchemaName;
+                    FirstDefaultDatabaseName = schemaInfo.DatabaseName;
                 }
 
                 if (schemaInfo.IsMaster)
                 {
-                    _connectionStringDict[schemaInfo.SchemaName + "_1"] = schemaInfo.ConnectionString;
+                    _connectionStringDict[schemaInfo.DatabaseName + "_1"] = schemaInfo.ConnectionString;
 
-                    if (!_connectionStringDict.ContainsKey(schemaInfo.SchemaName + "_0"))
+                    if (!_connectionStringDict.ContainsKey(schemaInfo.DatabaseName + "_0"))
                     {
-                        _connectionStringDict[schemaInfo.SchemaName + "_0"] = schemaInfo.ConnectionString;
+                        _connectionStringDict[schemaInfo.DatabaseName + "_0"] = schemaInfo.ConnectionString;
                     }
                 }
                 else
                 {
-                    _connectionStringDict[schemaInfo.SchemaName + "_0"] = schemaInfo.ConnectionString;
+                    _connectionStringDict[schemaInfo.DatabaseName + "_0"] = schemaInfo.ConnectionString;
                 }
             }
         }
@@ -197,7 +197,7 @@ INSERT INTO ""tb_sys_info""(""Name"", ""Value"") VALUES('DatabaseName', '{0}');"
 
         public IEnumerable<string> GetDatabaseNames()
         {
-            return _options.Schemas.Select(s => s.SchemaName);
+            return _options.Schemas.Select(s => s.DatabaseName);
         }
 
         public bool IsTableExists(string databaseName, string tableName, IDbTransaction transaction)

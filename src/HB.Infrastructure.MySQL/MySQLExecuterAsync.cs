@@ -96,7 +96,7 @@ namespace HB.Infrastructure.MySQL
                     reader.Close();
                 }
 
-                throw;
+                thro w;
             }
         }
 

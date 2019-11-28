@@ -62,7 +62,10 @@ namespace HB.Framework.Database
                     {
                         _initialized = true;
 
-                        AutoCreateTablesIfBrandNew();
+                        if (_databaseSettings.AutomaticCreateTable)
+                        {
+                            AutoCreateTablesIfBrandNew();
+                        }
 
                         Migarate(migrations);
                     }
@@ -72,11 +75,6 @@ namespace HB.Framework.Database
 
         private void AutoCreateTablesIfBrandNew()
         {
-            if (!_databaseSettings.AutomaticCreateTable)
-            {
-                return;
-            }
-
             _databaseEngine.GetDatabaseNames().ForEach(databaseName => {
 
                 TransactionContext transactionContext = BeginTransaction(databaseName, IsolationLevel.Serializable);
@@ -699,7 +697,7 @@ namespace HB.Framework.Database
         {
             if (!item.IsValid())
             {
-                return DatabaseResult.Fail("entity check failed.");
+                return DatabaseResult.Failed("entity check failed.");
             }
 
             DatabaseEntityDef entityDef = _entityDefFactory.GetDef<T>();
@@ -725,7 +723,7 @@ namespace HB.Framework.Database
             catch (DbException ex)
             {
                 //_logger.LogCritical(ex.Message);
-                return DatabaseResult.Fail(ex);
+                return DatabaseResult.Failed(ex);
             }
             finally
             {
@@ -741,7 +739,7 @@ namespace HB.Framework.Database
         {
             if (!item.IsValid())
             {
-                return DatabaseResult.Fail("entity check failed.");
+                return DatabaseResult.Failed("entity check failed.");
             }
 
             DatabaseEntityDef entityDef = _entityDefFactory.GetDef<T>();
@@ -775,7 +773,7 @@ namespace HB.Framework.Database
             catch (DbException ex)
             {
                 //_logger.LogCritical(ex.Message);
-                return DatabaseResult.Fail(ex);
+                return DatabaseResult.Failed(ex);
             }
         }
 
@@ -787,7 +785,7 @@ namespace HB.Framework.Database
         {
             if (!item.IsValid())
             {
-                return DatabaseResult.Fail("entity check failed.");
+                return DatabaseResult.Failed("entity check failed.");
             }
 
             DatabaseEntityDef entityDef = _entityDefFactory.GetDef<T>();
@@ -828,7 +826,7 @@ namespace HB.Framework.Database
             catch (DbException ex)
             {
                 //_logger.LogCritical(ex.Message);
-                return DatabaseResult.Fail(ex);
+                return DatabaseResult.Failed(ex);
             }
         }
 
@@ -846,12 +844,22 @@ namespace HB.Framework.Database
         {
             if (transContext == null)
             {
-                return DatabaseResult.Fail(new ArgumentNullException(nameof(transContext)));
+                return DatabaseResult.Failed(new ArgumentNullException(nameof(transContext)));
+            }
+
+            if (items == null)
+            {
+                return DatabaseResult.Failed(new ArgumentNullException(nameof(items)));
+            }
+
+            if (items.Count() == 0)
+            {
+                return DatabaseResult.Succeeded();
             }
 
             if (!CheckEntities<T>(items))
             {
-                return DatabaseResult.Fail("entities not valid.");
+                return DatabaseResult.Failed("entities not valid.");
             }
 
             DatabaseEntityDef entityDef = _entityDefFactory.GetDef<T>();
@@ -896,7 +904,7 @@ namespace HB.Framework.Database
             catch (Exception ex)
             {
                 //_logger.LogCritical(ex.Message);
-                return DatabaseResult.Fail(ex);
+                return DatabaseResult.Failed(ex);
             }
             finally
             {
@@ -914,12 +922,22 @@ namespace HB.Framework.Database
         {
             if (transContext == null)
             {
-                return DatabaseResult.Fail(new ArgumentNullException(nameof(transContext)));
+                return DatabaseResult.Failed(new ArgumentNullException(nameof(transContext)));
+            }
+
+            if (items == null)
+            {
+                return DatabaseResult.Failed(new ArgumentNullException(nameof(items)));
+            }
+
+            if (items.Count() == 0)
+            {
+                return DatabaseResult.Succeeded();
             }
 
             if (!CheckEntities<T>(items))
             {
-                return DatabaseResult.Fail("entities not valid.");
+                return DatabaseResult.Failed("entities not valid.");
             }
 
             DatabaseEntityDef entityDef = _entityDefFactory.GetDef<T>();
@@ -964,7 +982,7 @@ namespace HB.Framework.Database
             catch (Exception ex)
             {
                 //_logger.LogCritical(ex.Message);
-                return DatabaseResult.Fail(ex);
+                return DatabaseResult.Failed(ex);
             }
             finally
             {
@@ -977,12 +995,22 @@ namespace HB.Framework.Database
         {
             if (transContext == null)
             {
-                return DatabaseResult.Fail(new ArgumentNullException(nameof(transContext)));
+                return DatabaseResult.Failed(new ArgumentNullException(nameof(transContext)));
+            }
+
+            if (items == null)
+            {
+                return DatabaseResult.Failed(new ArgumentNullException(nameof(items)));
+            }
+
+            if (items.Count() == 0)
+            {
+                return DatabaseResult.Succeeded();
             }
 
             if (!CheckEntities<T>(items))
             {
-                return DatabaseResult.Fail("Entities not valid");
+                return DatabaseResult.Failed("Entities not valid");
             }
 
             DatabaseEntityDef entityDef = _entityDefFactory.GetDef<T>();
@@ -1027,7 +1055,7 @@ namespace HB.Framework.Database
             catch (Exception ex)
             {
                 //_logger.LogCritical(ex.Message);
-                return DatabaseResult.Fail(ex);
+                return DatabaseResult.Failed(ex);
             }
             finally
             {

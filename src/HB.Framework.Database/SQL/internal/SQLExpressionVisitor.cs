@@ -537,13 +537,16 @@ namespace HB.Framework.Database.SQL
                     statement = string.Format(GlobalSettings.Culture, "lower({0})", quotedColName);
                     break;
                 case "StartsWith":
-                    statement = string.Format(GlobalSettings.Culture, "upper({0}) like {1} ", quotedColName, context.DatabaesEngine.GetQuotedStatement(args[0].ToString().ToUpper(GlobalSettings.Culture) + "%"));
+                    statement = string.Format(GlobalSettings.Culture, "upper({0}) like {1} ", quotedColName, 
+                        context.DatabaesEngine.GetQuotedStatement(args[0].ToString().ToUpper(GlobalSettings.Culture) + "%"));
                     break;
                 case "EndsWith":
-                    statement = string.Format(GlobalSettings.Culture, "upper({0}) like {1}", quotedColName, context.DatabaesEngine.GetQuotedStatement("%" + args[0].ToString().ToUpper(GlobalSettings.Culture)));
+                    statement = string.Format(GlobalSettings.Culture, "upper({0}) like {1}", quotedColName, 
+                        context.DatabaesEngine.GetQuotedStatement("%" + args[0].ToString().ToUpper(GlobalSettings.Culture)));
                     break;
                 case "Contains":
-                    statement = string.Format(GlobalSettings.Culture, "upper({0}) like {1}", quotedColName, context.DatabaesEngine.GetQuotedStatement("%" + args[0].ToString().ToUpper(GlobalSettings.Culture) + "%"));
+                    statement = string.Format(GlobalSettings.Culture, "upper({0}) like {1}", quotedColName, 
+                        context.DatabaesEngine.GetQuotedStatement("%" + args[0].ToString().ToUpper(GlobalSettings.Culture) + "%"));
                     break;
                 case "Substring":
                     int startIndex = int.Parse(args[0].ToString(), GlobalSettings.Culture) + 1;
@@ -577,42 +580,24 @@ namespace HB.Framework.Database.SQL
                 && exp.Expression.NodeType == ExpressionType.Parameter;
         }
 
-        private static string BindOperant(ExpressionType e)
+        private static string BindOperant(ExpressionType e) => e switch
         {
-            switch (e)
-            {
-                case ExpressionType.Equal:
-                    return "=";
-                case ExpressionType.NotEqual:
-                    return "<>";
-                case ExpressionType.GreaterThan:
-                    return ">";
-                case ExpressionType.GreaterThanOrEqual:
-                    return ">=";
-                case ExpressionType.LessThan:
-                    return "<";
-                case ExpressionType.LessThanOrEqual:
-                    return "<=";
-                case ExpressionType.AndAlso:
-                    return "AND";
-                case ExpressionType.OrElse:
-                    return "OR";
-                case ExpressionType.Add:
-                    return "+";
-                case ExpressionType.Subtract:
-                    return "-";
-                case ExpressionType.Multiply:
-                    return "*";
-                case ExpressionType.Divide:
-                    return "/";
-                case ExpressionType.Modulo:
-                    return "MOD";
-                case ExpressionType.Coalesce:
-                    return "COALESCE";
-                default:
-                    return e.ToString();
-            }
-        }
+            ExpressionType.Equal => "=",
+            ExpressionType.NotEqual => "<>",
+            ExpressionType.GreaterThan => ">",
+            ExpressionType.GreaterThanOrEqual => ">=",
+            ExpressionType.LessThan => "<",
+            ExpressionType.LessThanOrEqual => "<=",
+            ExpressionType.AndAlso => "AND",
+            ExpressionType.OrElse => "OR",
+            ExpressionType.Add => "+",
+            ExpressionType.Subtract => "-",
+            ExpressionType.Multiply => "*",
+            ExpressionType.Divide => "/",
+            ExpressionType.Modulo => "MOD",
+            ExpressionType.Coalesce => "COALESCE",
+            _ => e.ToString(),
+        };
 
         private static string RemoveQuoteFromAlias(string exp)
         {

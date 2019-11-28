@@ -6,7 +6,7 @@ namespace HB.Framework.Database.Test.Data
 {
     public static class Mocker
     {
-        private static Random random = new Random();
+        private static readonly Random _random = new Random();
 
         public static IList<BookEntity> GetBooks()
         {
@@ -17,7 +17,7 @@ namespace HB.Framework.Database.Test.Data
                 books.Add(new BookEntity {
                     Guid = SecurityUtil.CreateUniqueToken(),
                     Name = "Book" + i.ToString(),
-                    Price = random.NextDouble()
+                    Price = _random.NextDouble()
                 });
             }
 
@@ -26,16 +26,18 @@ namespace HB.Framework.Database.Test.Data
 
         public static PublisherEntity MockOne()
         {
-            PublisherEntity entity = new PublisherEntity();
-            entity.Guid = SecurityUtil.CreateUniqueToken();
-            entity.Type = PublisherType.Online;
-            entity.Name = "中文名字";
-            entity.Books = new List<string>() { "Cat", "Dog" };
-            entity.BookAuthors = new Dictionary<string, Author>()
+            PublisherEntity entity = new PublisherEntity
+            {
+                Guid = SecurityUtil.CreateUniqueToken(),
+                Type = PublisherType.Online,
+                Name = "中文名字",
+                Books = new List<string>() { "Cat", "Dog" },
+                BookAuthors = new Dictionary<string, Author>()
             {
                     { "Cat", new Author() { Mobile="111", Name="BB" } },
                     { "Dog", new Author() { Mobile="222", Name="sx" } }
-                };
+                }
+            };
 
             return entity;
         }

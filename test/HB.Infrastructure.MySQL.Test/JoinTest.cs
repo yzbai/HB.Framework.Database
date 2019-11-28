@@ -9,17 +9,17 @@ using Xunit.Abstractions;
 
 namespace HB.Framework.Database.Test
 {
-    [TestCaseOrderer("HB.Framework.Database.Test.TestCaseOrdererByTestName", "HB.Framework.Database.Test")]
-    public class MutipleTableTest
+    //[TestCaseOrderer("HB.Framework.Database.Test.TestCaseOrdererByTestName", "HB.Framework.Database.Test")]
+    public class MutipleTableTest : IClassFixture<ServiceFixture>
     {
-        private IDatabase db;
-        private ITestOutputHelper output; 
+        private readonly IDatabase _db;
+        private readonly ITestOutputHelper _output; 
 
-        public MutipleTableTest(ITestOutputHelper testOutputHelper)
+        public MutipleTableTest(ITestOutputHelper testOutputHelper, ServiceFixture serviceFixture)
         {
-            output = testOutputHelper;
+            _output = testOutputHelper;
 
-            db = GetDatabase();
+            _db = serviceFixture.Database;
 
             AddSomeData();
 
@@ -47,53 +47,30 @@ namespace HB.Framework.Database.Test
             C c5 = new C { AId = a2.Guid };
             C c6 = new C { AId = a3.Guid };
 
-            db.Add(a1, null);
-            db.Add(a2, null);
-            db.Add(a3, null);
+            _db.Add(a1, null);
+            _db.Add(a2, null);
+            _db.Add(a3, null);
 
-            db.Add(b1, null);
-            db.Add(b2, null);
+            _db.Add(b1, null);
+            _db.Add(b2, null);
 
-            db.Add(a1b1, null);
-            db.Add(a1b2, null);
-            db.Add(a2b1, null);
-            db.Add(a3b2, null);
+            _db.Add(a1b1, null);
+            _db.Add(a1b2, null);
+            _db.Add(a2b1, null);
+            _db.Add(a3b2, null);
 
-            db.Add(c1, null);
-            db.Add(c2, null);
-            db.Add(c3, null);
-            db.Add(c4, null);
-            db.Add(c5, null);
-            db.Add(c6, null);
-        }
-
-        private IDatabase GetDatabase()
-        {
-            IServiceCollection services = new ServiceCollection();
-
-            services.AddMySQL(mySQLOptions => {
-                mySQLOptions.DatabaseSettings.Version = 1;
-                mySQLOptions.Schemas.Add(new SchemaInfo
-                {
-                    SchemaName = "test_db",
-                    IsMaster = true,
-                    ConnectionString = "server=127.0.0.1;port=3306;user=admin;password=_admin;database=test_db;SslMode=None"
-                });
-            });
-
-            
-
-            IDatabase database = services.BuildServiceProvider().GetRequiredService<IDatabase>();
-
-            database.Initialize();
-
-            return database;
+            _db.Add(c1, null);
+            _db.Add(c2, null);
+            _db.Add(c3, null);
+            _db.Add(c4, null);
+            _db.Add(c5, null);
+            _db.Add(c6, null);
         }
 
         [Fact]
         public void Test_1_ThreeTable_JoinTest()
         {
-            var from = db
+            var from = _db
                 .From<A>()
                 .LeftJoin<AB>((a, ab) => ab.AId == a.Guid)
                 .LeftJoin<AB, B>((ab, b) => ab.BId == b.Guid);
@@ -101,12 +78,12 @@ namespace HB.Framework.Database.Test
 
             try
             {
-                var result = db.Retrieve<A, AB, B>(from, db.Where<A>(), null);
+                var result = _db.Retrieve<A, AB, B>(from, _db.Where<A>(), null);
                 Assert.True(result.Count > 0);
             }
             catch(Exception ex)
             {
-                output.WriteLine(ex.Message);
+                _output.WriteLine(ex.Message);
 
                 throw ex;
             }
@@ -117,19 +94,19 @@ namespace HB.Framework.Database.Test
         [Fact]
         public void Test_2_TwoTable_JoinTest()
         {
-            var from = db
+            var from = _db
                 .From<C>()
                 .LeftJoin<A>((c, a) => c.AId == a.Guid);
 
 
             try
             {
-                var result = db.Retrieve<C, A>(from, db.Where<C>(), null);
+                var result = _db.Retrieve<C, A>(from, _db.Where<C>(), null);
                 Assert.True(result.Count > 0);
             }
             catch (Exception ex)
             {
-                output.WriteLine(ex.Message);
+                _output.WriteLine(ex.Message);
 
                 throw ex;
             }

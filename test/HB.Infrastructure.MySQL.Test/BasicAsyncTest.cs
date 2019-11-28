@@ -1,4 +1,3 @@
-using HB.Framework.Database.SQL;
 using HB.Framework.Database.Test.Data;
 using System;
 using System.Collections.Generic;
@@ -9,18 +8,18 @@ using Xunit.Abstractions;
 
 namespace HB.Framework.Database.Test
 {
-    [TestCaseOrderer("HB.Framework.Database.Test.TestCaseOrdererByTestName", "HB.Framework.Database.Test")]
+    //[TestCaseOrderer("HB.Framework.Database.Test.TestCaseOrdererByTestName", "HB.Framework.Database.Test")]
     public class BasicAsyncTest : IClassFixture<ServiceFixture>
     {
-        private readonly IDatabase database;
-        private readonly ITestOutputHelper output;
-        private readonly IsolationLevel isolationLevel = IsolationLevel.Serializable;
+        private readonly IDatabase _database;
+        private readonly ITestOutputHelper _output;
+        private readonly IsolationLevel _isolationLevel = IsolationLevel.Serializable;
 
         public BasicAsyncTest(ITestOutputHelper testOutputHelper, ServiceFixture serviceFixture)
         {
-            output = testOutputHelper;
-            database = serviceFixture.Database;
-            database.Initialize();
+            _output = testOutputHelper;
+            _database = serviceFixture.Database;
+            _database.Initialize();
         }
 
         [Fact]
@@ -28,26 +27,27 @@ namespace HB.Framework.Database.Test
         {
             IList<PublisherEntity> publishers = Mocker.GetPublishers();
 
-            var transactionContext = await database.BeginTransactionAsync<PublisherEntity>(isolationLevel).ConfigureAwait(false);
+            TransactionContext transactionContext = await _database.BeginTransactionAsync<PublisherEntity>(_isolationLevel).ConfigureAwait(false);
 
-            DatabaseResult result = DatabaseResult.Failed();
+            DatabaseResult result;
+
             try
             {
-                result = await database.BatchAddAsync<PublisherEntity>(publishers, "tester", transactionContext);
+                result = await _database.BatchAddAsync<PublisherEntity>(publishers, "tester", transactionContext);
 
                 if (!result.IsSucceeded())
                 {
-                    output.WriteLine(result.Exception?.Message);
+                    _output.WriteLine(result.Exception?.Message);
                     throw new Exception();
                 }
 
-                await database.CommitAsync(transactionContext);
+                await _database.CommitAsync(transactionContext);
 
             }
             catch (Exception ex)
             {
-                output.WriteLine(ex.Message);
-                await database.RollbackAsync(transactionContext);
+                _output.WriteLine(ex.Message);
+                await _database.RollbackAsync(transactionContext);
                 throw ex;
             }
 
@@ -57,11 +57,11 @@ namespace HB.Framework.Database.Test
         [Fact]
         public async Task Test_2_Batch_Update_PublisherEntityAsync()
         {
-            TransactionContext transContext = await database.BeginTransactionAsync<PublisherEntity>(isolationLevel);
+            TransactionContext transContext = await _database.BeginTransactionAsync<PublisherEntity>(_isolationLevel);
 
             try
             {
-                IList<PublisherEntity> lst = await database.RetrieveAllAsync<PublisherEntity>(transContext);
+                IList<PublisherEntity> lst = await _database.RetrieveAllAsync<PublisherEntity>(transContext);
 
                 for (int i = 0; i < lst.Count; i += 2)
                 {
@@ -77,24 +77,24 @@ namespace HB.Framework.Database.Test
                 };
                 }
 
-                DatabaseResult result = await database.BatchUpdateAsync<PublisherEntity>(lst, "tester", transContext);
+                DatabaseResult result = await _database.BatchUpdateAsync<PublisherEntity>(lst, "tester", transContext);
 
                 Assert.True(result.IsSucceeded());
 
                 if (!result.IsSucceeded())
                 {
-                    output.WriteLine(result.Exception?.Message);
-                    await database.RollbackAsync(transContext);
+                    _output.WriteLine(result.Exception?.Message);
+                    await _database.RollbackAsync(transContext);
                     throw new Exception();
                 }
 
-                await database.CommitAsync(transContext);
-                
+                await _database.CommitAsync(transContext);
+
             }
             catch (Exception ex)
             {
-                output.WriteLine(ex.Message);
-                await database.RollbackAsync(transContext);
+                _output.WriteLine(ex.Message);
+                await _database.RollbackAsync(transContext);
                 throw ex;
             }
         }
@@ -102,31 +102,31 @@ namespace HB.Framework.Database.Test
         [Fact]
         public async Task Test_3_Batch_Delete_PublisherEntityAsync()
         {
-            TransactionContext transactionContext = await database.BeginTransactionAsync<PublisherEntity>(isolationLevel);
+            TransactionContext transactionContext = await _database.BeginTransactionAsync<PublisherEntity>(_isolationLevel);
 
             try
             {
-                IList<PublisherEntity> lst = await database.PageAsync<PublisherEntity>(2, 100, transactionContext);
+                IList<PublisherEntity> lst = await _database.PageAsync<PublisherEntity>(2, 100, transactionContext);
 
                 if (lst.Count != 0)
                 {
-                    DatabaseResult result = await database.BatchDeleteAsync<PublisherEntity>(lst, "deleter", transactionContext);
+                    DatabaseResult result = await _database.BatchDeleteAsync<PublisherEntity>(lst, "deleter", transactionContext);
 
                     if (!result.IsSucceeded())
                     {
-                        output.WriteLine(result.Exception?.Message);
+                        _output.WriteLine(result.Exception?.Message);
                         throw new Exception();
                     }
 
                     Assert.True(result.IsSucceeded());
                 }
 
-                await database.CommitAsync(transactionContext);
+                await _database.CommitAsync(transactionContext);
             }
             catch (Exception ex)
             {
-                output.WriteLine(ex.Message);
-                await database.RollbackAsync(transactionContext);
+                _output.WriteLine(ex.Message);
+                await _database.RollbackAsync(transactionContext);
                 throw ex;
             }
         }
@@ -134,7 +134,7 @@ namespace HB.Framework.Database.Test
         [Fact]
         public async Task Test_4_Add_PublisherEntityAsync()
         {
-            var tContext = await database.BeginTransactionAsync<PublisherEntity>(isolationLevel);
+            TransactionContext tContext = await _database.BeginTransactionAsync<PublisherEntity>(_isolationLevel);
 
             try
             {
@@ -142,23 +142,23 @@ namespace HB.Framework.Database.Test
                 {
                     PublisherEntity entity = Mocker.MockOne();
 
-                    DatabaseResult result = await database.AddAsync(entity, tContext);
+                    DatabaseResult result = await _database.AddAsync(entity, tContext);
 
                     if (!result.IsSucceeded())
                     {
-                        output.WriteLine(result.Exception?.Message);
+                        _output.WriteLine(result.Exception?.Message);
                         throw new Exception();
                     }
 
                     Assert.True(result.IsSucceeded());
                 }
 
-                await database.CommitAsync(tContext);
+                await _database.CommitAsync(tContext);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
-                output.WriteLine(ex.Message);
-                await database.RollbackAsync(tContext);
+                _output.WriteLine(ex.Message);
+                await _database.RollbackAsync(tContext);
                 throw ex;
             }
         }
@@ -166,14 +166,15 @@ namespace HB.Framework.Database.Test
         [Fact]
         public async Task Test_5_Update_PublisherEntityAsync()
         {
-            var tContext = await database.BeginTransactionAsync<PublisherEntity>(isolationLevel);
+            TransactionContext tContext = await _database.BeginTransactionAsync<PublisherEntity>(_isolationLevel);
 
             try
             {
-                IList<PublisherEntity> testEntities = await database.PageAsync<PublisherEntity>(1, 1, tContext);
+                IList<PublisherEntity> testEntities = await _database.PageAsync<PublisherEntity>(1, 1, tContext);
 
                 if (testEntities.Count == 0)
                 {
+                    _database.Rollback(tContext);
                     return;
                 }
 
@@ -182,27 +183,27 @@ namespace HB.Framework.Database.Test
                 entity.Books.Add("New Book2");
                 entity.BookAuthors.Add("New Book2", new Author() { Mobile = "15190208956", Name = "Yuzhaobai" });
 
-                DatabaseResult result = await database.UpdateAsync(entity, tContext);
+                DatabaseResult result = await _database.UpdateAsync(entity, tContext);
 
                 if (!result.IsSucceeded())
                 {
-                    output.WriteLine(result.Exception?.Message);
+                    _output.WriteLine(result.Exception?.Message);
                     throw new Exception();
                 }
 
                 Assert.True(result.IsSucceeded());
 
-                PublisherEntity stored = await database.ScalarAsync<PublisherEntity>(entity.Id, tContext);
+                PublisherEntity stored = await _database.ScalarAsync<PublisherEntity>(entity.Id, tContext);
 
                 Assert.True(stored.Books.Contains("New Book2"));
                 Assert.True(stored.BookAuthors["New Book2"].Mobile == "15190208956");
 
-                await database.CommitAsync(tContext);
+                await _database.CommitAsync(tContext);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
-                output.WriteLine(ex.Message);
-                await database.RollbackAsync(tContext);
+                _output.WriteLine(ex.Message);
+                await _database.RollbackAsync(tContext);
                 throw ex;
             }
         }
@@ -210,36 +211,37 @@ namespace HB.Framework.Database.Test
         [Fact]
         public async Task Test_6_Delete_PublisherEntityAsync()
         {
-            var tContext = await database.BeginTransactionAsync<PublisherEntity>(isolationLevel);
+            TransactionContext tContext = await _database.BeginTransactionAsync<PublisherEntity>(_isolationLevel);
 
             try
             {
-                IList<PublisherEntity> testEntities = await database.RetrieveAllAsync<PublisherEntity>(tContext);
+                IList<PublisherEntity> testEntities = await _database.RetrieveAllAsync<PublisherEntity>(tContext);
 
-                await testEntities.ForEachAsync(async entity => {
-                    DatabaseResult result = await database.DeleteAsync(entity, tContext);
+                await testEntities.ForEachAsync(async entity =>
+                {
+                    DatabaseResult result = await _database.DeleteAsync(entity, tContext);
 
                     if (!result.IsSucceeded())
                     {
-                        output.WriteLine(result.Exception?.Message);
+                        _output.WriteLine(result.Exception?.Message);
                         throw new Exception();
                     }
 
                     Assert.True(result.IsSucceeded());
                 });
 
-                long count = await database.CountAsync<PublisherEntity>(tContext);
+                long count = await _database.CountAsync<PublisherEntity>(tContext);
 
                 Assert.True(count == 0);
 
-                await database.CommitAsync(tContext);
+                await _database.CommitAsync(tContext);
 
-                output.WriteLine($"count: {count}");
+                _output.WriteLine($"count: {count}");
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
-                await database.RollbackAsync(tContext);
-                output.WriteLine(ex.Message);
+                await _database.RollbackAsync(tContext);
+                _output.WriteLine(ex.Message);
                 throw ex;
             }
         }

@@ -5,25 +5,22 @@ using System.Runtime.Serialization;
 namespace HB.Framework.Database
 {
     public class DatabaseException : DbException
-    {
-        public DatabaseException()
-        {
-        }
+    { 
+        public DatabaseError Error { get; set; }
 
-        public DatabaseException(string message) : base(message)
-        {
-        }
+        public int InnerNumber { get; set; }
 
-        public DatabaseException(SerializationInfo info, StreamingContext context) : base(info, context)
-        {
-        }
+        public string SqlState { get; set; }
 
-        public DatabaseException(string message, Exception innerException) : base(message, innerException)
-        {
-        }
+        public string EntityName { get; set; }
 
-        public DatabaseException(string message, int errorCode) : base(message, errorCode)
+        public string Operation { get; set; }
+
+        public DatabaseException(DatabaseError error, string operation, string entityName, string message) : base(message)
         {
+            Error = error;
+            Operation = operation;
+            EntityName = entityName;
         }
     }
 }

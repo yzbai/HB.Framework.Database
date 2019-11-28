@@ -1,114 +1,100 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
-using System.Linq;
+using System.Data.Common;
 
 namespace HB.Framework.Database
 {
-    public enum DatabaseResultStatus
+    public partial class DatabaseResult
     {
-        Succeeded,
-        NotFound,
-        Failed,
-        NotWriteable
-    }
-
-    public class DatabaseResult
-    {
-        public Exception Exception { get; private set; }
-
-        public DatabaseResultStatus Status { get; private set; }
-
         public IList<long> Ids { get; private set; } = new List<long>();
+
+        public DatabaseException Exception { get; private set; }
+
+        /// <summary>
+        /// 当Status为Failed时，FailedReason有效
+        /// </summary>
+        public int FailedReason { get; set; } = 0;
+
+        public DatabaseError Status { get; private set; }
+
+        public bool IsSucceeded => Status == DatabaseError.Succeeded;
+
+        public bool IsNotFound => Status == DatabaseError.NotFound;
+
+        public bool IsNotWriteable => Status == DatabaseError.NotFound;
+
+        private DatabaseResult() { }
 
         public void AddId(long id)
         {
             Ids.Add(id);
         }
 
-        public bool IsSucceeded()
+        public static DatabaseResult Create(DatabaseException exception)
         {
-            return Status == DatabaseResultStatus.Succeeded;
-        }
-
-        public static DatabaseResult Fail(Exception exception)
-        {
-            DatabaseResult result = new DatabaseResult
+            return new DatabaseResult
             {
-                Status = DatabaseResultStatus.Failed
+                Exception = exception,
+                Status = exception.Error,
+                FailedReason = exception.ErrorCode
             };
-
-            if (exception != null)
-            {
-                result.Exception = exception;
-            }
-
-            return result;
-        }
-
-        public static DatabaseResult Fail(string message)
-        {
-            return Fail(new Exception(message));
-        }
-
-        public static DatabaseResult NotWriteable()
-        {
-            return new DatabaseResult { Status = DatabaseResultStatus.NotWriteable };
         }
 
         public static DatabaseResult Succeeded()
         {
-            return new DatabaseResult { Status = DatabaseResultStatus.Succeeded };
+            return new DatabaseResult { Status = DatabaseError.Succeeded };
         }
 
-        public static DatabaseResult NotFound()
-        {
-            return new DatabaseResult { Status = DatabaseResultStatus.NotFound };
-        }
-
-        public static DatabaseResult Failed()
-        {
-            return new DatabaseResult { Status = DatabaseResultStatus.Failed };
-        }
-
-        //public static readonly DatabaseResult Succeeded = new DatabaseResult() { Status = DatabaseResultStatus.Succeeded };
-
-        //public static readonly DatabaseResult Failed = new DatabaseResult() { Status = DatabaseResultStatus.Failed };
-
-        //public static readonly DatabaseResult NotFound = new DatabaseResult() { Status = DatabaseResultStatus.NotFound };
-
-        //public static readonly DatabaseResult NotWriteable = new DatabaseResult() { Status = DatabaseResultStatus.NotWriteable };
-
-        //public static bool operator ==(DatabaseResult left, DatabaseResult right)
+        //public static DatabaseResult NotWriteable1(string operation, string entityName, string lastUser)
         //{
-        //    if (System.Object.ReferenceEquals(left, right))
+        //    return new DatabaseResult
         //    {
-        //        return true;
+        //        Status = DatabaseError.NotWriteable,
+        //        Exception = new Exception($"The Database: {databaseName} is not writeable when perform: {operation} on Entity: {entityName}")
+        //    };
+        //}
+
+        //public static DatabaseResult NotWriteable1(DatabaseException exception)
+        //{
+        //    return new DatabaseResult { Status = DatabaseError.NotWriteable, Exception = exception };
+        //}
+
+
+        //public static DatabaseResult NotFound1(string operation, string entityName, string lastUser, Exception exception)
+        //{
+        //    return new DatabaseResult { Status = DatabaseError.NotFound, Exception = exception };
+        //}
+
+        //public static DatabaseResult NotFound1(string message)
+        //{
+        //    return new DatabaseResult { Status = DatabaseError.NotFound, Exception = new Exception(message) };
+        //}
+
+        //public static DatabaseResult ArgumentError1(Exception exception)
+        //{
+        //    throw new NotImplementedException();
+        //}
+
+        //internal static DatabaseResult EntityNotValid1(string v)
+        //{
+        //    throw new NotImplementedException();
+        //}
+
+        //public static DatabaseResult Fail1(string operation, string entityName, string lastUser, Exception exception)
+        //{
+        //    DatabaseResult rt = new DatabaseResult { Status = DatabaseError.Failed, Exception = ex };
+
+        //    if (ex is DbException)
+        //    {
+        //        rt.FailedReason = ((DbException)ex).ErrorCode;
         //    }
 
-        //    if (((object)left == null) || ((object)right == null))
-        //    {
-        //        return false;
-        //    }
-
-        //    return left.Status == right.Status;
+        //    return rt;
         //}
 
-        //public static bool operator !=(DatabaseResult left, DatabaseResult right)
+        //internal static DatabaseResult NewIdError1(string operation, string entityName, string lastUser)
         //{
-        //    return !(left == right);
-        //}
-
-        //public override bool Equals(object obj)
-        //{
-        //    DatabaseResult result = obj as DatabaseResult;
-
-        //    return this == result;
-        //}
-
-        //public override int GetHashCode()
-        //{
-        //    return base.GetHashCode();
+        //    throw new NotImplementedException();
         //}
     }
 }

@@ -80,17 +80,13 @@ namespace HB.Framework.Database.SQL
 
         protected virtual MemberBinding VisitBinding(MemberBinding binding)
         {
-            switch (binding.BindingType)
+            return binding.BindingType switch
             {
-                case MemberBindingType.Assignment:
-                    return VisitMemberAssignment((MemberAssignment)binding);
-                case MemberBindingType.MemberBinding:
-                    return VisitMemberMemberBinding((MemberMemberBinding)binding);
-                case MemberBindingType.ListBinding:
-                    return VisitMemberListBinding((MemberListBinding)binding);
-                default:
-                    throw new Exception(string.Format(GlobalSettings.Culture, "Unhandled binding type '{0}'", binding.BindingType));
-            }
+                MemberBindingType.Assignment => VisitMemberAssignment((MemberAssignment)binding),
+                MemberBindingType.MemberBinding => VisitMemberMemberBinding((MemberMemberBinding)binding),
+                MemberBindingType.ListBinding => VisitMemberListBinding((MemberListBinding)binding),
+                _ => throw new Exception(string.Format(GlobalSettings.Culture, "Unhandled binding type '{0}'", binding.BindingType)),
+            };
         }
 
         protected virtual ElementInit VisitElementInitializer(ElementInit initializer)

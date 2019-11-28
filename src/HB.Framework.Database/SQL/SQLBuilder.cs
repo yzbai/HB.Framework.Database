@@ -520,7 +520,7 @@ namespace HB.Framework.Database.SQL
                 if (args.Length > 0)
                     args.Remove(args.Length - 1, 1);
 
-                innerBuilder.Append($"update {definition.DbTableReservedName} set {args.ToString()} WHERE `Id`={entity.Id} and `Version`={entity.Version};{TempTable_Insert(tempTableName, FoundChanges_Statement(_databaseEngine.EngineType), _databaseEngine.EngineType)}");
+                innerBuilder.Append($"update {definition.DbTableReservedName} set {args.ToString()} WHERE `Id`={entity.Id} and `Version`={entity.Version} and `Deleted`=0;{TempTable_Insert(tempTableName, FoundChanges_Statement(_databaseEngine.EngineType), _databaseEngine.EngineType)}");
 
                 number++;
             }
@@ -546,7 +546,7 @@ namespace HB.Framework.Database.SQL
                 string lastUserValue = lastUser == null ? "null" : _databaseEngine.GetDbValueStatement(lastUser, needQuoted: true);
                 string args = $"`Deleted` = 1, `LastUser` = {lastUserValue}, `Version` = {entity.Version + 1}";
                 innerBuilder.Append(
-                    $"UPDATE {definition.DbTableReservedName} set {args} WHERE `Id`={entity.Id} AND `Version`={entity.Version};{TempTable_Insert(tempTableName, FoundChanges_Statement(_databaseEngine.EngineType), _databaseEngine.EngineType)}");
+                    $"UPDATE {definition.DbTableReservedName} set {args} WHERE `Id`={entity.Id} AND `Version`={entity.Version} and `Deleted`=0;{TempTable_Insert(tempTableName, FoundChanges_Statement(_databaseEngine.EngineType), _databaseEngine.EngineType)}");
             }
 
             string sql = $"{TempTable_Drop(tempTableName, _databaseEngine.EngineType)}{TempTable_Create(tempTableName, _databaseEngine.EngineType)}{innerBuilder.ToString()}{TempTable_Select_All(tempTableName, _databaseEngine.EngineType)}{TempTable_Drop(tempTableName, _databaseEngine.EngineType)}";

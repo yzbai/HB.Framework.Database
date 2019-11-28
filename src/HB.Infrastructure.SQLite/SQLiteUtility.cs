@@ -1,5 +1,4 @@
 ﻿using HB.Framework.Common;
-using HB.Framework.Common.Entity;
 using HB.Framework.Database.Entity;
 using System;
 using System.Collections.Generic;

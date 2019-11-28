@@ -10,17 +10,17 @@ namespace HB.Framework.Database.SQL
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes", Justification = "<Pending>")]
     internal class SQLInValues
     {
-        private readonly IEnumerable values;
+        private readonly IEnumerable _values;
 
         public int Count { get; private set; }
 
         public SQLInValues(IEnumerable values)
         {
-            this.values = values;
+            _values = values;
 
             if (values != null)
             {
-                foreach (var value in values)
+                foreach (object _ in values)
                 {
                     ++Count;
                 }
@@ -32,14 +32,14 @@ namespace HB.Framework.Database.SQL
             if (Count == 0)
                 return "NULL";
 
-            return SqlJoin(values, dbEngine);
+            return SqlJoin(_values, dbEngine);
         }
 
         public static string SqlJoin(IEnumerable values, IDatabaseEngine dbEngine)
         {
-            var sb = new StringBuilder();
+            StringBuilder sb = new StringBuilder();
 
-            foreach (var value in values)
+            foreach (object value in values)
             {
                 sb.Append(dbEngine.GetDbValueStatement(value, needQuoted: true));
                 sb.Append(",");
