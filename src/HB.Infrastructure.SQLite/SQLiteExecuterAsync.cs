@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Data;
 using Microsoft.Data.Sqlite;
+using HB.Framework.Database;
 
 namespace HB.Infrastructure.SQLite
 {
@@ -46,7 +47,7 @@ namespace HB.Infrastructure.SQLite
 
                 return reader;
             }
-            catch 
+            catch (Exception ex)
             {
                 if (isOwnedConnection)
                 {
@@ -58,7 +59,14 @@ namespace HB.Infrastructure.SQLite
                     reader.Close();
                 }
 
-                throw;
+                if (ex is SqliteException sqliteException)
+                {
+                    throw new DatabaseException(sqliteException.SqliteErrorCode, sqliteException.SqliteExtendedErrorCode.ToString(), sqliteException.Message, sqliteException);
+                }
+                else
+                {
+                    throw new DatabaseException(DatabaseError.InnerError, "ExecuteCommandReaderAsync", connection.Database, $"CommandText:{command.CommandText}");
+                }
             }
         }
 
@@ -92,6 +100,17 @@ namespace HB.Infrastructure.SQLite
                 command.Connection = connection;
 
                 rtObj = await command.ExecuteScalarAsync().ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                if (ex is SqliteException sqliteException)
+                {
+                    throw new DatabaseException(sqliteException.SqliteErrorCode, sqliteException.SqliteExtendedErrorCode.ToString(), sqliteException.Message, sqliteException);
+                }
+                else
+                {
+                    throw new DatabaseException(DatabaseError.InnerError, "ExecuteCommandScalarAsync", connection.Database, $"CommandText:{command.CommandText}");
+                }
             }
             finally
             {
@@ -135,6 +154,17 @@ namespace HB.Infrastructure.SQLite
                 command.Connection = conn;
 
                 rtInt = await command.ExecuteNonQueryAsync().ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                if (ex is SqliteException sqliteException)
+                {
+                    throw new DatabaseException(sqliteException.SqliteErrorCode, sqliteException.SqliteExtendedErrorCode.ToString(), sqliteException.Message, sqliteException);
+                }
+                else
+                {
+                    throw new DatabaseException(DatabaseError.InnerError, "ExecuteCommandNonQueryAsync", conn.Database, $"CommandText:{command.CommandText}");
+                }
             }
             finally
             {

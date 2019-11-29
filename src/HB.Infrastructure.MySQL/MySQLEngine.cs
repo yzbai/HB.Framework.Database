@@ -245,47 +245,46 @@ namespace HB.Infrastructure.MySQL
 
         #region 方言
 
-        public string ParameterizedChar { get { return MySQLUtility.ParameterizedChar; } }
+        public string ParameterizedChar { get { return MySQLLocalism.ParameterizedChar; } }
 
-        public string QuotedChar { get { return MySQLUtility.QuotedChar; } }
+        public string QuotedChar { get { return MySQLLocalism.QuotedChar; } }
 
-        public string ReservedChar { get { return MySQLUtility.ReservedChar; } }
-
+        public string ReservedChar { get { return MySQLLocalism.ReservedChar; } }
         
 
         public string GetQuotedStatement(string name)
         {
-            return MySQLUtility.GetQuoted(name);
+            return MySQLLocalism.GetQuoted(name);
         }
 
         public string GetParameterizedStatement(string name)
         {
-            return MySQLUtility.GetParameterized(name);
+            return MySQLLocalism.GetParameterized(name);
         }
 
         public string GetReservedStatement(string name)
         {
-            return MySQLUtility.GetReserved(name);
+            return MySQLLocalism.GetReserved(name);
         }
 
         public DbType GetDbType(Type type)
         {
-            return MySQLUtility.GetDbType(type);
+            return MySQLLocalism.GetDbType(type);
         }
 
         public string GetDbTypeStatement(Type type)
         {
-            return MySQLUtility.GetDbTypeStatement(type);
+            return MySQLLocalism.GetDbTypeStatement(type);
         }
 
         public string GetDbValueStatement(object value, bool needQuoted)
         {
-            return MySQLUtility.GetDbValueStatement(value, needQuoted);
+            return MySQLLocalism.GetDbValueStatement(value, needQuoted);
         }
 
         public bool IsValueNeedQuoted(Type type)
         {
-            return MySQLUtility.IsValueNeedQuoted(type);
+            return MySQLLocalism.IsValueNeedQuoted(type);
         }
 
         #endregion
@@ -320,9 +319,9 @@ namespace HB.Infrastructure.MySQL
 
         #region SystemInfo
 
-        private const string systemInfoTableName = "tb_sys_info";
+        private const string _systemInfoTableName = "tb_sys_info";
 
-        private const string tbSysInfoCreate =
+        private const string _tbSysInfoCreate =
 @"CREATE TABLE `tb_sys_info` (
 	`Id` int (11) NOT NULL AUTO_INCREMENT, 
 	`Name` varchar(100) DEFAULT NULL, 
@@ -355,7 +354,7 @@ INSERT INTO `tb_sys_info`(`Name`, `Value`) VALUES('DatabaseName', '{0}');";
 
         public SystemInfo GetSystemInfo(string databaseName, IDbTransaction transaction)
         {
-            if (!IsTableExists(databaseName, systemInfoTableName, transaction))
+            if (!IsTableExists(databaseName, _systemInfoTableName, transaction))
             {
                 return new SystemInfo
                 {
@@ -391,7 +390,7 @@ INSERT INTO `tb_sys_info`(`Name`, `Value`) VALUES('DatabaseName', '{0}');";
             if (version == 1)
             {
                 //创建SystemInfo
-                ExecuteSqlNonQuery(transaction, databaseName, string.Format(GlobalSettings.Culture, tbSysInfoCreate, databaseName));
+                ExecuteSqlNonQuery(transaction, databaseName, string.Format(GlobalSettings.Culture, _tbSysInfoCreate, databaseName));
             }
             else
             {

@@ -1,67 +1,78 @@
-using HB.Framework.Database.Test.Data;
+using HB.Framework.Database;
+using HB.Framework.DatabaseTests.Data;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace HB.Framework.Database.Test
+namespace HB.Framework.DatabaseTests
 {
     //[TestCaseOrderer("HB.Framework.Database.Test.TestCaseOrdererByTestName", "HB.Framework.Database.Test")]
     public class BasicAsyncTest : IClassFixture<ServiceFixture>
     {
-        private readonly IDatabase _database;
+        private readonly IDatabase _mysql;
+        private readonly IDatabase _sqlite;
         private readonly ITestOutputHelper _output;
         private readonly IsolationLevel _isolationLevel = IsolationLevel.Serializable;
+        private IDatabase GetDatabase(string databaseType) =>
+            databaseType switch
+            {
+                "MySQL" => _mysql,
+                "SQLite" => _sqlite,
+                _ => null
+            };
 
         public BasicAsyncTest(ITestOutputHelper testOutputHelper, ServiceFixture serviceFixture)
         {
             _output = testOutputHelper;
-            _database = serviceFixture.Database;
-            _database.Initialize();
+
+            _mysql = serviceFixture.MySQL;
+            _sqlite = serviceFixture.SQLite;
+
+            _mysql.Initialize();
+            _sqlite.Initialize();
         }
 
-        [Fact]
-        public async Task Test_1_Batch_Add_PublisherEntityAsync()
+        [Theory]
+        [InlineData("MySQL")]
+        [InlineData("SQLite")]
+        public async Task Test_1_Batch_Add_PublisherEntityAsync(string databaseType)
         {
+            IDatabase database = GetDatabase(databaseType);
+
             IList<PublisherEntity> publishers = Mocker.GetPublishers();
 
-            TransactionContext transactionContext = await _database.BeginTransactionAsync<PublisherEntity>(_isolationLevel).ConfigureAwait(false);
-
-            DatabaseResult result;
+            TransactionContext transactionContext = await database.BeginTransactionAsync<PublisherEntity>(_isolationLevel).ConfigureAwait(false);
 
             try
             {
-                result = await _database.BatchAddAsync<PublisherEntity>(publishers, "tester", transactionContext);
+                await database.BatchAddAsync<PublisherEntity>(publishers, transactionContext);
 
-                if (!result.IsSucceeded())
-                {
-                    _output.WriteLine(result.Exception?.Message);
-                    throw new Exception();
-                }
-
-                await _database.CommitAsync(transactionContext);
-
+                await database.CommitAsync(transactionContext);
             }
             catch (Exception ex)
             {
                 _output.WriteLine(ex.Message);
-                await _database.RollbackAsync(transactionContext);
+                await database.RollbackAsync(transactionContext);
                 throw ex;
             }
-
-            Assert.True(result.IsSucceeded());
         }
 
-        [Fact]
-        public async Task Test_2_Batch_Update_PublisherEntityAsync()
+        [Theory]
+        [InlineData("MySQL")]
+        [InlineData("SQLite")]
+        public async Task Test_2_Batch_Update_PublisherEntityAsync(string databaseType)
         {
-            TransactionContext transContext = await _database.BeginTransactionAsync<PublisherEntity>(_isolationLevel);
+            IDatabase database = GetDatabase(databaseType);
+
+            TransactionContext transContext = await database.BeginTransactionAsync<PublisherEntity>(_isolationLevel);
 
             try
             {
-                IList<PublisherEntity> lst = await _database.RetrieveAllAsync<PublisherEntity>(transContext);
+                IList<PublisherEntity> lst = await database.RetrieveAllAsync<PublisherEntity>(transContext);
 
                 for (int i = 0; i < lst.Count; i += 2)
                 {
@@ -77,105 +88,95 @@ namespace HB.Framework.Database.Test
                 };
                 }
 
-                DatabaseResult result = await _database.BatchUpdateAsync<PublisherEntity>(lst, "tester", transContext);
+                await database.BatchUpdateAsync<PublisherEntity>(lst, transContext);
 
-                Assert.True(result.IsSucceeded());
-
-                if (!result.IsSucceeded())
-                {
-                    _output.WriteLine(result.Exception?.Message);
-                    await _database.RollbackAsync(transContext);
-                    throw new Exception();
-                }
-
-                await _database.CommitAsync(transContext);
+                await database.CommitAsync(transContext);
 
             }
             catch (Exception ex)
             {
                 _output.WriteLine(ex.Message);
-                await _database.RollbackAsync(transContext);
+                await database.RollbackAsync(transContext);
                 throw ex;
             }
         }
 
-        [Fact]
-        public async Task Test_3_Batch_Delete_PublisherEntityAsync()
+        [Theory]
+        [InlineData("MySQL")]
+        [InlineData("SQLite")]
+        public async Task Test_3_Batch_Delete_PublisherEntityAsync(string databaseType)
         {
-            TransactionContext transactionContext = await _database.BeginTransactionAsync<PublisherEntity>(_isolationLevel);
+            IDatabase database = GetDatabase(databaseType);
+            TransactionContext transactionContext = await database.BeginTransactionAsync<PublisherEntity>(_isolationLevel);
 
             try
             {
-                IList<PublisherEntity> lst = await _database.PageAsync<PublisherEntity>(2, 100, transactionContext);
+                IList<PublisherEntity> lst = await database.PageAsync<PublisherEntity>(2, 100, transactionContext);
 
                 if (lst.Count != 0)
                 {
-                    DatabaseResult result = await _database.BatchDeleteAsync<PublisherEntity>(lst, "deleter", transactionContext);
+                    await database.BatchDeleteAsync<PublisherEntity>(lst, transactionContext);
 
-                    if (!result.IsSucceeded())
-                    {
-                        _output.WriteLine(result.Exception?.Message);
-                        throw new Exception();
-                    }
-
-                    Assert.True(result.IsSucceeded());
                 }
 
-                await _database.CommitAsync(transactionContext);
+                await database.CommitAsync(transactionContext);
             }
             catch (Exception ex)
             {
                 _output.WriteLine(ex.Message);
-                await _database.RollbackAsync(transactionContext);
+                await database.RollbackAsync(transactionContext);
                 throw ex;
             }
         }
 
-        [Fact]
-        public async Task Test_4_Add_PublisherEntityAsync()
+        [Theory]
+        [InlineData("MySQL")]
+        [InlineData("SQLite")]
+        public async Task Test_4_Add_PublisherEntityAsync(string databaseType)
         {
-            TransactionContext tContext = await _database.BeginTransactionAsync<PublisherEntity>(_isolationLevel);
+            IDatabase database = GetDatabase(databaseType);
+            TransactionContext tContext = await database.BeginTransactionAsync<PublisherEntity>(_isolationLevel);
 
             try
             {
+                IList<PublisherEntity> lst = new List<PublisherEntity>();
+
                 for (int i = 0; i < 10; ++i)
                 {
                     PublisherEntity entity = Mocker.MockOne();
 
-                    DatabaseResult result = await _database.AddAsync(entity, tContext);
+                    await database.AddAsync(entity, tContext);
 
-                    if (!result.IsSucceeded())
-                    {
-                        _output.WriteLine(result.Exception?.Message);
-                        throw new Exception();
-                    }
-
-                    Assert.True(result.IsSucceeded());
+                    lst.Add(entity);
                 }
 
-                await _database.CommitAsync(tContext);
+                await database.CommitAsync(tContext);
+
+                Assert.True(lst.All(p => p.Id > 0));
             }
             catch (Exception ex)
             {
                 _output.WriteLine(ex.Message);
-                await _database.RollbackAsync(tContext);
+                await database.RollbackAsync(tContext);
                 throw ex;
             }
         }
 
-        [Fact]
-        public async Task Test_5_Update_PublisherEntityAsync()
+        [Theory]
+        [InlineData("MySQL")]
+        [InlineData("SQLite")]
+        public async Task Test_5_Update_PublisherEntityAsync(string databaseType)
         {
-            TransactionContext tContext = await _database.BeginTransactionAsync<PublisherEntity>(_isolationLevel);
+            IDatabase database = GetDatabase(databaseType);
+            TransactionContext tContext = await database.BeginTransactionAsync<PublisherEntity>(_isolationLevel);
 
             try
             {
-                IList<PublisherEntity> testEntities = await _database.PageAsync<PublisherEntity>(1, 1, tContext);
+                IList<PublisherEntity> testEntities = await database.PageAsync<PublisherEntity>(1, 1, tContext);
 
                 if (testEntities.Count == 0)
                 {
-                    _database.Rollback(tContext);
-                    return;
+                    throw new Exception("No Entity to update");
                 }
 
                 PublisherEntity entity = testEntities[0];
@@ -183,64 +184,51 @@ namespace HB.Framework.Database.Test
                 entity.Books.Add("New Book2");
                 entity.BookAuthors.Add("New Book2", new Author() { Mobile = "15190208956", Name = "Yuzhaobai" });
 
-                DatabaseResult result = await _database.UpdateAsync(entity, tContext);
+                await database.UpdateAsync(entity, tContext);
 
-                if (!result.IsSucceeded())
-                {
-                    _output.WriteLine(result.Exception?.Message);
-                    throw new Exception();
-                }
+                PublisherEntity stored = await database.ScalarAsync<PublisherEntity>(entity.Id, tContext);
 
-                Assert.True(result.IsSucceeded());
-
-                PublisherEntity stored = await _database.ScalarAsync<PublisherEntity>(entity.Id, tContext);
+                await database.CommitAsync(tContext);
 
                 Assert.True(stored.Books.Contains("New Book2"));
                 Assert.True(stored.BookAuthors["New Book2"].Mobile == "15190208956");
 
-                await _database.CommitAsync(tContext);
             }
             catch (Exception ex)
             {
                 _output.WriteLine(ex.Message);
-                await _database.RollbackAsync(tContext);
+                await database.RollbackAsync(tContext);
                 throw ex;
             }
         }
 
-        [Fact]
-        public async Task Test_6_Delete_PublisherEntityAsync()
+        [Theory]
+        [InlineData("MySQL")]
+        [InlineData("SQLite")]
+        public async Task Test_6_Delete_PublisherEntityAsync(string databaseType)
         {
-            TransactionContext tContext = await _database.BeginTransactionAsync<PublisherEntity>(_isolationLevel);
+            IDatabase database = GetDatabase(databaseType);
+            TransactionContext tContext = await database.BeginTransactionAsync<PublisherEntity>(_isolationLevel);
 
             try
             {
-                IList<PublisherEntity> testEntities = await _database.RetrieveAllAsync<PublisherEntity>(tContext);
+                IList<PublisherEntity> testEntities = await database.RetrieveAllAsync<PublisherEntity>(tContext);
 
                 await testEntities.ForEachAsync(async entity =>
                 {
-                    DatabaseResult result = await _database.DeleteAsync(entity, tContext);
+                    await database.DeleteAsync(entity, tContext);
 
-                    if (!result.IsSucceeded())
-                    {
-                        _output.WriteLine(result.Exception?.Message);
-                        throw new Exception();
-                    }
-
-                    Assert.True(result.IsSucceeded());
                 });
 
-                long count = await _database.CountAsync<PublisherEntity>(tContext);
+                long count = await database.CountAsync<PublisherEntity>(tContext);
+
+                await database.CommitAsync(tContext);
 
                 Assert.True(count == 0);
-
-                await _database.CommitAsync(tContext);
-
-                _output.WriteLine($"count: {count}");
             }
             catch (Exception ex)
             {
-                await _database.RollbackAsync(tContext);
+                await database.RollbackAsync(tContext);
                 _output.WriteLine(ex.Message);
                 throw ex;
             }

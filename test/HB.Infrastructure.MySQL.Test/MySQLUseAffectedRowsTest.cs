@@ -1,12 +1,13 @@
-﻿using MySql.Data.MySqlClient;
+﻿using HB.Framework.Database;
+using MySql.Data.MySqlClient;
 using System;
 using System.Collections.Generic;
 using System.Text;
 using Xunit;
 
-namespace HB.Infrastructure.MySQL.Test
+namespace HB.Framework.DatabaseTests
 {
-    public class UseAffectedRowsTest
+    public class MySQLUseAffectedRowsTest : IClassFixture<ServiceFixture>
     {
         [Fact]
         public void TestUseAffectedRow_When_True_Test()

@@ -3,7 +3,7 @@ using System.Linq;
 using Xunit.Abstractions;
 using Xunit.Sdk;
 
-namespace HB.Framework.Database.Test
+namespace HB.Framework.DatabaseTests
 {
     internal class TestCaseOrdererByTestName : ITestCaseOrderer
     {

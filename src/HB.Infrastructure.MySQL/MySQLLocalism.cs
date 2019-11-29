@@ -6,7 +6,7 @@ using System.Data;
 using System.Globalization;
 using System.Reflection;
 
-namespace HB.Infrastructure.SQLite
+namespace HB.Infrastructure.MySQL
 {
     internal class DbTypeInfo
     {
@@ -24,19 +24,19 @@ namespace HB.Infrastructure.SQLite
         public bool IsValueQuoted { get; set; }
     }
 
-    internal static class SQLiteUtility
+    internal static class MySQLLocalism
     {
         //参数化
         public const string ParameterizedChar = "@";
         //引号化
         public const string QuotedChar = "'";
         //保留化
-        public const string ReservedChar = @"""";
+        public const string ReservedChar = "`";
 
         /// <summary>
         /// 类型与数据库类型映射字典
         /// </summary>
-        private static readonly Dictionary<Type, DbTypeInfo> dbTypeInfoMap = InitDbTypeInfoMap();
+        private static readonly Dictionary<Type, DbTypeInfo> _dbTypeInfoMap = InitDbTypeInfoMap();
 
         private static Dictionary<Type, DbTypeInfo> InitDbTypeInfoMap()
         {
@@ -92,9 +92,9 @@ namespace HB.Infrastructure.SQLite
                 return false;
             }
 
-            if (dbTypeInfoMap.ContainsKey(type))
+            if (_dbTypeInfoMap.ContainsKey(type))
             {
-                return dbTypeInfoMap[type].IsValueQuoted;
+                return _dbTypeInfoMap[type].IsValueQuoted;
             }
 
             return false;
@@ -109,35 +109,35 @@ namespace HB.Infrastructure.SQLite
 
             if (type.IsAssignableFrom(typeof(IList<string>)))
             {
-                return dbTypeInfoMap[typeof(string)].DatabaseType;
+                return _dbTypeInfoMap[typeof(string)].DatabaseType;
             }
 
             if (type.IsAssignableFrom(typeof(IDictionary<string, string>)))
             {
-                return dbTypeInfoMap[typeof(string)].DatabaseType;
+                return _dbTypeInfoMap[typeof(string)].DatabaseType;
             }
 
-            return dbTypeInfoMap[type].DatabaseType;
+            return _dbTypeInfoMap[type].DatabaseType;
         }
 
         public static string GetDbTypeStatement(Type type)
         {
             if (type.IsEnum)
             {
-                return dbTypeInfoMap[typeof(string)].Statement;
+                return _dbTypeInfoMap[typeof(string)].Statement;
             }
 
             if (type.IsAssignableFrom(typeof(IList<string>)))
             {
-                return dbTypeInfoMap[typeof(string)].Statement;
+                return _dbTypeInfoMap[typeof(string)].Statement;
             }
 
             if (type.IsAssignableFrom(typeof(IDictionary<string, string>)))
             {
-                return dbTypeInfoMap[typeof(string)].Statement;
+                return _dbTypeInfoMap[typeof(string)].Statement;
             }
 
-            return dbTypeInfoMap[type].Statement;
+            return _dbTypeInfoMap[type].Statement;
         }
 
         public static string GetQuoted(string name)
@@ -172,7 +172,7 @@ namespace HB.Infrastructure.SQLite
                 return null;
             }
 
-            if (needQuoted && IsValueNeedQuoted(value.GetType()))
+            if (needQuoted && MySQLLocalism.IsValueNeedQuoted(value.GetType()))
             {
                 valueStr = GetQuoted(valueStr);
             }

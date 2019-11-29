@@ -18,7 +18,7 @@ namespace XamarinSample.Models
         [EntityProperty]
         public IList<string> Books { get; set; }
 
-        [EntityProperty(ConverterType = typeof(PublisherBookAuthorsTypeConventer))]
+        [EntityProperty(Converter = typeof(PublisherBookAuthorsTypeConventer))]
         public IDictionary<string, Author> BookAuthors { get; set; }
 
         [EntityProperty(Length = EntityPropertyLength.MediumLength)]
@@ -48,12 +48,12 @@ namespace XamarinSample.Models
 
         protected override object StringDbValueToTypeValue(string stringValue)
         {
-            return JsonUtil.FromJson<IDictionary<string, Author>>(stringValue);
+            return SerializeUtil.FromJson<IDictionary<string, Author>>(stringValue);
         }
 
         protected override string TypeValueToStringDbValue(object typeValue)
         {
-            return JsonUtil.ToJson(typeValue);
+            return SerializeUtil.ToJson(typeValue);
         }
     }
 }

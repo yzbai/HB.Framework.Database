@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace HB.Framework.Database.Test
+namespace HB.Framework.DatabaseTests.Data
 {
     public class BookEntity : DatabaseEntity
     {

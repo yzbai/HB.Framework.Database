@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace HB.Framework.Database.Test
+namespace HB.Framework.DatabaseTests
 {
     class MigrationTest
     {

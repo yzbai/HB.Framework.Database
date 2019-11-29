@@ -37,7 +37,7 @@ namespace HB.Infrastructure.SQLite
         {
             _connectionStringDict = new Dictionary<string, string>();
 
-            foreach (DatabaseConnectionSettings schemaInfo in _options.Schemas)
+            foreach (DatabaseConnectionSettings schemaInfo in _options.Connections)
             {
                 if (FirstDefaultDatabaseName.IsNullOrEmpty())
                 {
@@ -103,45 +103,45 @@ namespace HB.Infrastructure.SQLite
 
         #region 方言
 
-        public string ParameterizedChar { get { return SQLiteUtility.ParameterizedChar; } }
+        public string ParameterizedChar { get { return SQLiteLocalism.ParameterizedChar; } }
 
-        public string QuotedChar { get { return SQLiteUtility.QuotedChar; } }
+        public string QuotedChar { get { return SQLiteLocalism.QuotedChar; } }
 
-        public string ReservedChar { get { return SQLiteUtility.ReservedChar; } }
+        public string ReservedChar { get { return SQLiteLocalism.ReservedChar; } }
 
         public string GetQuotedStatement(string name)
         {
-            return SQLiteUtility.GetQuoted(name);
+            return SQLiteLocalism.GetQuoted(name);
         }
 
         public string GetParameterizedStatement(string name)
         {
-            return SQLiteUtility.GetParameterized(name);
+            return SQLiteLocalism.GetParameterized(name);
         }
 
         public string GetReservedStatement(string name)
         {
-            return SQLiteUtility.GetReserved(name);
+            return SQLiteLocalism.GetReserved(name);
         }
 
         public DbType GetDbType(Type type)
         {
-            return SQLiteUtility.GetDbType(type);
+            return SQLiteLocalism.GetDbType(type);
         }
 
         public string GetDbTypeStatement(Type type)
         {
-            return SQLiteUtility.GetDbTypeStatement(type);
+            return SQLiteLocalism.GetDbTypeStatement(type);
         }
 
         public string GetDbValueStatement(object value, bool needQuoted)
         {
-            return SQLiteUtility.GetDbValueStatement(value, needQuoted);
+            return SQLiteLocalism.GetDbValueStatement(value, needQuoted);
         }
 
         public bool IsValueNeedQuoted(Type type)
         {
-            return SQLiteUtility.IsValueNeedQuoted(type);
+            return SQLiteLocalism.IsValueNeedQuoted(type);
         }
 
         #endregion
@@ -197,7 +197,7 @@ INSERT INTO ""tb_sys_info""(""Name"", ""Value"") VALUES('DatabaseName', '{0}');"
 
         public IEnumerable<string> GetDatabaseNames()
         {
-            return _options.Schemas.Select(s => s.DatabaseName);
+            return _options.Connections.Select(s => s.DatabaseName);
         }
 
         public bool IsTableExists(string databaseName, string tableName, IDbTransaction transaction)

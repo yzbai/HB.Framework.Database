@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Text;
 
-namespace HB.Infrastructure.SQLite.Test
+namespace HB.Framework.DatabaseTests.Data
 {
     public class PublisherEntity : DatabaseEntity
     {
@@ -18,7 +18,7 @@ namespace HB.Infrastructure.SQLite.Test
         [EntityProperty]
         public IList<string> Books { get; set; }
 
-        [EntityProperty(ConverterType = typeof(PublisherBookAuthorsTypeConventer))]
+        [EntityProperty(Converter = typeof(PublisherBookAuthorsTypeConventer))]
         public IDictionary<string, Author> BookAuthors { get; set; }
 
         [EntityProperty(Length = EntityPropertyLength.MediumLength)]
@@ -48,12 +48,12 @@ namespace HB.Infrastructure.SQLite.Test
 
         protected override object StringDbValueToTypeValue(string stringValue)
         {
-            return JsonUtil.FromJson<IDictionary<string, Author>>(stringValue);
+            return SerializeUtil.FromJson<IDictionary<string, Author>>(stringValue);
         }
 
         protected override string TypeValueToStringDbValue(object typeValue)
         {
-            return JsonUtil.ToJson(typeValue);
+            return SerializeUtil.ToJson(typeValue);
         }
     }
 }

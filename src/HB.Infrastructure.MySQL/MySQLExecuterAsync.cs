@@ -3,48 +3,13 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using MySql.Data.MySqlClient;
 using System.Data;
+using HB.Framework.Database;
 
 namespace HB.Infrastructure.MySQL
 {
     internal partial class MySQLExecuter
     {
-        #region Privates
-
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>")]
-        private static async Task PrepareCommandAsync(MySqlCommand command, MySqlConnection connection, MySqlTransaction transaction,
-            CommandType commandType, string commandText, IEnumerable<IDataParameter> commandParameters)
-        {
-            //if the provided connection is not open, we will open it
-            if (connection.State != ConnectionState.Open)
-            {
-                await connection.OpenAsync().ConfigureAwait(false);
-            }
-
-            //associate the connection with the command
-            command.Connection = connection;
-
-            //if we were provided a transaction, assign it.
-            if (transaction != null)
-            {
-                command.Transaction = transaction;
-            }
-
-            //set the command type
-            command.CommandType = commandType;
-
-            //attach the command parameters if they are provided
-            if (commandParameters != null)
-            {
-                AttachParameters(command, commandParameters);
-            }
-
-            //set the command text (stored procedure name or SQL statement)
-            command.CommandText = commandText;
-
-            return;
-        }
-
-        #endregion
+        
 
         #region Command Reader
 
@@ -62,7 +27,7 @@ namespace HB.Infrastructure.MySQL
 
         private static async Task<IDataReader> ExecuteCommandReaderAsync(MySqlConnection connection, bool isOwnedConnection, MySqlCommand command)
         {
-            MySqlDataReader reader = null;
+            IDataReader reader = null;
 
             try
             {
@@ -75,16 +40,16 @@ namespace HB.Infrastructure.MySQL
 
                 if (isOwnedConnection)
                 {
-                    reader = (MySqlDataReader)await command.ExecuteReaderAsync(CommandBehavior.CloseConnection).ConfigureAwait(false);
+                    reader = await command.ExecuteReaderAsync(CommandBehavior.CloseConnection).ConfigureAwait(false);
                 }
                 else
                 {
-                    reader = (MySqlDataReader)await command.ExecuteReaderAsync().ConfigureAwait(false);
+                    reader = await command.ExecuteReaderAsync().ConfigureAwait(false);
                 }
 
                 return reader;
             }
-            catch
+            catch(Exception ex)
             {
                 if (isOwnedConnection)
                 {
@@ -96,7 +61,14 @@ namespace HB.Infrastructure.MySQL
                     reader.Close();
                 }
 
-                thro w;
+                if (ex is MySqlException mySqlException)
+                {
+                    throw new DatabaseException(mySqlException.Number, mySqlException.SqlState, mySqlException.Message, mySqlException);
+                }
+                else
+                {
+                    throw new DatabaseException(DatabaseError.InnerError, "ExecuteCommandReaderAsync", connection.Database, $"CommandText:{command.CommandText}");
+                }
             }
         }
 
@@ -130,6 +102,17 @@ namespace HB.Infrastructure.MySQL
                 command.Connection = connection;
 
                 rtObj = await command.ExecuteScalarAsync().ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                if (ex is MySqlException mySqlException)
+                {
+                    throw new DatabaseException(mySqlException.Number, mySqlException.SqlState, mySqlException.Message, mySqlException);
+                }
+                else
+                {
+                    throw new DatabaseException(DatabaseError.InnerError, "ExecuteCommandScalarAsync", connection.Database, $"CommandText:{command.CommandText}");
+                }
             }
             finally
             {
@@ -174,6 +157,17 @@ namespace HB.Infrastructure.MySQL
 
                 rtInt = await command.ExecuteNonQueryAsync().ConfigureAwait(false);
             }
+            catch (Exception ex)
+            {
+                if (ex is MySqlException mySqlException)
+                {
+                    throw new DatabaseException(mySqlException.Number, mySqlException.SqlState, mySqlException.Message, mySqlException);
+                }
+                else
+                {
+                    throw new DatabaseException(DatabaseError.InnerError, "ExecuteCommandNonQueryAsync", conn.Database, $"CommandText:{command.CommandText}");
+                }
+            }
             finally
             {
                 if (isOwnedConnection)
@@ -188,6 +182,44 @@ namespace HB.Infrastructure.MySQL
         #endregion
 
         #region SP NonQuery
+
+        #region Privates
+
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>")]
+        private static async Task PrepareCommandAsync(MySqlCommand command, MySqlConnection connection, MySqlTransaction transaction,
+            CommandType commandType, string commandText, IEnumerable<IDataParameter> commandParameters)
+        {
+            //if the provided connection is not open, we will open it
+            if (connection.State != ConnectionState.Open)
+            {
+                await connection.OpenAsync().ConfigureAwait(false);
+            }
+
+            //associate the connection with the command
+            command.Connection = connection;
+
+            //if we were provided a transaction, assign it.
+            if (transaction != null)
+            {
+                command.Transaction = transaction;
+            }
+
+            //set the command type
+            command.CommandType = commandType;
+
+            //attach the command parameters if they are provided
+            if (commandParameters != null)
+            {
+                AttachParameters(command, commandParameters);
+            }
+
+            //set the command text (stored procedure name or SQL statement)
+            command.CommandText = commandText;
+
+            return;
+        }
+
+        #endregion
 
         public static Task<int> ExecuteSPNonQueryAsync(string connectString, string spName, IList<IDataParameter> parameters)
         {
@@ -210,6 +242,17 @@ namespace HB.Infrastructure.MySQL
             try
             {
                 rtInt = await command.ExecuteNonQueryAsync().ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                if (ex is MySqlException mySqlException)
+                {
+                    throw new DatabaseException(mySqlException.Number, mySqlException.SqlState, mySqlException.Message, mySqlException);
+                }
+                else
+                {
+                    throw new DatabaseException(DatabaseError.InnerError, "ExecuteSPNonQueryAsync", conn.Database, $"CommandText:{command.CommandText}");
+                }
             }
             finally
             {
@@ -251,6 +294,17 @@ namespace HB.Infrastructure.MySQL
             {
                 rtObj = await command.ExecuteScalarAsync().ConfigureAwait(false);
             }
+            catch (Exception ex)
+            {
+                if (ex is MySqlException mySqlException)
+                {
+                    throw new DatabaseException(mySqlException.Number, mySqlException.SqlState, mySqlException.Message, mySqlException);
+                }
+                else
+                {
+                    throw new DatabaseException(DatabaseError.InnerError, "ExecuteSPScalarAsync", conn.Database, $"CommandText:{command.CommandText}");
+                }
+            }
             finally
             {
                 if (isOwnedConnection)
@@ -287,20 +341,20 @@ namespace HB.Infrastructure.MySQL
             MySqlCommand command = new MySqlCommand();
 
             await PrepareCommandAsync(command, connection, mySqlTransaction, CommandType.StoredProcedure, spName, dbParameters).ConfigureAwait(false);
-            MySqlDataReader reader = null;
+            IDataReader reader = null;
 
             try
             {
                 if (isOwedConnection)
                 {
-                    reader = (MySqlDataReader)await command.ExecuteReaderAsync(CommandBehavior.CloseConnection).ConfigureAwait(false);
+                    reader = await command.ExecuteReaderAsync(CommandBehavior.CloseConnection).ConfigureAwait(false);
                 }
                 else
                 {
-                    reader = (MySqlDataReader)await command.ExecuteReaderAsync().ConfigureAwait(false);
+                    reader = await command.ExecuteReaderAsync().ConfigureAwait(false);
                 }
             }
-            catch
+            catch(Exception ex)
             {
                 if (isOwedConnection)
                 {
@@ -312,7 +366,14 @@ namespace HB.Infrastructure.MySQL
                     reader.Close();
                 }
 
-                throw;
+                if (ex is MySqlException mySqlException)
+                {
+                    throw new DatabaseException(mySqlException.Number, mySqlException.SqlState, mySqlException.Message, mySqlException);
+                }
+                else
+                {
+                    throw new DatabaseException(DatabaseError.InnerError, "ExecuteSPReaderAsync", connection.Database, $"CommandText:{command.CommandText}");
+                }
             }
 
             command.Parameters.Clear();

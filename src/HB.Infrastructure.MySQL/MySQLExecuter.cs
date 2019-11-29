@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using MySql.Data.MySqlClient;
 using System.Data;
+using HB.Framework.Database;
+using System.Linq;
 
 namespace HB.Infrastructure.MySQL
 {
@@ -11,6 +13,178 @@ namespace HB.Infrastructure.MySQL
     /// </summary>
     internal static partial class MySQLExecuter
     {
+        #region Comand Reader
+
+        public static IDataReader ExecuteCommandReader(MySqlTransaction mySqlTransaction, IDbCommand dbCommand)
+        {
+            dbCommand.Transaction = mySqlTransaction;
+            return ExecuteCommandReader(mySqlTransaction.Connection, false, (MySqlCommand)dbCommand);
+        }
+
+        public static IDataReader ExecuteCommandReader(string connectString, IDbCommand dbCommand)
+        {
+            MySqlConnection conn = new MySqlConnection(connectString);
+            return ExecuteCommandReader(conn, true, (MySqlCommand)dbCommand);
+        }
+
+        private static IDataReader ExecuteCommandReader(MySqlConnection connection, bool isOwnedConnection, MySqlCommand command)
+        {
+            MySqlDataReader reader = null;
+
+            try
+            {
+                if (connection.State != ConnectionState.Open)
+                {
+                    connection.Open();
+                }
+
+                command.Connection = connection;
+
+                if (isOwnedConnection)
+                {
+                    reader = command.ExecuteReader(CommandBehavior.CloseConnection);
+                }
+                else
+                {
+                    reader = command.ExecuteReader();
+                }
+
+                return reader;
+            }
+            catch(Exception ex)
+            {
+                if (isOwnedConnection)
+                {
+                    connection.Close();
+                }
+                if (reader != null)
+                {
+                    reader.Close();
+                }
+
+                if (ex is MySqlException mySqlException)
+                {
+                    throw new DatabaseException(mySqlException.Number, mySqlException.SqlState, mySqlException.Message, mySqlException);
+                }
+                else
+                {
+                    throw new DatabaseException(DatabaseError.InnerError, "ExecuteCommandReader", connection.Database, $"CommandText:{command.CommandText}");
+                }
+            }
+        }
+
+        #endregion
+
+        #region Command Scalar
+
+        public static object ExecuteCommandScalar(string connectString, IDbCommand dbCommand)
+        {
+            MySqlConnection conn = new MySqlConnection(connectString);
+            return ExecuteCommandScalar(conn, true, (MySqlCommand)dbCommand);
+        }
+
+        public static object ExecuteCommandScalar(MySqlTransaction mySqlTransaction, IDbCommand dbCommand)
+        {
+            dbCommand.Transaction = mySqlTransaction;
+            return ExecuteCommandScalar(mySqlTransaction.Connection, false, (MySqlCommand)dbCommand);
+        }
+
+        private static object ExecuteCommandScalar(MySqlConnection connection, bool isOwnedConnection, MySqlCommand command)
+        {
+            object rtObj = null;
+
+            try
+            {
+                if (connection.State != ConnectionState.Open)
+                {
+                    connection.Open();
+                }
+
+                command.Connection = connection;
+
+                rtObj = command.ExecuteScalar();
+            }
+            catch(Exception ex)
+            {
+                if (ex is MySqlException mySqlException)
+                {
+                    throw new DatabaseException(mySqlException.Number, mySqlException.SqlState, mySqlException.Message, mySqlException);
+                }
+                else
+                {
+                    throw new DatabaseException(DatabaseError.InnerError, "ExecuteCommandScalar", connection.Database, $"CommandText:{command.CommandText}");
+                }
+            }
+            finally
+            {
+                if (isOwnedConnection)
+                {
+                    connection.Close();
+                }
+            }
+
+            return rtObj;
+        }
+
+        #endregion
+
+        #region Command NonQuery
+
+        public static int ExecuteCommandNonQuery(string connectString, IDbCommand dbCommand)
+        {
+            MySqlConnection conn = new MySqlConnection(connectString);
+
+            return ExecuteCommandNonQuery(conn, true, (MySqlCommand)dbCommand);
+        }
+
+        public static int ExecuteCommandNonQuery(MySqlTransaction mySqlTransaction, IDbCommand dbCommand)
+        {
+            dbCommand.Transaction = mySqlTransaction;
+            return ExecuteCommandNonQuery(mySqlTransaction.Connection, false, (MySqlCommand)dbCommand);
+        }
+
+        private static int ExecuteCommandNonQuery(MySqlConnection conn, bool isOwnedConnection, MySqlCommand command)
+        {
+            int rtInt = -1;
+
+            try
+            {
+                if (conn.State != ConnectionState.Open)
+                {
+                    //TODO: 要用Polly来确保吗?
+                    conn.Open();
+                }
+
+                command.Connection = conn;
+
+                rtInt = command.ExecuteNonQuery();
+            }
+            catch(Exception ex)
+            {
+                if (ex is MySqlException mySqlException)
+                {
+                    throw new DatabaseException(mySqlException.Number, mySqlException.SqlState, mySqlException.Message, mySqlException);
+                }
+                else
+                {
+                    throw new DatabaseException(DatabaseError.InnerError, "ExecuteCommandNonQuery", conn.Database, $"CommandText:{command.CommandText}");
+                }
+            }
+            finally
+            {
+                if (isOwnedConnection)
+                {
+                    conn.Close();
+                }
+            }
+
+            return rtInt;
+        }
+
+        #endregion
+
+        #region SP NonQuery
+
         #region private utility methods & constructors
 
         private static void AttachParameters(MySqlCommand command, IEnumerable<IDataParameter> commandParameters)
@@ -63,151 +237,6 @@ namespace HB.Infrastructure.MySQL
 
         #endregion
 
-        #region Comand Reader
-
-        public static IDataReader ExecuteCommandReader(MySqlTransaction mySqlTransaction, IDbCommand dbCommand)
-        {
-            dbCommand.Transaction = mySqlTransaction;
-            return ExecuteCommandReader(mySqlTransaction.Connection, false, (MySqlCommand)dbCommand);
-        }
-
-        public static IDataReader ExecuteCommandReader(string connectString, IDbCommand dbCommand)
-        {
-            MySqlConnection conn = new MySqlConnection(connectString);
-            return ExecuteCommandReader(conn, true, (MySqlCommand)dbCommand);
-        }
-
-        private static IDataReader ExecuteCommandReader(MySqlConnection connection, bool isOwnedConnection, MySqlCommand command)
-        {
-            MySqlDataReader reader = null;
-
-            try
-            {
-                if (connection.State != ConnectionState.Open)
-                {
-                    connection.Open();
-                }
-
-                command.Connection = connection;
-
-                if (isOwnedConnection)
-                {
-                    reader = command.ExecuteReader(CommandBehavior.CloseConnection);
-                }
-                else
-                {
-                    reader = command.ExecuteReader();
-                }
-
-                return reader;
-            }
-            catch
-            {
-                if (isOwnedConnection)
-                {
-                    connection.Close();
-                }
-
-                if (reader != null)
-                {
-                    reader.Close();
-                }
-
-                MySqlException to DatabaseExcetipn 
-                thr  ow;
-            }
-        }
-
-        #endregion
-
-        #region Command Scalar
-
-        public static object ExecuteCommandScalar(string connectString, IDbCommand dbCommand)
-        {
-            MySqlConnection conn = new MySqlConnection(connectString);
-            return ExecuteCommandScalar(conn, true, (MySqlCommand)dbCommand);
-        }
-
-        public static object ExecuteCommandScalar(MySqlTransaction mySqlTransaction, IDbCommand dbCommand)
-        {
-            dbCommand.Transaction = mySqlTransaction;
-            return ExecuteCommandScalar(mySqlTransaction.Connection, false, (MySqlCommand)dbCommand);
-        }
-
-        private static object ExecuteCommandScalar(MySqlConnection connection, bool isOwnedConnection, MySqlCommand command)
-        {
-            object rtObj = null;
-
-            try
-            {
-                if (connection.State != ConnectionState.Open)
-                {
-                    connection.Open();
-                }
-
-                command.Connection = connection;
-
-                rtObj = command.ExecuteScalar();
-            }
-            finally
-            {
-                if (isOwnedConnection)
-                {
-                    connection.Close();
-                }
-            }
-
-            return rtObj;
-        }
-
-        #endregion
-
-        #region Command NonQuery
-
-        public static int ExecuteCommandNonQuery(string connectString, IDbCommand dbCommand)
-        {
-            MySqlConnection conn = new MySqlConnection(connectString);
-
-            return ExecuteCommandNonQuery(conn, true, (MySqlCommand)dbCommand);
-        }
-
-        public static int ExecuteCommandNonQuery(MySqlTransaction mySqlTransaction, IDbCommand dbCommand)
-        {
-            dbCommand.Transaction = mySqlTransaction;
-            return ExecuteCommandNonQuery(mySqlTransaction.Connection, false, (MySqlCommand)dbCommand);
-        }
-
-        private static int ExecuteCommandNonQuery(MySqlConnection conn, bool isOwnedConnection, MySqlCommand command)
-        {
-            int rtInt = -1;
-
-            try
-            {
-                if (conn.State != ConnectionState.Open)
-                {
-                    //TODO: 要用Polly来确保吗?
-                    conn.Open();
-                }
-
-                command.Connection = conn;
-
-                rtInt = command.ExecuteNonQuery();
-            }
-            finally
-            {
-                if (isOwnedConnection)
-                {
-                    conn.Close();
-                }
-            }
-
-            return rtInt;
-        }
-
-        #endregion
-
-        #region SP NonQuery
-
         public static int ExecuteSPNonQuery(string connectString, string spName, IList<IDataParameter> parameters)
         {
             MySqlConnection conn = new MySqlConnection(connectString);
@@ -229,6 +258,17 @@ namespace HB.Infrastructure.MySQL
             try
             {
                 rtInt = command.ExecuteNonQuery();
+            }
+            catch (Exception ex)
+            {
+                if (ex is MySqlException mySqlException)
+                {
+                    throw new DatabaseException(mySqlException.Number, mySqlException.SqlState, mySqlException.Message, mySqlException);
+                }
+                else
+                {
+                    throw new DatabaseException(DatabaseError.InnerError, "ExecuteSPNonQuery", conn.Database, $"CommandText:{command.CommandText}");
+                }
             }
             finally
             {
@@ -270,6 +310,17 @@ namespace HB.Infrastructure.MySQL
             try
             {
                 rtObj = command.ExecuteScalar();
+            }
+            catch (Exception ex)
+            {
+                if (ex is MySqlException mySqlException)
+                {
+                    throw new DatabaseException(mySqlException.Number, mySqlException.SqlState, mySqlException.Message, mySqlException);
+                }
+                else
+                {
+                    throw new DatabaseException(DatabaseError.InnerError, "ExecuteSPScalar", conn.Database, $"CommandText:{command.CommandText}");
+                }
             }
             finally
             {
@@ -321,7 +372,7 @@ namespace HB.Infrastructure.MySQL
                     reader = command.ExecuteReader();
                 }
             }
-            catch
+            catch(Exception ex)
             {
                 if (isOwedConnection)
                 {
@@ -333,7 +384,14 @@ namespace HB.Infrastructure.MySQL
                     reader.Close();
                 }
 
-                throw;
+                if (ex is MySqlException mySqlException)
+                {
+                    throw new DatabaseException(mySqlException.Number, mySqlException.SqlState, mySqlException.Message, mySqlException);
+                }
+                else
+                {
+                    throw new DatabaseException(DatabaseError.InnerError, "ExecuteSPReader", connection.Database, $"CommandText:{command.CommandText}");
+                }
             }
 
             command.Parameters.Clear();
@@ -353,7 +411,7 @@ namespace HB.Infrastructure.MySQL
             using MySqlCommand command = new MySqlCommand
             {
                 CommandType = CommandType.Text,
-                CommandText = MySQLUtility.SafeDbStatement(sqlString)
+                CommandText = MySQLLocalism.SafeDbStatement(sqlString)
             };
             return ExecuteCommandNonQuery(conn, true, command);
         }
@@ -364,7 +422,7 @@ namespace HB.Infrastructure.MySQL
             using MySqlCommand command = new MySqlCommand
             {
                 CommandType = CommandType.Text,
-                CommandText = MySQLUtility.SafeDbStatement(sqlString),
+                CommandText = MySQLLocalism.SafeDbStatement(sqlString),
                 Transaction = mySqlTransaction
             };
             return ExecuteCommandNonQuery(mySqlTransaction.Connection, false, command);
@@ -379,7 +437,7 @@ namespace HB.Infrastructure.MySQL
             MySqlCommand command = new MySqlCommand
             {
                 CommandType = CommandType.Text,
-                CommandText = MySQLUtility.SafeDbStatement(sqlString)
+                CommandText = MySQLLocalism.SafeDbStatement(sqlString)
             };
 
             return new Tuple<IDbCommand, IDataReader>(command, ExecuteCommandReader(conn, true, command));
@@ -392,7 +450,7 @@ namespace HB.Infrastructure.MySQL
             MySqlCommand command = new MySqlCommand
             {
                 CommandType = CommandType.Text,
-                CommandText = MySQLUtility.SafeDbStatement(sqlString),
+                CommandText = MySQLLocalism.SafeDbStatement(sqlString),
                 Transaction = mySqlTransaction
             };
             return new Tuple<IDbCommand, IDataReader>(command, ExecuteCommandReader(mySqlTransaction.Connection, false, command));
@@ -406,7 +464,7 @@ namespace HB.Infrastructure.MySQL
             using MySqlCommand command = new MySqlCommand
             {
                 CommandType = CommandType.Text,
-                CommandText = MySQLUtility.SafeDbStatement(sqlString)
+                CommandText = MySQLLocalism.SafeDbStatement(sqlString)
             };
             return ExecuteCommandScalar(conn, true, command);
         }
@@ -417,7 +475,7 @@ namespace HB.Infrastructure.MySQL
             using MySqlCommand command = new MySqlCommand
             {
                 CommandType = CommandType.Text,
-                CommandText = MySQLUtility.SafeDbStatement(sqlString),
+                CommandText = MySQLLocalism.SafeDbStatement(sqlString),
                 Transaction = mySqlTransaction
             };
             return ExecuteCommandScalar(mySqlTransaction.Connection, false, command);
@@ -484,7 +542,6 @@ namespace HB.Infrastructure.MySQL
         //}
 
         //#endregion
-
 
     }
 }

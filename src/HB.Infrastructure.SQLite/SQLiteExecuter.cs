@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using HB.Framework.Database;
 using Microsoft.Data.Sqlite;
 
 
@@ -12,20 +13,6 @@ namespace HB.Infrastructure.SQLite
     /// </summary>
     internal static partial class SQLiteExecuter
     {
-        //private static void AttachParameters(SqliteCommand command, IEnumerable<IDataParameter> commandParameters)
-        //{
-        //    foreach (IDataParameter p in commandParameters)
-        //    {
-        //        //check for derived output value with no value assigned
-        //        if ((p.Direction == ParameterDirection.InputOutput) && (p.Value == null))
-        //        {
-        //            p.Value = DBNull.Value;
-        //        }
-
-        //        command.Parameters.Add(p);
-        //    }
-        //}
-
         #region Comand Reader
 
         public static IDataReader ExecuteCommandReader(SqliteTransaction sqliteTransaction, IDbCommand dbCommand)
@@ -64,7 +51,7 @@ namespace HB.Infrastructure.SQLite
 
                 return reader;
             }
-            catch
+            catch(Exception ex)
             {
                 if (isOwnedConnection)
                 {
@@ -76,7 +63,14 @@ namespace HB.Infrastructure.SQLite
                     reader.Close();
                 }
 
-                throw;
+                if (ex is SqliteException sqliteException)
+                {
+                    throw new DatabaseException(sqliteException.SqliteErrorCode, sqliteException.SqliteExtendedErrorCode.ToString(), sqliteException.Message, sqliteException);
+                }
+                else
+                {
+                    throw new DatabaseException(DatabaseError.InnerError, "ExecuteCommandReader", connection.Database, $"CommandText:{command.CommandText}");
+                }
             }
         }
 
@@ -110,6 +104,17 @@ namespace HB.Infrastructure.SQLite
                 command.Connection = connection;
 
                 rtObj = command.ExecuteScalar();
+            }
+            catch(Exception ex)
+            {
+                if (ex is SqliteException sqliteException)
+                {
+                    throw new DatabaseException(sqliteException.SqliteErrorCode, sqliteException.SqliteExtendedErrorCode.ToString(), sqliteException.Message, sqliteException);
+                }
+                else
+                {
+                    throw new DatabaseException(DatabaseError.InnerError, "ExecuteCommandScalar", connection.Database, $"CommandText:{command.CommandText}");
+                }
             }
             finally
             {
@@ -155,10 +160,17 @@ namespace HB.Infrastructure.SQLite
 
                 rtInt = command.ExecuteNonQuery();
             }
-            //catch (Exception ex)  
-            //{
-            //    throw ex;
-            //}
+            catch (Exception ex)
+            {
+                if (ex is SqliteException sqliteException)
+                {
+                    throw new DatabaseException(sqliteException.SqliteErrorCode, sqliteException.SqliteExtendedErrorCode.ToString(), sqliteException.Message, sqliteException);
+                }
+                else
+                {
+                    throw new DatabaseException(DatabaseError.InnerError, "ExecuteCommandNonQuery", conn.Database, $"CommandText:{command.CommandText}");
+                }
+            }
             finally
             {
                 if (isOwnedConnection)
@@ -182,7 +194,7 @@ namespace HB.Infrastructure.SQLite
             using SqliteCommand command = new SqliteCommand
             {
                 CommandType = CommandType.Text,
-                CommandText = SQLiteUtility.SafeDbStatement(sqlString)
+                CommandText = SQLiteLocalism.SafeDbStatement(sqlString)
             };
             return ExecuteCommandNonQuery(conn, true, command);
         }
@@ -193,7 +205,7 @@ namespace HB.Infrastructure.SQLite
             using SqliteCommand command = new SqliteCommand
             {
                 CommandType = CommandType.Text,
-                CommandText = SQLiteUtility.SafeDbStatement(sqlString),
+                CommandText = SQLiteLocalism.SafeDbStatement(sqlString),
                 Transaction = sqliteTransaction
             };
             return ExecuteCommandNonQuery(sqliteTransaction.Connection, false, command);
@@ -208,7 +220,7 @@ namespace HB.Infrastructure.SQLite
             SqliteCommand command = new SqliteCommand
             {
                 CommandType = CommandType.Text,
-                CommandText = SQLiteUtility.SafeDbStatement(sqlString)
+                CommandText = SQLiteLocalism.SafeDbStatement(sqlString)
             };
 
             return new Tuple<IDbCommand, IDataReader>(command, ExecuteCommandReader(conn, true, command));
@@ -221,7 +233,7 @@ namespace HB.Infrastructure.SQLite
             SqliteCommand command = new SqliteCommand
             {
                 CommandType = CommandType.Text,
-                CommandText = SQLiteUtility.SafeDbStatement(sqlString),
+                CommandText = SQLiteLocalism.SafeDbStatement(sqlString),
                 Transaction = sqliteTransaction
             };
 
@@ -236,7 +248,7 @@ namespace HB.Infrastructure.SQLite
             using SqliteCommand command = new SqliteCommand
             {
                 CommandType = CommandType.Text,
-                CommandText = SQLiteUtility.SafeDbStatement(sqlString)
+                CommandText = SQLiteLocalism.SafeDbStatement(sqlString)
             };
             return ExecuteCommandScalar(conn, true, command);
         }
@@ -247,7 +259,7 @@ namespace HB.Infrastructure.SQLite
             using SqliteCommand command = new SqliteCommand
             {
                 CommandType = CommandType.Text,
-                CommandText = SQLiteUtility.SafeDbStatement(sqlString),
+                CommandText = SQLiteLocalism.SafeDbStatement(sqlString),
                 Transaction = sqliteTransaction
             };
             return ExecuteCommandScalar(sqliteTransaction.Connection, false, command);

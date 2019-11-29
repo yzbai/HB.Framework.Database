@@ -1,4 +1,8 @@
-﻿using System;
+﻿using HB.Framework.Database;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using System;
+using System.IO;
 using Xamarin.Forms;
 using Xamarin.Forms.Xaml;
 using XamarinSample.Services;
@@ -25,14 +29,22 @@ namespace XamarinSample
         {
             IServiceCollection services = new ServiceCollection();
 
+            services.AddOptions();
+
+            services.AddLogging(builder =>
+            {
+                builder.SetMinimumLevel(LogLevel.Trace);
+                builder.AddDebug();
+            });
+
             services.AddSQLite(sqliteOptions => {
                 string dbFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "test.db");
 
                 sqliteOptions.DatabaseSettings.Version = 1;
 
-                sqliteOptions.Schemas.Add(new SchemaInfo
+                sqliteOptions.Connections.Add(new DatabaseConnectionSettings
                 {
-                    SchemaName = "test.db",
+                    DatabaseName = "test.db",
                     IsMaster = true,
                     ConnectionString = $"Data Source={dbFile}"
                 });

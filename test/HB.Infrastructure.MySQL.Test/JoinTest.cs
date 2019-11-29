@@ -1,4 +1,5 @@
-﻿using HB.Framework.Database.Entity;
+﻿using HB.Framework.Database;
+using HB.Framework.Database.Entity;
 using HB.Infrastructure.MySQL;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -7,19 +8,32 @@ using System.Text;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace HB.Framework.Database.Test
+namespace HB.Framework.DatabaseTests
 {
     //[TestCaseOrderer("HB.Framework.Database.Test.TestCaseOrdererByTestName", "HB.Framework.Database.Test")]
     public class MutipleTableTest : IClassFixture<ServiceFixture>
     {
-        private readonly IDatabase _db;
-        private readonly ITestOutputHelper _output; 
+        private readonly IDatabase _mysql;
+        private readonly IDatabase _sqlite;
+        private readonly ITestOutputHelper _output;
+
+        private IDatabase GetDatabase(string databaseType) =>
+            databaseType switch
+            {
+                "MySQL" => _mysql,
+                "SQLite" => _sqlite,
+                _ => null
+            };
 
         public MutipleTableTest(ITestOutputHelper testOutputHelper, ServiceFixture serviceFixture)
         {
             _output = testOutputHelper;
 
-            _db = serviceFixture.Database;
+            _mysql = serviceFixture.MySQL;
+            _sqlite = serviceFixture.SQLite;
+
+            _mysql.Initialize();
+            _sqlite.Initialize();
 
             AddSomeData();
 
@@ -47,30 +61,54 @@ namespace HB.Framework.Database.Test
             C c5 = new C { AId = a2.Guid };
             C c6 = new C { AId = a3.Guid };
 
-            _db.Add(a1, null);
-            _db.Add(a2, null);
-            _db.Add(a3, null);
+            _mysql.Add(a2, null);
+            _mysql.Add(a1, null);
+            _mysql.Add(a3, null);
 
-            _db.Add(b1, null);
-            _db.Add(b2, null);
+            _mysql.Add(b1, null);
+            _mysql.Add(b2, null);
 
-            _db.Add(a1b1, null);
-            _db.Add(a1b2, null);
-            _db.Add(a2b1, null);
-            _db.Add(a3b2, null);
+            _mysql.Add(a1b1, null);
+            _mysql.Add(a1b2, null);
+            _mysql.Add(a2b1, null);
+            _mysql.Add(a3b2, null);
 
-            _db.Add(c1, null);
-            _db.Add(c2, null);
-            _db.Add(c3, null);
-            _db.Add(c4, null);
-            _db.Add(c5, null);
-            _db.Add(c6, null);
+            _mysql.Add(c1, null);
+            _mysql.Add(c2, null);
+            _mysql.Add(c3, null);
+            _mysql.Add(c4, null);
+            _mysql.Add(c5, null);
+            _mysql.Add(c6, null);
+
+
+            _sqlite.Add(a2, null);
+            _sqlite.Add(a1, null);
+            _sqlite.Add(a3, null);
+
+            _sqlite.Add(b1, null);
+            _sqlite.Add(b2, null);
+
+            _sqlite.Add(a1b1, null);
+            _sqlite.Add(a1b2, null);
+            _sqlite.Add(a2b1, null);
+            _sqlite.Add(a3b2, null);
+
+            _sqlite.Add(c1, null);
+            _sqlite.Add(c2, null);
+            _sqlite.Add(c3, null);
+            _sqlite.Add(c4, null);
+            _sqlite.Add(c5, null);
+            _sqlite.Add(c6, null);
         }
 
-        [Fact]
-        public void Test_1_ThreeTable_JoinTest()
+        [Theory]
+        [InlineData("MySQL")]
+        [InlineData("SQLite")]
+        public void Test_1_ThreeTable_JoinTest(string databaseType)
         {
-            var from = _db
+            IDatabase database = GetDatabase(databaseType);
+
+            var from = database
                 .From<A>()
                 .LeftJoin<AB>((a, ab) => ab.AId == a.Guid)
                 .LeftJoin<AB, B>((ab, b) => ab.BId == b.Guid);
@@ -78,7 +116,7 @@ namespace HB.Framework.Database.Test
 
             try
             {
-                var result = _db.Retrieve<A, AB, B>(from, _db.Where<A>(), null);
+                var result = database.Retrieve<A, AB, B>(from, database.Where<A>(), null);
                 Assert.True(result.Count > 0);
             }
             catch(Exception ex)
@@ -91,17 +129,20 @@ namespace HB.Framework.Database.Test
             
         }
 
-        [Fact]
-        public void Test_2_TwoTable_JoinTest()
+        [Theory]
+        [InlineData("MySQL")]
+        [InlineData("SQLite")]
+        public void Test_2_TwoTable_JoinTest(string databaseType)
         {
-            var from = _db
+            IDatabase database = GetDatabase(databaseType);
+            var from = database
                 .From<C>()
                 .LeftJoin<A>((c, a) => c.AId == a.Guid);
 
 
             try
             {
-                var result = _db.Retrieve<C, A>(from, _db.Where<C>(), null);
+                var result = database.Retrieve<C, A>(from, database.Where<C>(), null);
                 Assert.True(result.Count > 0);
             }
             catch (Exception ex)

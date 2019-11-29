@@ -1,65 +1,79 @@
-using HB.Framework.Database.Test.Data;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using Xunit;
 using Xunit.Abstractions;
+using System.Linq;
+using HB.Framework.Database;
+using HB.Framework.DatabaseTests.Data;
 
-namespace HB.Framework.Database.Test
+namespace HB.Framework.DatabaseTests
 {
     //[TestCaseOrderer("HB.Framework.Database.Test.TestCaseOrdererByTestName", "HB.Framework.Database.Test")]
     public class BasicTest : IClassFixture<ServiceFixture>
     {
-        private readonly IDatabase _database;
+        private readonly IDatabase _mysql;
+        private readonly IDatabase _sqlite;
         private readonly ITestOutputHelper _output;
         private readonly IsolationLevel _isolationLevel = IsolationLevel.Serializable;
 
+        private IDatabase GetDatabase(string databaseType) =>
+            databaseType switch
+            {
+                "MySQL" => _mysql,
+                "SQLite" => _sqlite,
+                _ => null
+            };
 
         public BasicTest(ITestOutputHelper testOutputHelper, ServiceFixture serviceFixture)
         {
             _output = testOutputHelper;
-            _database = serviceFixture.Database;
-            _database.Initialize();
+            
+            _mysql = serviceFixture.MySQL;
+            _sqlite = serviceFixture.SQLite;
+
+            _mysql.Initialize();
+            _sqlite.Initialize();
         }
 
-        [Fact]
-        public void Test_1_Batch_Add_PublisherEntity()
+        [Theory]
+        [InlineData("MySQL")]
+        [InlineData("SQLite")]
+        public void Test_1_Batch_Add_PublisherEntity(string databaseType)
         {
+            IDatabase database = GetDatabase(databaseType);
             IList<PublisherEntity> publishers = Mocker.GetPublishers();
 
-            TransactionContext transactionContext = _database.BeginTransaction<PublisherEntity>(_isolationLevel);
-            DatabaseResult result;
+            TransactionContext transactionContext = database.BeginTransaction<PublisherEntity>(_isolationLevel);
             try
             {
-                result = _database.BatchAdd<PublisherEntity>(publishers, "tester", transactionContext);
+                IEnumerable<long> newIds = database.BatchAdd<PublisherEntity>(publishers, transactionContext);
 
-                if (!result.IsSucceeded())
-                {
-                    _output.WriteLine(result.Exception?.Message);
-                    throw new Exception();
-                }
+                database.Commit(transactionContext);
 
-                _database.Commit(transactionContext);
+                Assert.Equal(newIds.Count(), publishers.Count);
+                Assert.True(newIds.All(id => id > 0));
 
             }
             catch (Exception ex)
             {
                 _output.WriteLine(ex.Message);
-                _database.Rollback(transactionContext);
+                database.Rollback(transactionContext);
                 throw ex;
             }
-
-            Assert.True(result.IsSucceeded());
         }
 
-        [Fact]
-        public void Test_2_Batch_Update_PublisherEntity()
+        [Theory]
+        [InlineData("MySQL")]
+        [InlineData("SQLite")]
+        public void Test_2_Batch_Update_PublisherEntity(string databaseType)
         {
-            TransactionContext transContext = _database.BeginTransaction<PublisherEntity>(_isolationLevel);
+            IDatabase database = GetDatabase(databaseType);
+            TransactionContext transContext = database.BeginTransaction<PublisherEntity>(_isolationLevel);
 
             try
             {
-                IList<PublisherEntity> lst = _database.RetrieveAll<PublisherEntity>(transContext);
+                IList<PublisherEntity> lst = database.RetrieveAll<PublisherEntity>(transContext);
 
                 for (int i = 0; i < lst.Count; i += 3)
                 {
@@ -75,109 +89,95 @@ namespace HB.Framework.Database.Test
                     };
                 }
 
-                DatabaseResult result = _database.BatchUpdate<PublisherEntity>(lst, "tester", transContext);
+                database.BatchUpdate(lst, transContext);
 
-                if (!result.IsSucceeded())
-                {
-                    _output.WriteLine(result.Exception?.Message);
-                    _database.Rollback(transContext);
-                    throw new Exception();
-                }
+                database.Commit(transContext);
 
-                _database.Commit(transContext);
-
-                Assert.True(result.IsSucceeded());
             }
             catch (Exception ex)
             {
                 _output.WriteLine(ex.Message);
-                _database.Rollback(transContext);
+                database.Rollback(transContext);
                 throw ex;
             }
         }
 
-        [Fact]
-        public void Test_3_Batch_Delete_PublisherEntity()
+        [Theory]
+        [InlineData("MySQL")]
+        [InlineData("SQLite")]
+        public void Test_3_Batch_Delete_PublisherEntity(string databaseType)
         {
-            TransactionContext transactionContext = _database.BeginTransaction<PublisherEntity>(_isolationLevel);
+            IDatabase database = GetDatabase(databaseType);
+            TransactionContext transactionContext = database.BeginTransaction<PublisherEntity>(_isolationLevel);
 
             try
             {
-                IList<PublisherEntity> lst = _database.Page<PublisherEntity>(2, 100, transactionContext);
+                IList<PublisherEntity> lst = database.Page<PublisherEntity>(2, 100, transactionContext);
 
                 if (lst.Count != 0)
                 {
-                    DatabaseResult result = _database.BatchDelete<PublisherEntity>(lst, "deleter", transactionContext);
-
-                    if (!result.IsSucceeded())
-                    {
-                        _output.WriteLine(result.Exception?.Message);
-                        throw new Exception();
-                    }
-
-                    Assert.True(result.IsSucceeded());
+                    database.BatchDelete<PublisherEntity>(lst, transactionContext);
 
                 }
 
-                _database.Commit(transactionContext);
+                database.Commit(transactionContext);
             }
             catch (Exception ex)
             {
                 _output.WriteLine(ex.Message);
-                _database.Rollback(transactionContext);
+                database.Rollback(transactionContext);
                 throw ex;
             }
         }
 
-        [Fact]
-        public void Test_4_Add_PublisherEntity()
+        [Theory]
+        [InlineData("MySQL")]
+        [InlineData("SQLite")]
+        public void Test_4_Add_PublisherEntity(string databaseType)
         {
-            TransactionContext tContext = _database.BeginTransaction<PublisherEntity>(_isolationLevel);
+            IDatabase database = GetDatabase(databaseType);
+            TransactionContext tContext = database.BeginTransaction<PublisherEntity>(_isolationLevel);
 
             try
             {
-                DatabaseResult result = DatabaseResult.Failed(new Exception());
+                IList<PublisherEntity> lst = new List<PublisherEntity>();
 
                 for (int i = 0; i < 10; ++i)
                 {
                     PublisherEntity entity = Mocker.MockOne();
 
-                    result = _database.Add(entity, tContext);
+                    database.Add(entity, tContext);
 
-                    if (!result.IsSucceeded())
-                    {
-                        _output.WriteLine(result.Exception?.Message);
-                        throw new Exception();
-                    }
-
-                    
+                    lst.Add(entity);
                 }
 
-                _database.Commit(tContext);
+                database.Commit(tContext);
 
-                Assert.True(result.IsSucceeded());
+                Assert.True(lst.All(p => p.Id > 0));
             }
             catch (Exception ex)
             {
                 _output.WriteLine(ex.Message);
-                _database.Rollback(tContext);
+                database.Rollback(tContext);
                 throw ex;
             }
         }
 
-        [Fact]
-        public void Test_5_Update_PublisherEntity()
+        [Theory]
+        [InlineData("MySQL")]
+        [InlineData("SQLite")]
+        public void Test_5_Update_PublisherEntity(string databaseType)
         {
-            TransactionContext tContext = _database.BeginTransaction<PublisherEntity>(_isolationLevel);
+            IDatabase database = GetDatabase(databaseType);
+            TransactionContext tContext = database.BeginTransaction<PublisherEntity>(_isolationLevel);
 
             try
             {
-                IList<PublisherEntity> testEntities = _database.Page<PublisherEntity>(1, 1, tContext);
+                IList<PublisherEntity> testEntities = database.Page<PublisherEntity>(1, 1, tContext);
 
                 if (testEntities.Count == 0)
                 {
-                    _database.Rollback(tContext);
-                    return;
+                    throw new Exception("No Entity to update");
                 }
 
                 PublisherEntity entity = testEntities[0];
@@ -185,20 +185,13 @@ namespace HB.Framework.Database.Test
                 entity.Books.Add("New Book");
                 entity.BookAuthors.Add("New Book", new Author() { Mobile = "15190208956", Name = "Yuzhaobai" });
 
-                DatabaseResult result = _database.Update(entity, tContext);
-
-                if (!result.IsSucceeded())
-                {
-                    _output.WriteLine(result.Exception?.Message);
-                    throw new Exception();
-                }
+                database.Update(entity, tContext);
 
 
-                PublisherEntity stored = _database.Scalar<PublisherEntity>(entity.Id, tContext);
+                PublisherEntity stored = database.Scalar<PublisherEntity>(entity.Id, tContext);
                 
-                _database.Commit(tContext);
+                database.Commit(tContext);
 
-                Assert.True(result.IsSucceeded());
                 Assert.True(stored.Books.Contains("New Book"));
                 Assert.True(stored.BookAuthors["New Book"].Mobile == "15190208956");
 
@@ -206,45 +199,39 @@ namespace HB.Framework.Database.Test
             catch (Exception ex)
             {
                 _output.WriteLine(ex.Message);
-                _database.Rollback(tContext);
+                database.Rollback(tContext);
                 throw ex;
             }
         }
 
-        [Fact]
-        public void Test_6_Delete_PublisherEntity()
+        [Theory]
+        [InlineData("MySQL")]
+        [InlineData("SQLite")]
+        public void Test_6_Delete_PublisherEntity(string databaseType)
         {
-            TransactionContext tContext = _database.BeginTransaction<PublisherEntity>(_isolationLevel);
+            IDatabase database = GetDatabase(databaseType);
+            TransactionContext tContext = database.BeginTransaction<PublisherEntity>(_isolationLevel);
 
             try
             {
-                IList<PublisherEntity> testEntities = _database.RetrieveAll<PublisherEntity>(tContext);
+                IList<PublisherEntity> testEntities = database.RetrieveAll<PublisherEntity>(tContext);
 
                 testEntities.ForEach(entity =>
                 {
-                    DatabaseResult result = _database.Delete(entity, tContext);
+                    database.Delete(entity, tContext);
 
-                    if (!result.IsSucceeded())
-                    {
-                        _output.WriteLine(result.Exception?.Message);
-                        throw new Exception();
-                    }
-
-                    Assert.True(result.IsSucceeded());
                 });
 
-                long count = _database.Count<PublisherEntity>(tContext);
+                long count = database.Count<PublisherEntity>(tContext);
 
-                _database.Commit(tContext);
-
-                _output.WriteLine($"count: {count}");
+                database.Commit(tContext);
 
                 Assert.True(count == 0);
             }
             catch (Exception ex)
             {
                 _output.WriteLine(ex.Message);
-                _database.Rollback(tContext);
+                database.Rollback(tContext);
                 throw ex;
             }
         }
