@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Data.Common;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 
 namespace HB.Framework.Database
@@ -9,19 +10,19 @@ namespace HB.Framework.Database
     {
         private IDictionary _data;
 
-        public DatabaseError Error { get; set; }
+        public DatabaseError Error { get; private set; }
 
-        public int InnerNumber { get; set; }
+        public int InnerNumber { get; private set; }
 
-        public string InnerSqlState { get; set; }
+        public string InnerSqlState { get; private set; }
 
-        public string EntityName { get; set; }
+        public string EntityName { get; private set; }
 
-        public string Operation { get; set; }
+        public string Operation { get; private set; }
 
 
         public DatabaseException(DatabaseException innerException,
-             string operation, string entityName, string message)
+             string entityName, string message, [CallerMemberName]string operation = "")
             : base(message, innerException)
         {
             Error = innerException.Error;
@@ -33,7 +34,7 @@ namespace HB.Framework.Database
         }
 
         public DatabaseException(DatabaseError error,
-             string operation, string entityName, string message, Exception innerException = null)
+             string entityName, string message, Exception innerException = null, [CallerMemberName]string operation = "")
             : base(message, innerException)
         {
             Error = error;

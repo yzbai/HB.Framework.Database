@@ -68,7 +68,7 @@ namespace HB.Infrastructure.MySQL
                 }
                 else
                 {
-                    throw new DatabaseException(DatabaseError.InnerError, "ExecuteCommandReader", connection.Database, $"CommandText:{command.CommandText}");
+                    throw new DatabaseException(DatabaseError.InnerError, connection.Database, $"CommandText:{command.CommandText}");
                 }
             }
         }
@@ -112,7 +112,7 @@ namespace HB.Infrastructure.MySQL
                 }
                 else
                 {
-                    throw new DatabaseException(DatabaseError.InnerError, "ExecuteCommandScalar", connection.Database, $"CommandText:{command.CommandText}");
+                    throw new DatabaseException(DatabaseError.InnerError, connection.Database, $"CommandText:{command.CommandText}");
                 }
             }
             finally
@@ -167,7 +167,7 @@ namespace HB.Infrastructure.MySQL
                 }
                 else
                 {
-                    throw new DatabaseException(DatabaseError.InnerError, "ExecuteCommandNonQuery", conn.Database, $"CommandText:{command.CommandText}");
+                    throw new DatabaseException(DatabaseError.InnerError, conn.Database, $"CommandText:{command.CommandText}");
                 }
             }
             finally
@@ -267,7 +267,7 @@ namespace HB.Infrastructure.MySQL
                 }
                 else
                 {
-                    throw new DatabaseException(DatabaseError.InnerError, "ExecuteSPNonQuery", conn.Database, $"CommandText:{command.CommandText}");
+                    throw new DatabaseException(DatabaseError.InnerError, conn.Database, $"CommandText:{command.CommandText}");
                 }
             }
             finally
@@ -319,7 +319,7 @@ namespace HB.Infrastructure.MySQL
                 }
                 else
                 {
-                    throw new DatabaseException(DatabaseError.InnerError, "ExecuteSPScalar", conn.Database, $"CommandText:{command.CommandText}");
+                    throw new DatabaseException(DatabaseError.InnerError, conn.Database, $"CommandText:{command.CommandText}");
                 }
             }
             finally
@@ -390,7 +390,7 @@ namespace HB.Infrastructure.MySQL
                 }
                 else
                 {
-                    throw new DatabaseException(DatabaseError.InnerError, "ExecuteSPReader", connection.Database, $"CommandText:{command.CommandText}");
+                    throw new DatabaseException(DatabaseError.InnerError, connection.Database, $"CommandText:{command.CommandText}");
                 }
             }
 

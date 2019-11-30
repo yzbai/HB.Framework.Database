@@ -65,7 +65,7 @@ namespace HB.Infrastructure.SQLite
                 }
                 else
                 {
-                    throw new DatabaseException(DatabaseError.InnerError, "ExecuteCommandReaderAsync", connection.Database, $"CommandText:{command.CommandText}");
+                    throw new DatabaseException(DatabaseError.InnerError, connection.Database, $"CommandText:{command.CommandText}");
                 }
             }
         }
@@ -109,7 +109,7 @@ namespace HB.Infrastructure.SQLite
                 }
                 else
                 {
-                    throw new DatabaseException(DatabaseError.InnerError, "ExecuteCommandScalarAsync", connection.Database, $"CommandText:{command.CommandText}");
+                    throw new DatabaseException(DatabaseError.InnerError, connection.Database, $"CommandText:{command.CommandText}");
                 }
             }
             finally
@@ -163,7 +163,7 @@ namespace HB.Infrastructure.SQLite
                 }
                 else
                 {
-                    throw new DatabaseException(DatabaseError.InnerError, "ExecuteCommandNonQueryAsync", conn.Database, $"CommandText:{command.CommandText}");
+                    throw new DatabaseException(DatabaseError.InnerError, conn.Database, $"CommandText:{command.CommandText}");
                 }
             }
             finally
