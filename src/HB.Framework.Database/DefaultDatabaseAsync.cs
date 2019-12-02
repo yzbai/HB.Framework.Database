@@ -29,7 +29,7 @@ namespace HB.Framework.Database
             {
                 string message = $"Scalar retrieve return more than one result. Select:{selectCondition.ToString()}, From:{fromCondition.ToString()}, Where:{whereCondition.ToString()}";
                 DatabaseException exception = new DatabaseException(DatabaseError.FoundTooMuch, typeof(T).FullName, message);
-                _logger.LogException(exception);
+                //_logger.LogException(exception);
 
                 throw exception;
             }
@@ -70,12 +70,12 @@ namespace HB.Framework.Database
                 reader = await _databaseEngine.ExecuteCommandReaderAsync(transContext?.Transaction, selectDef.DatabaseName, command, transContext != null).ConfigureAwait(false);
                 result = _modelMapper.ToList<TSelect>(reader);
             }
-            catch (DatabaseException ex)
+            catch (Exception ex)
             {
                 string message = $"select:{selectCondition.ToString()}, from:{fromCondition.ToString()}, where:{whereCondition.ToString()}";
                 DatabaseException exception = new DatabaseException(ex, "RetrieveAsync", selectDef.EntityFullName, message);
 
-                _logger.LogException(exception);
+                //_logger.LogException(exception);
 
                 throw exception;
             }
@@ -121,12 +121,12 @@ namespace HB.Framework.Database
                 reader = await _databaseEngine.ExecuteCommandReaderAsync(transContext?.Transaction, entityDef.DatabaseName, command, transContext != null).ConfigureAwait(false);
                 result = _modelMapper.ToList<T>(reader);
             }
-            catch (DatabaseException ex)
+            catch (Exception ex)
             {
                 string message = $"select:{selectCondition.ToString()}, from:{fromCondition.ToString()}, where:{whereCondition.ToString()}";
                 DatabaseException exception = new DatabaseException(ex, "RetrieveAsync", entityDef.EntityFullName, message);
 
-                _logger.LogException(exception);
+                //_logger.LogException(exception);
 
                 throw exception;
             }
@@ -191,12 +191,12 @@ namespace HB.Framework.Database
                 object countObj = await _databaseEngine.ExecuteCommandScalarAsync(transContext?.Transaction, entityDef.DatabaseName, command, transContext != null).ConfigureAwait(false);
                 count = Convert.ToInt32(countObj, GlobalSettings.Culture);
             }
-            catch (DatabaseException ex)
+            catch (Exception ex)
             {
                 string message = $"select:{selectCondition.ToString()}, from:{fromCondition.ToString()}, where:{whereCondition.ToString()}";
                 DatabaseException exception = new DatabaseException(ex, "CountAsync", entityDef.EntityFullName, message);
 
-                _logger.LogException(exception);
+                //_logger.LogException(exception);
 
                 throw exception;
             }
@@ -365,12 +365,12 @@ namespace HB.Framework.Database
                 reader = await _databaseEngine.ExecuteCommandReaderAsync(transContext?.Transaction, entityDef.DatabaseName, command, transContext != null).ConfigureAwait(false);
                 result = _modelMapper.ToList<TSource, TTarget>(reader);
             }
-            catch (DatabaseException ex)
+            catch (Exception ex)
             {
                 string message = $"from:{fromCondition.ToString()}, where:{whereCondition.ToString()}";
                 DatabaseException exception = new DatabaseException(ex, "RetrieveAsync", entityDef.EntityFullName, message);
 
-                _logger.LogException(exception);
+                //_logger.LogException(exception);
 
                 throw exception;
             }
@@ -412,7 +412,7 @@ namespace HB.Framework.Database
             {
                 string message = $"Scalar retrieve return more than one result. From:{fromCondition.ToString()}, Where:{whereCondition.ToString()}";
                 DatabaseException exception = new DatabaseException(DatabaseError.FoundTooMuch, typeof(TSource).FullName, message);
-                _logger.LogException(exception);
+                //_logger.LogException(exception);
 
                 throw exception;
             }
@@ -464,12 +464,12 @@ namespace HB.Framework.Database
                 reader = await _databaseEngine.ExecuteCommandReaderAsync(transContext?.Transaction, entityDef.DatabaseName, command, transContext != null).ConfigureAwait(false);
                 result = _modelMapper.ToList<TSource, TTarget1, TTarget2>(reader);
             }
-            catch (DatabaseException ex)
+            catch (Exception ex)
             {
                 string message = $"from:{fromCondition.ToString()}, where:{whereCondition.ToString()}";
                 DatabaseException exception = new DatabaseException(ex, "RetrieveAsync", entityDef.EntityFullName, message);
 
-                _logger.LogException(exception);
+                //_logger.LogException(exception);
 
                 throw exception;
             }
@@ -514,7 +514,7 @@ namespace HB.Framework.Database
             {
                 string message = $"Scalar retrieve return more than one result. From:{fromCondition.ToString()}, Where:{whereCondition.ToString()}";
                 DatabaseException exception = new DatabaseException(DatabaseError.FoundTooMuch, typeof(TSource).FullName, message);
-                _logger.LogException(exception);
+                //_logger.LogException(exception);
 
                 throw exception;
             }
@@ -551,12 +551,12 @@ namespace HB.Framework.Database
 
                 _modelMapper.ToObject(reader, item);
             }
-            catch (DatabaseException ex)
+            catch (Exception ex)
             {
                 string message = $"Item:{SerializeUtil.ToJson(item)}";
                 DatabaseException exception = new DatabaseException(ex, "AddAsync", entityDef.EntityFullName, message);
 
-                _logger.LogException(exception);
+                //_logger.LogException(exception);
 
                 throw exception;
             }
@@ -602,12 +602,12 @@ namespace HB.Framework.Database
 
                 throw new DatabaseException(DatabaseError.FoundTooMuch, entityDef.EntityFullName, $"Multiple Rows Affected instead of one. Something go wrong. Entity:{SerializeUtil.ToJson(item)}");
             }
-            catch (DatabaseException ex)
+            catch (Exception ex)
             {
                 string message = $"Item:{SerializeUtil.ToJson(item)}";
                 DatabaseException exception = new DatabaseException(ex, "DeleteAsync", entityDef.EntityFullName, message);
 
-                _logger.LogException(exception);
+                //_logger.LogException(exception);
 
                 throw exception;
             }
@@ -655,12 +655,12 @@ namespace HB.Framework.Database
 
                 throw new DatabaseException(DatabaseError.FoundTooMuch, entityDef.EntityFullName, $"Multiple Rows Affected instead of one. Something go wrong. Entity:{SerializeUtil.ToJson(item)}");
             }
-            catch (DatabaseException ex)
+            catch (Exception ex)
             {
                 string message = $"Item:{SerializeUtil.ToJson(item)}";
                 DatabaseException exception = new DatabaseException(ex, "UpdateAsync", entityDef.EntityFullName, message);
 
-                _logger.LogException(exception);
+                //_logger.LogException(exception);
 
                 throw exception;
             }
@@ -720,12 +720,12 @@ namespace HB.Framework.Database
 
                 return newIds;
             }
-            catch (DatabaseException ex)
+            catch (Exception ex)
             {
                 string message = $"Items:{SerializeUtil.ToJson(items)}";
                 DatabaseException exception = new DatabaseException(ex, "BatchAddAsync", entityDef.EntityFullName, message);
 
-                _logger.LogException(exception);
+                //_logger.LogException(exception);
 
                 throw exception;
             }
@@ -787,12 +787,12 @@ namespace HB.Framework.Database
                 if (count != items.Count())
                     throw new DatabaseException(DatabaseError.NotFound, entityDef.EntityFullName, $"BatchUpdate wrong number return. Some data item not found. Items:{SerializeUtil.ToJson(items)}");
             }
-            catch (DatabaseException ex)
+            catch (Exception ex)
             {
                 string message = $"Items:{SerializeUtil.ToJson(items)}";
                 DatabaseException exception = new DatabaseException(ex, "BatchUpdateAsync", entityDef.EntityFullName, message);
 
-                _logger.LogException(exception);
+                //_logger.LogException(exception);
 
                 throw exception;
             }
@@ -851,12 +851,12 @@ namespace HB.Framework.Database
                     throw new DatabaseException(DatabaseError.NotFound, entityDef.EntityFullName, $"BatchDelete wrong number return. Some data item not found. Items:{SerializeUtil.ToJson(items)}");
                 }
             }
-            catch (DatabaseException ex)
+            catch (Exception ex)
             {
                 string message = $"Items:{SerializeUtil.ToJson(items)}";
                 DatabaseException exception = new DatabaseException(ex, "BatchDeleteAsync", entityDef.EntityFullName, message);
 
-                _logger.LogException(exception);
+                //_logger.LogException(exception);
 
                 throw exception;
             }

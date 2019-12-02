@@ -21,16 +21,25 @@ namespace HB.Framework.Database
         public string Operation { get; private set; }
 
 
-        public DatabaseException(DatabaseException innerException,
+        public DatabaseException(Exception innerException,
              string entityName, string message, [CallerMemberName]string operation = "")
             : base(message, innerException)
         {
-            Error = innerException.Error;
+            if (innerException is DatabaseException databaseException)
+            {
+                Error = databaseException.Error;
+                InnerNumber = databaseException.InnerNumber;
+                InnerSqlState = databaseException.InnerSqlState;
+
+            }
+            else
+            {
+                Error = DatabaseError.InnerError;
+            }
+            
             Operation = operation;
             EntityName = entityName;
 
-            InnerNumber = innerException.InnerNumber;
-            InnerSqlState = innerException.InnerSqlState;
         }
 
         public DatabaseException(DatabaseError error,

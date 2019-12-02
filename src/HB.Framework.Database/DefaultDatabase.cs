@@ -31,18 +31,22 @@ namespace HB.Framework.Database
         private readonly IDatabaseEntityDefFactory _entityDefFactory;
         private readonly IDatabaseEntityMapper _modelMapper;
         private readonly ISQLBuilder _sqlBuilder;
-        private readonly ILogger _logger;
+        //private readonly ILogger _logger;
 
         //public IDatabaseEngine DatabaseEngine { get { return _databaseEngine; } }
 
-        public DefaultDatabase(ILogger<DefaultDatabase> logger, IDatabaseEngine databaseEngine, IDatabaseEntityDefFactory modelDefFactory, IDatabaseEntityMapper modelMapper, ISQLBuilder sqlBuilder/*, ILogger<DefaultDatabase> logger*/)
+        public DefaultDatabase(
+            IDatabaseEngine databaseEngine, 
+            IDatabaseEntityDefFactory modelDefFactory, 
+            IDatabaseEntityMapper modelMapper, 
+            ISQLBuilder sqlBuilder/*, ILogger<DefaultDatabase> logger*/)
         {
             _databaseSettings = databaseEngine.DatabaseSettings;
             _databaseEngine = databaseEngine;
             _entityDefFactory = modelDefFactory;
             _modelMapper = modelMapper;
             _sqlBuilder = sqlBuilder;
-            _logger = logger;
+            //_logger = logger;
 
             if (_databaseSettings.Version < 0)
             {
@@ -111,7 +115,7 @@ namespace HB.Framework.Database
         {
             string sql = GetTableCreateStatement(def.EntityType, false);
 
-            _logger.LogInformation($"Entity Table {def.TableName} going to create. SQL : {sql}");
+            //_logger.LogInformation($"Entity Table {def.TableName} going to create. SQL : {sql}");
 
             return _databaseEngine.ExecuteSqlNonQuery(transContext.Transaction, def.DatabaseName, sql);
         }
@@ -229,12 +233,12 @@ namespace HB.Framework.Database
                 reader = _databaseEngine.ExecuteCommandReader(transContext?.Transaction, selectDef.DatabaseName, command, transContext != null);
                 result = _modelMapper.ToList<TSelect>(reader);
             }
-            catch (DatabaseException ex)
+            catch (Exception ex)
             {
                 string message = $"select:{selectCondition.ToString()}, from:{fromCondition.ToString()}, where:{whereCondition.ToString()}";
                 DatabaseException exception = new DatabaseException(ex, "Retrieve", selectDef.EntityFullName, message);
 
-                _logger.LogException(exception);
+                //_logger.LogException(exception);
 
                 throw exception;
             }
@@ -261,7 +265,7 @@ namespace HB.Framework.Database
             {
                 string message = $"Scalar retrieve return more than one result. Select:{selectCondition.ToString()}, From:{fromCondition.ToString()}, Where:{whereCondition.ToString()}";
                 DatabaseException exception = new DatabaseException(DatabaseError.FoundTooMuch, typeof(T).FullName, message);
-                _logger.LogException(exception);
+                //_logger.LogException(exception);
 
                 throw exception;
             }
@@ -299,12 +303,12 @@ namespace HB.Framework.Database
                 reader = _databaseEngine.ExecuteCommandReader(transContext?.Transaction, entityDef.DatabaseName, command, transContext != null);
                 result = _modelMapper.ToList<T>(reader);
             }
-            catch (DatabaseException ex)
+            catch (Exception ex)
             {
                 string message = $"select:{selectCondition.ToString()}, from:{fromCondition.ToString()}, where:{whereCondition.ToString()}";
                 DatabaseException exception = new DatabaseException(ex, "Retrieve", entityDef.EntityFullName, message);
 
-                _logger.LogException(exception);
+                //_logger.LogException(exception);
 
                 throw exception;
             }
@@ -369,12 +373,12 @@ namespace HB.Framework.Database
                 object countObj = _databaseEngine.ExecuteCommandScalar(transContext?.Transaction, entityDef.DatabaseName, command, transContext != null);
                 count = Convert.ToInt32(countObj, GlobalSettings.Culture);
             }
-            catch (DatabaseException ex)
+            catch (Exception ex)
             {
                 string message = $"select:{selectCondition.ToString()}, from:{fromCondition.ToString()}, where:{whereCondition.ToString()}";
                 DatabaseException exception = new DatabaseException(ex, "Count", entityDef.EntityFullName, message);
 
-                _logger.LogException(exception);
+                //_logger.LogException(exception);
 
                 throw exception;
             }
@@ -543,12 +547,12 @@ namespace HB.Framework.Database
                 reader = _databaseEngine.ExecuteCommandReader(transContext?.Transaction, entityDef.DatabaseName, command, transContext != null);
                 result = _modelMapper.ToList<TSource, TTarget>(reader);
             }
-            catch (DatabaseException ex)
+            catch (Exception ex)
             {
                 string message = $"from:{fromCondition.ToString()}, where:{whereCondition.ToString()}";
                 DatabaseException exception = new DatabaseException(ex, "Retrieve", entityDef.EntityFullName, message);
 
-                _logger.LogException(exception);
+                //_logger.LogException(exception);
 
                 throw exception;
             }
@@ -590,7 +594,7 @@ namespace HB.Framework.Database
             {
                 string message = $"Scalar retrieve return more than one result. From:{fromCondition.ToString()}, Where:{whereCondition.ToString()}";
                 DatabaseException exception = new DatabaseException(DatabaseError.FoundTooMuch, typeof(TSource).FullName, message);
-                _logger.LogException(exception);
+                //_logger.LogException(exception);
 
                 throw exception;
             }
@@ -642,12 +646,12 @@ namespace HB.Framework.Database
                 reader = _databaseEngine.ExecuteCommandReader(transContext?.Transaction, entityDef.DatabaseName, command, transContext != null);
                 result = _modelMapper.ToList<TSource, TTarget1, TTarget2>(reader);
             }
-            catch (DatabaseException ex)
+            catch (Exception ex)
             {
                 string message = $"from:{fromCondition.ToString()}, where:{whereCondition.ToString()}";
                 DatabaseException exception = new DatabaseException(ex, "Retrieve", entityDef.EntityFullName, message);
 
-                _logger.LogException(exception);
+                //_logger.LogException(exception);
 
                 throw exception;
             }
@@ -692,7 +696,7 @@ namespace HB.Framework.Database
             {
                 string message = $"Scalar retrieve return more than one result. From:{fromCondition.ToString()}, Where:{whereCondition.ToString()}";
                 DatabaseException exception = new DatabaseException(DatabaseError.FoundTooMuch, typeof(TSource).FullName, message);
-                _logger.LogException(exception);
+                //_logger.LogException(exception);
 
                 throw exception;
             }
@@ -730,12 +734,12 @@ namespace HB.Framework.Database
                 _modelMapper.ToObject(reader, item);
 
             }
-            catch (DatabaseException ex)
+            catch (Exception ex)
             {
                 string message = $"Item:{SerializeUtil.ToJson(item)}";
                 DatabaseException exception = new DatabaseException(ex, "Add", entityDef.EntityFullName, message);
 
-                _logger.LogException(exception);
+                //_logger.LogException(exception);
 
                 throw exception;
             }
@@ -781,12 +785,12 @@ namespace HB.Framework.Database
 
                 throw new DatabaseException(DatabaseError.FoundTooMuch, entityDef.EntityFullName, $"Multiple Rows Affected instead of one. Something go wrong. Entity:{SerializeUtil.ToJson(item)}");
             }
-            catch (DatabaseException ex)
+            catch (Exception ex)
             {
                 string message = $"Item:{SerializeUtil.ToJson(item)}";
                 DatabaseException exception = new DatabaseException(ex, entityDef.EntityFullName, message);
 
-                _logger.LogException(exception);
+                //_logger.LogException(exception);
 
                 throw exception;
             }
@@ -835,12 +839,12 @@ namespace HB.Framework.Database
 
                 throw new DatabaseException(DatabaseError.FoundTooMuch, entityDef.EntityFullName, $"Multiple Rows Affected instead of one. Something go wrong. Entity:{SerializeUtil.ToJson(item)}");
             }
-            catch (DatabaseException ex)
+            catch (Exception ex)
             {
                 string message = $"Item:{SerializeUtil.ToJson(item)}";
                 DatabaseException exception = new DatabaseException(ex, "Update", entityDef.EntityFullName, message);
 
-                _logger.LogException(exception);
+                //_logger.LogException(exception);
 
                 throw exception;
             }
@@ -907,12 +911,12 @@ namespace HB.Framework.Database
 
                 return newIds;
             }
-            catch (DatabaseException ex)
+            catch (Exception ex)
             {
                 string message = $"Items:{SerializeUtil.ToJson(items)}";
                 DatabaseException exception = new DatabaseException(ex, "BatchAdd", entityDef.EntityFullName, message);
 
-                _logger.LogException(exception);
+                //_logger.LogException(exception);
 
                 throw exception;
             }
@@ -975,12 +979,12 @@ namespace HB.Framework.Database
                 if (count != items.Count())
                     throw new DatabaseException(DatabaseError.NotFound, entityDef.EntityFullName, $"BatchUpdate wrong number return. Some data item not found. Items:{SerializeUtil.ToJson(items)}");
             }
-            catch (DatabaseException ex)
+            catch (Exception ex)
             {
                 string message = $"Items:{SerializeUtil.ToJson(items)}";
                 DatabaseException exception = new DatabaseException(ex, "BatchUpdate", entityDef.EntityFullName, message);
 
-                _logger.LogException(exception);
+                //_logger.LogException(exception);
 
                 throw exception;
             }
@@ -1040,12 +1044,12 @@ namespace HB.Framework.Database
                     throw new DatabaseException(DatabaseError.NotFound, entityDef.EntityFullName, $"BatchDelete wrong number return. Some data item not found. Items:{SerializeUtil.ToJson(items)}");
                 }
             }
-            catch (DatabaseException ex)
+            catch (Exception ex)
             {
                 string message = $"Items:{SerializeUtil.ToJson(items)}";
                 DatabaseException exception = new DatabaseException(ex, "BatchDelete", entityDef.EntityFullName, message);
 
-                _logger.LogException(exception);
+                //_logger.LogException(exception);
 
                 throw exception;
             }
