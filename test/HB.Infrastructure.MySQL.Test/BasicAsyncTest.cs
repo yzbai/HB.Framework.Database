@@ -72,11 +72,11 @@ namespace HB.Framework.DatabaseTests
 
             try
             {
-                IList<PublisherEntity> lst = await database.RetrieveAllAsync<PublisherEntity>(transContext);
+                IEnumerable<PublisherEntity> lst = await database.RetrieveAllAsync<PublisherEntity>(transContext);
 
-                for (int i = 0; i < lst.Count; i += 2)
+                for (int i = 0; i < lst.Count(); i += 2)
                 {
-                    PublisherEntity entity = lst[i];
+                    PublisherEntity entity = lst.ElementAt(i);
                     //entity.Guid = Guid.NewGuid().ToString();
                     entity.Type = PublisherType.Online;
                     entity.Name = "ÖÐsfasfafÎÄÃû×Ö";
@@ -111,7 +111,7 @@ namespace HB.Framework.DatabaseTests
 
             try
             {
-                IList<PublisherEntity> lst = await database.PageAsync<PublisherEntity>(2, 100, transactionContext);
+                IList<PublisherEntity> lst = (await database.PageAsync<PublisherEntity>(2, 100, transactionContext)).ToList();
 
                 if (lst.Count != 0)
                 {
@@ -172,7 +172,7 @@ namespace HB.Framework.DatabaseTests
 
             try
             {
-                IList<PublisherEntity> testEntities = await database.PageAsync<PublisherEntity>(1, 1, tContext);
+                IList<PublisherEntity> testEntities = (await database.PageAsync<PublisherEntity>(1, 1, tContext)).ToList();
 
                 if (testEntities.Count == 0)
                 {
@@ -212,7 +212,7 @@ namespace HB.Framework.DatabaseTests
 
             try
             {
-                IList<PublisherEntity> testEntities = await database.RetrieveAllAsync<PublisherEntity>(tContext);
+                IList<PublisherEntity> testEntities = (await database.RetrieveAllAsync<PublisherEntity>(tContext)).ToList();
 
                 await testEntities.ForEachAsync(async entity =>
                 {

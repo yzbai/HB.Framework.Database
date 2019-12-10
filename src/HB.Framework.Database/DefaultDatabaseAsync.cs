@@ -18,14 +18,14 @@ namespace HB.Framework.Database
         public async Task<T> ScalarAsync<T>(SelectExpression<T> selectCondition, FromExpression<T> fromCondition, WhereExpression<T> whereCondition, TransactionContext transContext)
             where T : DatabaseEntity, new()
         {
-            IList<T> lst = await RetrieveAsync<T>(selectCondition, fromCondition, whereCondition, transContext).ConfigureAwait(false);
+            IEnumerable<T> lst = await RetrieveAsync<T>(selectCondition, fromCondition, whereCondition, transContext).ConfigureAwait(false);
 
             if (lst.IsNullOrEmpty())
             {
                 return null;
             }
 
-            if (lst.Count > 1)
+            if (lst.Count() > 1)
             {
                 string message = $"Scalar retrieve return more than one result. Select:{selectCondition.ToString()}, From:{fromCondition.ToString()}, Where:{whereCondition.ToString()}";
                 DatabaseException exception = new DatabaseException(DatabaseError.FoundTooMuch, typeof(T).FullName, message);
@@ -34,10 +34,10 @@ namespace HB.Framework.Database
                 throw exception;
             }
 
-            return lst[0];
+            return lst.ElementAt(0);
         }
 
-        public async Task<IList<TSelect>> RetrieveAsync<TSelect, TFrom, TWhere>(SelectExpression<TSelect> selectCondition, FromExpression<TFrom> fromCondition, WhereExpression<TWhere> whereCondition, TransactionContext transContext = null)
+        public async Task<IEnumerable<TSelect>> RetrieveAsync<TSelect, TFrom, TWhere>(SelectExpression<TSelect> selectCondition, FromExpression<TFrom> fromCondition, WhereExpression<TWhere> whereCondition, TransactionContext transContext = null)
             where TSelect : DatabaseEntity, new()
             where TFrom : DatabaseEntity, new()
             where TWhere : DatabaseEntity, new()
@@ -90,7 +90,7 @@ namespace HB.Framework.Database
 
 
 
-        public async Task<IList<T>> RetrieveAsync<T>(SelectExpression<T> selectCondition, FromExpression<T> fromCondition, WhereExpression<T> whereCondition, TransactionContext transContext)
+        public async Task<IEnumerable<T>> RetrieveAsync<T>(SelectExpression<T> selectCondition, FromExpression<T> fromCondition, WhereExpression<T> whereCondition, TransactionContext transContext)
             where T : DatabaseEntity, new()
         {
             #region Argument Adjusting
@@ -139,7 +139,7 @@ namespace HB.Framework.Database
             return result;
         }
 
-        public Task<IList<T>> PageAsync<T>(SelectExpression<T> selectCondition, FromExpression<T> fromCondition, WhereExpression<T> whereCondition, long pageNumber, long perPageCount, TransactionContext transContext)
+        public Task<IEnumerable<T>> PageAsync<T>(SelectExpression<T> selectCondition, FromExpression<T> fromCondition, WhereExpression<T> whereCondition, long pageNumber, long perPageCount, TransactionContext transContext)
             where T : DatabaseEntity, new()
         {
             #region Argument Adjusting
@@ -214,13 +214,13 @@ namespace HB.Framework.Database
             return ScalarAsync(null, fromCondition, whereCondition, transContext);
         }
 
-        public Task<IList<T>> RetrieveAsync<T>(FromExpression<T> fromCondition, WhereExpression<T> whereCondition, TransactionContext transContext)
+        public Task<IEnumerable<T>> RetrieveAsync<T>(FromExpression<T> fromCondition, WhereExpression<T> whereCondition, TransactionContext transContext)
             where T : DatabaseEntity, new()
         {
             return RetrieveAsync(null, fromCondition, whereCondition, transContext);
         }
 
-        public Task<IList<T>> PageAsync<T>(FromExpression<T> fromCondition, WhereExpression<T> whereCondition, long pageNumber, long perPageCount, TransactionContext transContext)
+        public Task<IEnumerable<T>> PageAsync<T>(FromExpression<T> fromCondition, WhereExpression<T> whereCondition, long pageNumber, long perPageCount, TransactionContext transContext)
             where T : DatabaseEntity, new()
         {
             return PageAsync(null, fromCondition, whereCondition, pageNumber, perPageCount, transContext);
@@ -236,7 +236,7 @@ namespace HB.Framework.Database
 
         #region 单表查询, Where
 
-        public Task<IList<T>> RetrieveAllAsync<T>(TransactionContext transContext)
+        public Task<IEnumerable<T>> RetrieveAllAsync<T>(TransactionContext transContext)
             where T : DatabaseEntity, new()
         {
             return RetrieveAsync<T>(null, null, null, transContext);
@@ -248,19 +248,19 @@ namespace HB.Framework.Database
             return ScalarAsync(null, null, whereCondition, transContext);
         }
 
-        public Task<IList<T>> RetrieveAsync<T>(WhereExpression<T> whereCondition, TransactionContext transContext)
+        public Task<IEnumerable<T>> RetrieveAsync<T>(WhereExpression<T> whereCondition, TransactionContext transContext)
             where T : DatabaseEntity, new()
         {
             return RetrieveAsync(null, null, whereCondition, transContext);
         }
 
-        public Task<IList<T>> PageAsync<T>(WhereExpression<T> whereCondition, long pageNumber, long perPageCount, TransactionContext transContext)
+        public Task<IEnumerable<T>> PageAsync<T>(WhereExpression<T> whereCondition, long pageNumber, long perPageCount, TransactionContext transContext)
             where T : DatabaseEntity, new()
         {
             return PageAsync(null, null, whereCondition, pageNumber, perPageCount, transContext);
         }
 
-        public Task<IList<T>> PageAsync<T>(long pageNumber, long perPageCount, TransactionContext transContext)
+        public Task<IEnumerable<T>> PageAsync<T>(long pageNumber, long perPageCount, TransactionContext transContext)
             where T : DatabaseEntity, new()
         {
             return PageAsync<T>(null, null, null, pageNumber, perPageCount, transContext);
@@ -297,7 +297,7 @@ namespace HB.Framework.Database
             return ScalarAsync(null, null, whereCondition, transContext);
         }
 
-        public Task<IList<T>> RetrieveAsync<T>(Expression<Func<T, bool>> whereExpr, TransactionContext transContext)
+        public Task<IEnumerable<T>> RetrieveAsync<T>(Expression<Func<T, bool>> whereExpr, TransactionContext transContext)
             where T : DatabaseEntity, new()
         {
             WhereExpression<T> whereCondition = Where<T>();
@@ -306,7 +306,7 @@ namespace HB.Framework.Database
             return RetrieveAsync(null, null, whereCondition, transContext);
         }
 
-        public Task<IList<T>> PageAsync<T>(Expression<Func<T, bool>> whereExpr, long pageNumber, long perPageCount, TransactionContext transContext)
+        public Task<IEnumerable<T>> PageAsync<T>(Expression<Func<T, bool>> whereExpr, long pageNumber, long perPageCount, TransactionContext transContext)
             where T : DatabaseEntity, new()
         {
             WhereExpression<T> whereCondition = Where<T>();
@@ -327,7 +327,7 @@ namespace HB.Framework.Database
 
         #region 双表查询
 
-        public async Task<IList<Tuple<TSource, TTarget>>> RetrieveAsync<TSource, TTarget>(FromExpression<TSource> fromCondition, WhereExpression<TSource> whereCondition, TransactionContext transContext)
+        public async Task<IEnumerable<Tuple<TSource, TTarget>>> RetrieveAsync<TSource, TTarget>(FromExpression<TSource> fromCondition, WhereExpression<TSource> whereCondition, TransactionContext transContext)
             where TSource : DatabaseEntity, new()
             where TTarget : DatabaseEntity, new()
         {
@@ -383,7 +383,7 @@ namespace HB.Framework.Database
             return result;
         }
 
-        public Task<IList<Tuple<TSource, TTarget>>> PageAsync<TSource, TTarget>(FromExpression<TSource> fromCondition, WhereExpression<TSource> whereCondition, long pageNumber, long perPageCount, TransactionContext transContext)
+        public Task<IEnumerable<Tuple<TSource, TTarget>>> PageAsync<TSource, TTarget>(FromExpression<TSource> fromCondition, WhereExpression<TSource> whereCondition, long pageNumber, long perPageCount, TransactionContext transContext)
             where TSource : DatabaseEntity, new()
             where TTarget : DatabaseEntity, new()
         {
@@ -401,14 +401,14 @@ namespace HB.Framework.Database
             where TSource : DatabaseEntity, new()
             where TTarget : DatabaseEntity, new()
         {
-            IList<Tuple<TSource, TTarget>> lst = await RetrieveAsync<TSource, TTarget>(fromCondition, whereCondition, transContext).ConfigureAwait(false);
+            IEnumerable<Tuple<TSource, TTarget>> lst = await RetrieveAsync<TSource, TTarget>(fromCondition, whereCondition, transContext).ConfigureAwait(false);
 
             if (lst.IsNullOrEmpty())
             {
                 return null;
             }
 
-            if (lst.Count > 1)
+            if (lst.Count() > 1)
             {
                 string message = $"Scalar retrieve return more than one result. From:{fromCondition.ToString()}, Where:{whereCondition.ToString()}";
                 DatabaseException exception = new DatabaseException(DatabaseError.FoundTooMuch, typeof(TSource).FullName, message);
@@ -417,14 +417,14 @@ namespace HB.Framework.Database
                 throw exception;
             }
 
-            return lst[0];
+            return lst.ElementAt(0);
         }
 
         #endregion
 
         #region 三表查询
 
-        public async Task<IList<Tuple<TSource, TTarget1, TTarget2>>> RetrieveAsync<TSource, TTarget1, TTarget2>(FromExpression<TSource> fromCondition, WhereExpression<TSource> whereCondition, TransactionContext transContext)
+        public async Task<IEnumerable<Tuple<TSource, TTarget1, TTarget2>>> RetrieveAsync<TSource, TTarget1, TTarget2>(FromExpression<TSource> fromCondition, WhereExpression<TSource> whereCondition, TransactionContext transContext)
             where TSource : DatabaseEntity, new()
             where TTarget1 : DatabaseEntity, new()
             where TTarget2 : DatabaseEntity, new()
@@ -483,7 +483,7 @@ namespace HB.Framework.Database
             return result;
         }
 
-        public Task<IList<Tuple<TSource, TTarget1, TTarget2>>> PageAsync<TSource, TTarget1, TTarget2>(FromExpression<TSource> fromCondition, WhereExpression<TSource> whereCondition, long pageNumber, long perPageCount, TransactionContext transContext)
+        public Task<IEnumerable<Tuple<TSource, TTarget1, TTarget2>>> PageAsync<TSource, TTarget1, TTarget2>(FromExpression<TSource> fromCondition, WhereExpression<TSource> whereCondition, long pageNumber, long perPageCount, TransactionContext transContext)
             where TSource : DatabaseEntity, new()
             where TTarget1 : DatabaseEntity, new()
             where TTarget2 : DatabaseEntity, new()
@@ -503,14 +503,14 @@ namespace HB.Framework.Database
             where TTarget1 : DatabaseEntity, new()
             where TTarget2 : DatabaseEntity, new()
         {
-            IList<Tuple<TSource, TTarget1, TTarget2>> lst = await RetrieveAsync<TSource, TTarget1, TTarget2>(fromCondition, whereCondition, transContext).ConfigureAwait(false);
+            IEnumerable<Tuple<TSource, TTarget1, TTarget2>> lst = await RetrieveAsync<TSource, TTarget1, TTarget2>(fromCondition, whereCondition, transContext).ConfigureAwait(false);
 
             if (lst.IsNullOrEmpty())
             {
                 return null;
             }
 
-            if (lst.Count > 1)
+            if (lst.Count() > 1)
             {
                 string message = $"Scalar retrieve return more than one result. From:{fromCondition.ToString()}, Where:{whereCondition.ToString()}";
                 DatabaseException exception = new DatabaseException(DatabaseError.FoundTooMuch, typeof(TSource).FullName, message);
@@ -519,7 +519,7 @@ namespace HB.Framework.Database
                 throw exception;
             }
 
-            return lst[0];
+            return lst.ElementAt(0);
         }
 
         #endregion

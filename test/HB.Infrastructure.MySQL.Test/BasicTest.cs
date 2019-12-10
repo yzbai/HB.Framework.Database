@@ -73,7 +73,7 @@ namespace HB.Framework.DatabaseTests
 
             try
             {
-                IList<PublisherEntity> lst = database.RetrieveAll<PublisherEntity>(transContext);
+                IList<PublisherEntity> lst = database.RetrieveAll<PublisherEntity>(transContext).ToList();
 
                 for (int i = 0; i < lst.Count; i += 3)
                 {
@@ -112,7 +112,7 @@ namespace HB.Framework.DatabaseTests
 
             try
             {
-                IList<PublisherEntity> lst = database.Page<PublisherEntity>(2, 100, transactionContext);
+                IList<PublisherEntity> lst = database.Page<PublisherEntity>(2, 100, transactionContext).ToList();
 
                 if (lst.Count != 0)
                 {
@@ -173,7 +173,7 @@ namespace HB.Framework.DatabaseTests
 
             try
             {
-                IList<PublisherEntity> testEntities = database.Page<PublisherEntity>(1, 1, tContext);
+                IList<PublisherEntity> testEntities = database.Page<PublisherEntity>(1, 1, tContext).ToList();
 
                 if (testEntities.Count == 0)
                 {
@@ -214,7 +214,7 @@ namespace HB.Framework.DatabaseTests
 
             try
             {
-                IList<PublisherEntity> testEntities = database.RetrieveAll<PublisherEntity>(tContext);
+                IList<PublisherEntity> testEntities = database.RetrieveAll<PublisherEntity>(tContext).ToList();
 
                 testEntities.ForEach(entity =>
                 {

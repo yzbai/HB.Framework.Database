@@ -1,13 +1,11 @@
-﻿using HB.Framework.Database.SQL;
+﻿using HB.Framework.Database.Engine;
+using HB.Framework.Database.Entity;
+using HB.Framework.Database.SQL;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Linq.Expressions;
-using HB.Framework.Database.Entity;
-using HB.Framework.Database.Engine;
-using System.Data.Common;
-using Microsoft.Extensions.Logging;
 
 namespace HB.Framework.Database
 {
@@ -36,9 +34,9 @@ namespace HB.Framework.Database
         //public IDatabaseEngine DatabaseEngine { get { return _databaseEngine; } }
 
         public DefaultDatabase(
-            IDatabaseEngine databaseEngine, 
-            IDatabaseEntityDefFactory modelDefFactory, 
-            IDatabaseEntityMapper modelMapper, 
+            IDatabaseEngine databaseEngine,
+            IDatabaseEntityDefFactory modelDefFactory,
+            IDatabaseEntityMapper modelMapper,
             ISQLBuilder sqlBuilder/*, ILogger<DefaultDatabase> logger*/)
         {
             _databaseSettings = databaseEngine.DatabaseSettings;
@@ -56,7 +54,7 @@ namespace HB.Framework.Database
 
         #region Initialize
 
-        public void Initialize(IList<Migration> migrations = null)
+        public void Initialize(IEnumerable<Migration> migrations = null)
         {
             if (!_initialized)
             {
@@ -79,7 +77,8 @@ namespace HB.Framework.Database
 
         private void AutoCreateTablesIfBrandNew()
         {
-            _databaseEngine.GetDatabaseNames().ForEach(databaseName => {
+            _databaseEngine.GetDatabaseNames().ForEach(databaseName =>
+            {
 
                 TransactionContext transactionContext = BeginTransaction(databaseName, IsolationLevel.Serializable);
 
@@ -127,14 +126,15 @@ namespace HB.Framework.Database
                 .ForEach(def => CreateTable(def, transactionContext));
         }
 
-        private void Migarate(IList<Migration> migrations)
+        private void Migarate(IEnumerable<Migration> migrations)
         {
             if (migrations != null && migrations.Any(m => m.NewVersion <= m.OldVersion))
             {
-                throw new DatabaseException(DatabaseError.MigrateError,"", $"oldVersion should always lower than newVersions in Database Migrations");
+                throw new DatabaseException(DatabaseError.MigrateError, "", $"oldVersion should always lower than newVersions in Database Migrations");
             }
 
-            _databaseEngine.GetDatabaseNames().ForEach(databaseName => {
+            _databaseEngine.GetDatabaseNames().ForEach(databaseName =>
+            {
 
                 TransactionContext transactionContext = BeginTransaction(databaseName, IsolationLevel.Serializable);
 
@@ -146,7 +146,7 @@ namespace HB.Framework.Database
                     {
                         if (migrations == null)
                         {
-                            throw new DatabaseException(DatabaseError.MigrateError,  "", $"Lack Migrations for {sys.DatabaseName}");
+                            throw new DatabaseException(DatabaseError.MigrateError, "", $"Lack Migrations for {sys.DatabaseName}");
                         }
 
                         IOrderedEnumerable<Migration> curOrderedMigrations = migrations
@@ -160,7 +160,7 @@ namespace HB.Framework.Database
 
                         if (!CheckMigration(sys.Version, _databaseSettings.Version, curOrderedMigrations))
                         {
-                            throw new DatabaseException(DatabaseError.MigrateError,  "", $"Can not perform Migration on ${sys.DatabaseName}, because the migrations provided is not sufficient.");
+                            throw new DatabaseException(DatabaseError.MigrateError, "", $"Can not perform Migration on ${sys.DatabaseName}, because the migrations provided is not sufficient.");
                         }
 
                         curOrderedMigrations.ForEach(migration => _databaseEngine.ExecuteSqlNonQuery(transactionContext.Transaction, databaseName, migration.SqlStatement));
@@ -201,7 +201,7 @@ namespace HB.Framework.Database
 
         #region 单表查询, Select, From, Where
 
-        public IList<TSelect> Retrieve<TSelect, TFrom, TWhere>(SelectExpression<TSelect> selectCondition, FromExpression<TFrom> fromCondition, WhereExpression<TWhere> whereCondition, TransactionContext transContext = null)
+        public IEnumerable<TSelect> Retrieve<TSelect, TFrom, TWhere>(SelectExpression<TSelect> selectCondition, FromExpression<TFrom> fromCondition, WhereExpression<TWhere> whereCondition, TransactionContext transContext = null)
             where TSelect : DatabaseEntity, new()
             where TFrom : DatabaseEntity, new()
             where TWhere : DatabaseEntity, new()
@@ -254,14 +254,14 @@ namespace HB.Framework.Database
         public T Scalar<T>(SelectExpression<T> selectCondition, FromExpression<T> fromCondition, WhereExpression<T> whereCondition, TransactionContext transContext)
             where T : DatabaseEntity, new()
         {
-            IList<T> lst = Retrieve<T>(selectCondition, fromCondition, whereCondition, transContext);
+            IEnumerable<T> lst = Retrieve<T>(selectCondition, fromCondition, whereCondition, transContext);
 
             if (lst.IsNullOrEmpty())
             {
                 return null;
             }
 
-            if (lst.Count > 1)
+            if (lst.Count() > 1)
             {
                 string message = $"Scalar retrieve return more than one result. Select:{selectCondition.ToString()}, From:{fromCondition.ToString()}, Where:{whereCondition.ToString()}";
                 DatabaseException exception = new DatabaseException(DatabaseError.FoundTooMuch, typeof(T).FullName, message);
@@ -270,10 +270,10 @@ namespace HB.Framework.Database
                 throw exception;
             }
 
-            return lst[0];
+            return lst.ElementAt(0);
         }
 
-        public IList<T> Retrieve<T>(SelectExpression<T> selectCondition, FromExpression<T> fromCondition, WhereExpression<T> whereCondition, TransactionContext transContext)
+        public IEnumerable<T> Retrieve<T>(SelectExpression<T> selectCondition, FromExpression<T> fromCondition, WhereExpression<T> whereCondition, TransactionContext transContext)
             where T : DatabaseEntity, new()
         {
             #region Argument Adjusting
@@ -321,7 +321,7 @@ namespace HB.Framework.Database
             return result;
         }
 
-        public IList<T> Page<T>(SelectExpression<T> selectCondition, FromExpression<T> fromCondition, WhereExpression<T> whereCondition, long pageNumber, long perPageCount, TransactionContext transContext)
+        public IEnumerable<T> Page<T>(SelectExpression<T> selectCondition, FromExpression<T> fromCondition, WhereExpression<T> whereCondition, long pageNumber, long perPageCount, TransactionContext transContext)
             where T : DatabaseEntity, new()
         {
             #region Argument Adjusting
@@ -396,13 +396,13 @@ namespace HB.Framework.Database
             return Scalar(null, fromCondition, whereCondition, transContext);
         }
 
-        public IList<T> Retrieve<T>(FromExpression<T> fromCondition, WhereExpression<T> whereCondition, TransactionContext transContext)
+        public IEnumerable<T> Retrieve<T>(FromExpression<T> fromCondition, WhereExpression<T> whereCondition, TransactionContext transContext)
             where T : DatabaseEntity, new()
         {
             return Retrieve(null, fromCondition, whereCondition, transContext);
         }
 
-        public IList<T> Page<T>(FromExpression<T> fromCondition, WhereExpression<T> whereCondition, long pageNumber, long perPageCount, TransactionContext transContext)
+        public IEnumerable<T> Page<T>(FromExpression<T> fromCondition, WhereExpression<T> whereCondition, long pageNumber, long perPageCount, TransactionContext transContext)
             where T : DatabaseEntity, new()
         {
             return Page(null, fromCondition, whereCondition, pageNumber, perPageCount, transContext);
@@ -418,7 +418,7 @@ namespace HB.Framework.Database
 
         #region 单表查询, Where
 
-        public IList<T> RetrieveAll<T>(TransactionContext transContext)
+        public IEnumerable<T> RetrieveAll<T>(TransactionContext transContext)
             where T : DatabaseEntity, new()
         {
             return Retrieve<T>(null, null, null, transContext);
@@ -430,19 +430,19 @@ namespace HB.Framework.Database
             return Scalar(null, null, whereCondition, transContext);
         }
 
-        public IList<T> Retrieve<T>(WhereExpression<T> whereCondition, TransactionContext transContext)
+        public IEnumerable<T> Retrieve<T>(WhereExpression<T> whereCondition, TransactionContext transContext)
             where T : DatabaseEntity, new()
         {
             return Retrieve(null, null, whereCondition, transContext);
         }
 
-        public IList<T> Page<T>(WhereExpression<T> whereCondition, long pageNumber, long perPageCount, TransactionContext transContext)
+        public IEnumerable<T> Page<T>(WhereExpression<T> whereCondition, long pageNumber, long perPageCount, TransactionContext transContext)
             where T : DatabaseEntity, new()
         {
             return Page(null, null, whereCondition, pageNumber, perPageCount, transContext);
         }
 
-        public IList<T> Page<T>(long pageNumber, long perPageCount, TransactionContext transContext)
+        public IEnumerable<T> Page<T>(long pageNumber, long perPageCount, TransactionContext transContext)
             where T : DatabaseEntity, new()
         {
             return Page<T>(null, null, null, pageNumber, perPageCount, transContext);
@@ -479,7 +479,7 @@ namespace HB.Framework.Database
             return Scalar(null, null, whereCondition, transContext);
         }
 
-        public IList<T> Retrieve<T>(Expression<Func<T, bool>> whereExpr, TransactionContext transContext)
+        public IEnumerable<T> Retrieve<T>(Expression<Func<T, bool>> whereExpr, TransactionContext transContext)
             where T : DatabaseEntity, new()
         {
             WhereExpression<T> whereCondition = Where<T>();
@@ -488,7 +488,7 @@ namespace HB.Framework.Database
             return Retrieve(null, null, whereCondition, transContext);
         }
 
-        public IList<T> Page<T>(Expression<Func<T, bool>> whereExpr, long pageNumber, long perPageCount, TransactionContext transContext)
+        public IEnumerable<T> Page<T>(Expression<Func<T, bool>> whereExpr, long pageNumber, long perPageCount, TransactionContext transContext)
             where T : DatabaseEntity, new()
         {
             WhereExpression<T> whereCondition = Where<T>().Where(whereExpr);
@@ -509,7 +509,7 @@ namespace HB.Framework.Database
 
         #region 双表查询
 
-        public IList<Tuple<TSource, TTarget>> Retrieve<TSource, TTarget>(FromExpression<TSource> fromCondition, WhereExpression<TSource> whereCondition, TransactionContext transContext)
+        public IEnumerable<Tuple<TSource, TTarget>> Retrieve<TSource, TTarget>(FromExpression<TSource> fromCondition, WhereExpression<TSource> whereCondition, TransactionContext transContext)
             where TSource : DatabaseEntity, new()
             where TTarget : DatabaseEntity, new()
         {
@@ -565,7 +565,7 @@ namespace HB.Framework.Database
             return result;
         }
 
-        public IList<Tuple<TSource, TTarget>> Page<TSource, TTarget>(FromExpression<TSource> fromCondition, WhereExpression<TSource> whereCondition, long pageNumber, long perPageCount, TransactionContext transContext)
+        public IEnumerable<Tuple<TSource, TTarget>> Page<TSource, TTarget>(FromExpression<TSource> fromCondition, WhereExpression<TSource> whereCondition, long pageNumber, long perPageCount, TransactionContext transContext)
             where TSource : DatabaseEntity, new()
             where TTarget : DatabaseEntity, new()
         {
@@ -583,14 +583,14 @@ namespace HB.Framework.Database
             where TSource : DatabaseEntity, new()
             where TTarget : DatabaseEntity, new()
         {
-            IList<Tuple<TSource, TTarget>> lst = Retrieve<TSource, TTarget>(fromCondition, whereCondition, transContext);
+            IEnumerable<Tuple<TSource, TTarget>> lst = Retrieve<TSource, TTarget>(fromCondition, whereCondition, transContext);
 
             if (lst.IsNullOrEmpty())
             {
                 return null;
             }
 
-            if (lst.Count > 1)
+            if (lst.Count() > 1)
             {
                 string message = $"Scalar retrieve return more than one result. From:{fromCondition.ToString()}, Where:{whereCondition.ToString()}";
                 DatabaseException exception = new DatabaseException(DatabaseError.FoundTooMuch, typeof(TSource).FullName, message);
@@ -599,14 +599,14 @@ namespace HB.Framework.Database
                 throw exception;
             }
 
-            return lst[0];
+            return lst.ElementAt(0);
         }
 
         #endregion
 
         #region 三表查询
 
-        public IList<Tuple<TSource, TTarget1, TTarget2>> Retrieve<TSource, TTarget1, TTarget2>(FromExpression<TSource> fromCondition, WhereExpression<TSource> whereCondition, TransactionContext transContext)
+        public IEnumerable<Tuple<TSource, TTarget1, TTarget2>> Retrieve<TSource, TTarget1, TTarget2>(FromExpression<TSource> fromCondition, WhereExpression<TSource> whereCondition, TransactionContext transContext)
             where TSource : DatabaseEntity, new()
             where TTarget1 : DatabaseEntity, new()
             where TTarget2 : DatabaseEntity, new()
@@ -665,7 +665,7 @@ namespace HB.Framework.Database
             return result;
         }
 
-        public IList<Tuple<TSource, TTarget1, TTarget2>> Page<TSource, TTarget1, TTarget2>(FromExpression<TSource> fromCondition, WhereExpression<TSource> whereCondition, long pageNumber, long perPageCount, TransactionContext transContext)
+        public IEnumerable<Tuple<TSource, TTarget1, TTarget2>> Page<TSource, TTarget1, TTarget2>(FromExpression<TSource> fromCondition, WhereExpression<TSource> whereCondition, long pageNumber, long perPageCount, TransactionContext transContext)
             where TSource : DatabaseEntity, new()
             where TTarget1 : DatabaseEntity, new()
             where TTarget2 : DatabaseEntity, new()
@@ -685,14 +685,14 @@ namespace HB.Framework.Database
             where TTarget1 : DatabaseEntity, new()
             where TTarget2 : DatabaseEntity, new()
         {
-            IList<Tuple<TSource, TTarget1, TTarget2>> lst = Retrieve<TSource, TTarget1, TTarget2>(fromCondition, whereCondition, transContext);
+            IEnumerable<Tuple<TSource, TTarget1, TTarget2>> lst = Retrieve<TSource, TTarget1, TTarget2>(fromCondition, whereCondition, transContext);
 
             if (lst.IsNullOrEmpty())
             {
                 return null;
             }
 
-            if (lst.Count > 1)
+            if (lst.Count() > 1)
             {
                 string message = $"Scalar retrieve return more than one result. From:{fromCondition.ToString()}, Where:{whereCondition.ToString()}";
                 DatabaseException exception = new DatabaseException(DatabaseError.FoundTooMuch, typeof(TSource).FullName, message);
@@ -701,7 +701,7 @@ namespace HB.Framework.Database
                 throw exception;
             }
 
-            return lst[0];
+            return lst.ElementAt(0);
         }
 
         #endregion
@@ -1096,7 +1096,8 @@ namespace HB.Framework.Database
         {
             IDbTransaction dbTransaction = _databaseEngine.BeginTransaction(databaseName, isolationLevel);
 
-            return new TransactionContext() {
+            return new TransactionContext()
+            {
                 Transaction = dbTransaction,
                 Status = TransactionStatus.InTransaction
             };

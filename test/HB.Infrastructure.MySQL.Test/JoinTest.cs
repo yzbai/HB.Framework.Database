@@ -4,6 +4,7 @@ using HB.Infrastructure.MySQL;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using Xunit;
 using Xunit.Abstractions;
@@ -117,7 +118,7 @@ namespace HB.Framework.DatabaseTests
             try
             {
                 var result = database.Retrieve<A, AB, B>(from, database.Where<A>(), null);
-                Assert.True(result.Count > 0);
+                Assert.True(result.Count() > 0);
             }
             catch(Exception ex)
             {
@@ -143,7 +144,7 @@ namespace HB.Framework.DatabaseTests
             try
             {
                 var result = database.Retrieve<C, A>(from, database.Where<C>(), null);
-                Assert.True(result.Count > 0);
+                Assert.True(result.Count() > 0);
             }
             catch (Exception ex)
             {

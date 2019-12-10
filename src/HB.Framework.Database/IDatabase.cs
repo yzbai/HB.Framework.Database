@@ -12,9 +12,9 @@ namespace HB.Framework.Database
     public interface IDatabase : IDatabaseAsync
     {
 
-        void Initialize(IList<Migration> migrations = null);
+        void Initialize(IEnumerable<Migration> migrations = null);
 
-        IList<TSelect> Retrieve<TSelect, TFrom, TWhere>(
+        IEnumerable<TSelect> Retrieve<TSelect, TFrom, TWhere>(
             SelectExpression<TSelect> selectCondition,
             FromExpression<TFrom> fromCondition,
             WhereExpression<TWhere> whereCondition,
@@ -24,20 +24,20 @@ namespace HB.Framework.Database
             where TWhere : DatabaseEntity, new();
 
         //delete
-        IList<T> Retrieve<T>(
+        IEnumerable<T> Retrieve<T>(
             WhereExpression<T> whereCondition,
             TransactionContext transContext
             )
             where T : DatabaseEntity, new();
 
-        IList<T> Retrieve<T>(
+        IEnumerable<T> Retrieve<T>(
             Expression<Func<T, bool>> whereExpr,
             TransactionContext transContext
             )
             where T : DatabaseEntity, new();
 
         //modify
-        IList<T> Retrieve<T>(
+        IEnumerable<T> Retrieve<T>(
             FromExpression<T> fromCondition,
             WhereExpression<T> whereCondition,
             TransactionContext transContext
@@ -45,7 +45,7 @@ namespace HB.Framework.Database
             where T : DatabaseEntity, new();
 
         //Delete
-        IList<T> Retrieve<T>(
+        IEnumerable<T> Retrieve<T>(
             SelectExpression<T> selectCondition,
             FromExpression<T> fromCondition,
             WhereExpression<T> whereCondition,
@@ -54,7 +54,7 @@ namespace HB.Framework.Database
             where T : DatabaseEntity, new();
 
 
-        IList<Tuple<TSource, TTarget>> Retrieve<TSource, TTarget>(
+        IEnumerable<Tuple<TSource, TTarget>> Retrieve<TSource, TTarget>(
             FromExpression<TSource> fromCondition,
             WhereExpression<TSource> whereCondition,
             TransactionContext transContext
@@ -63,13 +63,13 @@ namespace HB.Framework.Database
             where TTarget : DatabaseEntity, new();
 
 
-        IList<Tuple<TSource, TTarget1, TTarget2>> Retrieve<TSource, TTarget1, TTarget2>(FromExpression<TSource> fromCondition, WhereExpression<TSource> whereCondition, TransactionContext transContext)
+        IEnumerable<Tuple<TSource, TTarget1, TTarget2>> Retrieve<TSource, TTarget1, TTarget2>(FromExpression<TSource> fromCondition, WhereExpression<TSource> whereCondition, TransactionContext transContext)
             where TSource : DatabaseEntity, new()
             where TTarget1 : DatabaseEntity, new()
             where TTarget2 : DatabaseEntity, new();
         string GetTableCreateStatement(Type type, bool addDropStatement);
 
-        IList<T> RetrieveAll<T>(TransactionContext transContext) where T : DatabaseEntity, new();
+        IEnumerable<T> RetrieveAll<T>(TransactionContext transContext) where T : DatabaseEntity, new();
 
 
         long Count<T>(TransactionContext transContext) where T : DatabaseEntity, new();
@@ -79,15 +79,15 @@ namespace HB.Framework.Database
         long Count<T>(SelectExpression<T> selectCondition, FromExpression<T> fromCondition, WhereExpression<T> whereCondition, TransactionContext transContext) where T : DatabaseEntity, new();
 
 
-        IList<T> Page<T>(long pageNumber, long perPageCount, TransactionContext transContext) where T : DatabaseEntity, new();
-        IList<T> Page<T>(WhereExpression<T> whereCondition, long pageNumber, long perPageCount, TransactionContext transContext) where T : DatabaseEntity, new();
-        IList<T> Page<T>(Expression<Func<T, bool>> whereExpr, long pageNumber, long perPageCount, TransactionContext transContext) where T : DatabaseEntity, new();
-        IList<T> Page<T>(FromExpression<T> fromCondition, WhereExpression<T> whereCondition, long pageNumber, long perPageCount, TransactionContext transContext) where T : DatabaseEntity, new();
-        IList<T> Page<T>(SelectExpression<T> selectCondition, FromExpression<T> fromCondition, WhereExpression<T> whereCondition, long pageNumber, long perPageCount, TransactionContext transContext) where T : DatabaseEntity, new();
-        IList<Tuple<TSource, TTarget>> Page<TSource, TTarget>(FromExpression<TSource> fromCondition, WhereExpression<TSource> whereCondition, long pageNumber, long perPageCount, TransactionContext transContext)
+        IEnumerable<T> Page<T>(long pageNumber, long perPageCount, TransactionContext transContext) where T : DatabaseEntity, new();
+        IEnumerable<T> Page<T>(WhereExpression<T> whereCondition, long pageNumber, long perPageCount, TransactionContext transContext) where T : DatabaseEntity, new();
+        IEnumerable<T> Page<T>(Expression<Func<T, bool>> whereExpr, long pageNumber, long perPageCount, TransactionContext transContext) where T : DatabaseEntity, new();
+        IEnumerable<T> Page<T>(FromExpression<T> fromCondition, WhereExpression<T> whereCondition, long pageNumber, long perPageCount, TransactionContext transContext) where T : DatabaseEntity, new();
+        IEnumerable<T> Page<T>(SelectExpression<T> selectCondition, FromExpression<T> fromCondition, WhereExpression<T> whereCondition, long pageNumber, long perPageCount, TransactionContext transContext) where T : DatabaseEntity, new();
+        IEnumerable<Tuple<TSource, TTarget>> Page<TSource, TTarget>(FromExpression<TSource> fromCondition, WhereExpression<TSource> whereCondition, long pageNumber, long perPageCount, TransactionContext transContext)
             where TSource : DatabaseEntity, new()
             where TTarget : DatabaseEntity, new();
-        IList<Tuple<TSource, TTarget1, TTarget2>> Page<TSource, TTarget1, TTarget2>(FromExpression<TSource> fromCondition, WhereExpression<TSource> whereCondition, long pageNumber, long perPageCount, TransactionContext transContext)
+        IEnumerable<Tuple<TSource, TTarget1, TTarget2>> Page<TSource, TTarget1, TTarget2>(FromExpression<TSource> fromCondition, WhereExpression<TSource> whereCondition, long pageNumber, long perPageCount, TransactionContext transContext)
             where TSource : DatabaseEntity, new()
             where TTarget1 : DatabaseEntity, new()
             where TTarget2 : DatabaseEntity, new();
