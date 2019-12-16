@@ -677,10 +677,25 @@ CREATE TABLE {definition.DbTableReservedName} (
                     ? _databaseEngine.GetDbTypeStatement(info.PropertyType) 
                     : info.TypeConverter.TypeToDbTypeStatement(info.PropertyType);
 
+                if (length >= 16383) //因为utf8mb4编码，一个汉字4个字节
+                {
+                    dbTypeStatement = "MEDIUMTEXT";
+                }
+
+                if (length >= 4194303)
+                {
+                    throw new Exception($"字段长度太长。{info.EntityDef.EntityFullName} : {info.PropertyName}");
+                }
+
+                if(info.IsLengthFixed)
+                {
+                    dbTypeStatement = "CHAR";
+                }
+
                 sql.AppendFormat(GlobalSettings.Culture, " {0} {1}{2} {6} {3} {4} {5},",
                     info.DbReservedName,
-                    info.IsLengthFixed ? "CHAR" : length >= 21845 ? "TEXT" : dbTypeStatement,
-                    length == 0 ? "" : "(" + length + ")",
+                    dbTypeStatement,
+                    (length == 0 ||  dbTypeStatement == "MEDIUMTEXT") ? "" : "(" + length + ")",
                     info.IsNullable == true ? "" : " NOT NULL ",
                     string.IsNullOrEmpty(info.DbDefaultValue) ? "" : "DEFAULT " + info.DbDefaultValue,
                     !info.IsAutoIncrementPrimaryKey && !info.IsForeignKey && info.IsUnique ? " UNIQUE " : "",
