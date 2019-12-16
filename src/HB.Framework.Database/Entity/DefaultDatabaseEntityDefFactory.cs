@@ -33,13 +33,15 @@ namespace HB.Framework.Database.Entity
 
             IEnumerable<Type> allEntityTypes;
 
+            Func<Type, bool> entityTypeCondition = t => t.IsSubclassOf(typeof(DatabaseEntity)) && !t.IsAbstract;
+
             if (_databaseSettings.AssembliesIncludeEntity.IsNullOrEmpty())
             {
-                allEntityTypes = ReflectUtil.GetAllTypeByCondition(t => t.IsSubclassOf(typeof(DatabaseEntity)));
+                allEntityTypes = ReflectUtil.GetAllTypeByCondition(entityTypeCondition);
             }
             else
             {
-                allEntityTypes = ReflectUtil.GetAllTypeByCondition(_databaseSettings.AssembliesIncludeEntity, t => t.IsSubclassOf(typeof(DatabaseEntity)));
+                allEntityTypes = ReflectUtil.GetAllTypeByCondition(_databaseSettings.AssembliesIncludeEntity, entityTypeCondition);
             }
 
             _entitySchemaDict = ConstructeSchemaDict(allEntityTypes);
