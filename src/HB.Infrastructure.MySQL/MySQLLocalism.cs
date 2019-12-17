@@ -142,7 +142,7 @@ namespace HB.Infrastructure.MySQL
 
         public static string GetQuoted(string name)
         {
-            return QuotedChar + name.Replace(QuotedChar, QuotedChar + QuotedChar) + QuotedChar;
+            return QuotedChar + name.Replace(QuotedChar, QuotedChar + QuotedChar, GlobalSettings.Comparison) + QuotedChar;
         }
 
         public static string GetParameterized(string name)
@@ -194,9 +194,9 @@ namespace HB.Infrastructure.MySQL
             //TODO:增加对值的过滤，预防SQL注入
             return dbValueStatement.ToString(GlobalSettings.Culture)
                 //.Replace("'", "''")
-                .Replace("--", "")
-                .Replace("/*", "")
-                .Replace("*/", "");
+                .Replace("--", "", GlobalSettings.Comparison)
+                .Replace("/*", "", GlobalSettings.Comparison)
+                .Replace("*/", "", GlobalSettings.Comparison);
         }
     }
 }

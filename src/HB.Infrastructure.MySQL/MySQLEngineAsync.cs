@@ -108,9 +108,14 @@ namespace HB.Infrastructure.MySQL
 
             MySqlConnection connection = mySqlTransaction.Connection;
 
-            await mySqlTransaction.CommitAsync().ConfigureAwait(false);
-
-            connection.Close();
+            try
+            {
+                await mySqlTransaction.CommitAsync().ConfigureAwait(false);
+            }
+            finally
+            {
+                connection.Close();
+            }
         }
 
         public async Task RollbackAsync(IDbTransaction transaction)
@@ -119,9 +124,14 @@ namespace HB.Infrastructure.MySQL
 
             MySqlConnection connection = mySqlTransaction.Connection;
 
-            await mySqlTransaction.RollbackAsync().ConfigureAwait(false);
-
-            connection.Close();
+            try
+            {
+                await mySqlTransaction.RollbackAsync().ConfigureAwait(false);
+            }
+            finally
+            {
+                connection.Close();
+            }
         }
 
 

@@ -77,8 +77,8 @@ namespace HB.Infrastructure.MySQL
         #region Command Scalar
 
         public static Task<object> ExecuteCommandScalarAsync(string connectString, IDbCommand dbCommand)
-        {
-            MySqlConnection conn = new MySqlConnection(connectString);
+        {           
+            using MySqlConnection conn = new MySqlConnection(connectString);
             return ExecuteCommandScalarAsync(conn, true, (MySqlCommand)dbCommand);
         }
 
@@ -118,7 +118,7 @@ namespace HB.Infrastructure.MySQL
             {
                 if (isOwnedConnection)
                 {
-                    connection.Close();
+                    await connection.CloseAsync().ConfigureAwait(false);
                 }
             }
 
@@ -131,7 +131,7 @@ namespace HB.Infrastructure.MySQL
 
         public static Task<int> ExecuteCommandNonQueryAsync(string connectString, IDbCommand dbCommand)
         {
-            MySqlConnection conn = new MySqlConnection(connectString);
+            using MySqlConnection conn = new MySqlConnection(connectString);
 
             return ExecuteCommandNonQueryAsync(conn, true, (MySqlCommand)dbCommand);
         }
@@ -172,7 +172,7 @@ namespace HB.Infrastructure.MySQL
             {
                 if (isOwnedConnection)
                 {
-                    conn.Close();
+                    await conn.CloseAsync().ConfigureAwait(false);
                 }
             }
 

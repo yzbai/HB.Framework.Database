@@ -119,8 +119,10 @@ namespace HB.Framework.Database
         void BatchUpdate<T>(IEnumerable<T> items, TransactionContext transContext) where T : DatabaseEntity, new();
 
 
+
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Naming", "CA1716:Identifiers should not match keywords", Justification = "<Pending>")]
         SelectExpression<T> Select<T>() where T : DatabaseEntity, new();
+
         FromExpression<T> From<T>() where T : DatabaseEntity, new();
         WhereExpression<T> Where<T>() where T : DatabaseEntity, new();
 

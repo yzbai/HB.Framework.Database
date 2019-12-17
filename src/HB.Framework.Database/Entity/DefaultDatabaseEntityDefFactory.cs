@@ -33,7 +33,7 @@ namespace HB.Framework.Database.Entity
 
             IEnumerable<Type> allEntityTypes;
 
-            Func<Type, bool> entityTypeCondition = t => t.IsSubclassOf(typeof(DatabaseEntity)) && !t.IsAbstract;
+            static bool entityTypeCondition(Type t) => t.IsSubclassOf(typeof(DatabaseEntity)) && !t.IsAbstract;
 
             if (_databaseSettings.AssembliesIncludeEntity.IsNullOrEmpty())
             {
@@ -189,7 +189,7 @@ namespace HB.Framework.Database.Entity
             {
                 IEnumerable<Attribute> atts2 = info.GetCustomAttributes(typeof(EntityPropertyIgnoreAttribute), false).Select<object, Attribute>(o => (Attribute)o);
 
-                if (atts2 == null || atts2.Count() == 0)
+                if (atts2.IsNullOrEmpty())
                 {
                     DatabaseEntityPropertyDef propertyDef = CreatePropertyDef(entityDef, info);
 
@@ -221,7 +221,7 @@ namespace HB.Framework.Database.Entity
             #region 数据库
 
             IEnumerable<Attribute> propertyAttrs = info.GetCustomAttributes(typeof(EntityPropertyAttribute), false).Select(o => (Attribute)o);
-            if (propertyAttrs != null && propertyAttrs.Count() > 0)
+            if (propertyAttrs.IsNotNullOrEmpty())
             {
                 EntityPropertyAttribute propertyAttr = propertyAttrs.ElementAt(0) as EntityPropertyAttribute;
 
@@ -240,8 +240,8 @@ namespace HB.Framework.Database.Entity
             }
 
             //判断是否是主键
-            IEnumerable<Attribute> atts1 = info.GetCustomAttributes(typeof(AutoIncrementPrimaryKeyAttribute), false).Select<object, Attribute>(o => (Attribute)o);
-            if (atts1 != null && atts1.Count() > 0)
+            IEnumerable<Attribute> atts1 = info.GetCustomAttributes(typeof(AutoIncrementPrimaryKeyAttribute), false).Select(o => (Attribute)o);
+            if (atts1.IsNotNullOrEmpty())
             {
                 propertyDef.IsTableProperty = true;
                 propertyDef.IsAutoIncrementPrimaryKey = true;
@@ -252,8 +252,8 @@ namespace HB.Framework.Database.Entity
             else
             {
                 //判断是否外键
-                IEnumerable<Attribute> atts2 = info.GetCustomAttributes(typeof(ForeignKeyAttribute), false).Select<object, Attribute>(o => (Attribute)o);
-                if (atts2 != null && atts2.Count() > 0)
+                IEnumerable<Attribute> atts2 = info.GetCustomAttributes(typeof(ForeignKeyAttribute), false).Select(o => (Attribute)o);
+                if (atts2.IsNotNullOrEmpty())
                 {
                     propertyDef.IsTableProperty = true;
                     propertyDef.IsAutoIncrementPrimaryKey = false;

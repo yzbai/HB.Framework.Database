@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using HB.Framework.Database.Entity;
 using HB.Framework.Database.SQL;
 using Microsoft.Extensions.Logging;
+using HB.Framework.Database.Properties;
 
 namespace HB.Framework.Database
 {
@@ -906,7 +907,7 @@ namespace HB.Framework.Database
 
             if (context.Status != TransactionStatus.InTransaction)
             {
-                throw new DatabaseException( DatabaseError.TransactionError, "", "use a already finished transactioncontenxt");
+                throw new DatabaseException( DatabaseError.TransactionError, "", Resources.TransactionAlreadyFinishedMessage);
             }
 
             try
@@ -928,7 +929,7 @@ namespace HB.Framework.Database
             catch
             {
                 context.Status = TransactionStatus.Failed;
-                //throw ex;
+                throw;
             }
         }
 
@@ -949,7 +950,7 @@ namespace HB.Framework.Database
 
             if (context.Status != TransactionStatus.InTransaction)
             {
-                throw new DatabaseException(DatabaseError.TransactionError,  "", "use a already finished transactioncontenxt");
+                throw new DatabaseException(DatabaseError.TransactionError,  "", Resources.TransactionAlreadyFinishedMessage);
             }
 
             try

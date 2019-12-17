@@ -1,5 +1,6 @@
 ﻿using HB.Framework.Database.Engine;
 using HB.Framework.Database.Entity;
+using HB.Framework.Database.Properties;
 using HB.Framework.Database.SQL;
 using System;
 using System.Collections.Generic;
@@ -48,7 +49,7 @@ namespace HB.Framework.Database
 
             if (_databaseSettings.Version < 0)
             {
-                throw new ArgumentException("Database Version should greater than 0");
+                throw new ArgumentException(Resources.VersionShouldBePositiveMessage);
             }
         }
 
@@ -130,7 +131,7 @@ namespace HB.Framework.Database
         {
             if (migrations != null && migrations.Any(m => m.NewVersion <= m.OldVersion))
             {
-                throw new DatabaseException(DatabaseError.MigrateError, "", $"oldVersion should always lower than newVersions in Database Migrations");
+                throw new DatabaseException(DatabaseError.MigrateError, "", Resources.MigrationVersionErrorMessage);
             }
 
             _databaseEngine.GetDatabaseNames().ForEach(databaseName =>
@@ -1127,7 +1128,7 @@ namespace HB.Framework.Database
 
             if (context.Status != TransactionStatus.InTransaction)
             {
-                throw new DatabaseException(DatabaseError.TransactionError, "", "use a already finished transactioncontenxt");
+                throw new DatabaseException(DatabaseError.TransactionError, "", Resources.TransactionAlreadyFinishedMessage);
             }
 
             try
@@ -1168,7 +1169,7 @@ namespace HB.Framework.Database
 
             if (context.Status != TransactionStatus.InTransaction)
             {
-                throw new DatabaseException(DatabaseError.TransactionError, "", "use a already finished transactioncontenxt");
+                throw new DatabaseException(DatabaseError.TransactionError, "", Resources.TransactionAlreadyFinishedMessage);
             }
 
             try

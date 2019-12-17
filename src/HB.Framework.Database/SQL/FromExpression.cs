@@ -1,5 +1,6 @@
 ﻿using HB.Framework.Database.Engine;
 using HB.Framework.Database.Entity;
+using HB.Framework.Database.Properties;
 using System;
 using System.Linq.Expressions;
 using System.Text;
@@ -51,7 +52,7 @@ namespace HB.Framework.Database.SQL
         {
             if (JoinType != null && JoinType != SqlJoinType.INNER)
             {
-                throw new ArgumentException("DO NOT MIX JOIN UP");
+                throw new ArgumentException(Resources.SqlJoinTypeMixedErrorMessage);
             }
 
             JoinType = SqlJoinType.INNER;
@@ -65,7 +66,7 @@ namespace HB.Framework.Database.SQL
         {
             if (JoinType != null && JoinType != SqlJoinType.INNER)
             {
-                throw new ArgumentException("DO NOT MIX JOIN UP");
+                throw new ArgumentException(Resources.SqlJoinTypeMixedErrorMessage);
             }
 
             JoinType = SqlJoinType.INNER;
@@ -77,7 +78,7 @@ namespace HB.Framework.Database.SQL
         {
             if (JoinType != null && JoinType != SqlJoinType.LEFT)
             {
-                throw new ArgumentException("DO NOT MIX JOIN UP");
+                throw new ArgumentException(Resources.SqlJoinTypeMixedErrorMessage);
             }
 
             JoinType = SqlJoinType.LEFT;
@@ -91,7 +92,7 @@ namespace HB.Framework.Database.SQL
         {
             if (JoinType != null && JoinType != SqlJoinType.LEFT)
             {
-                throw new ArgumentException("DO NOT MIX JOIN UP");
+                throw new ArgumentException(Resources.SqlJoinTypeMixedErrorMessage);
             }
 
             JoinType = SqlJoinType.LEFT;
@@ -103,7 +104,7 @@ namespace HB.Framework.Database.SQL
         {
             if (JoinType != null && JoinType != SqlJoinType.RIGHT)
             {
-                throw new ArgumentException("DO NOT MIX JOIN UP");
+                throw new ArgumentException(Resources.SqlJoinTypeMixedErrorMessage);
             }
 
             JoinType = SqlJoinType.RIGHT;
@@ -117,7 +118,7 @@ namespace HB.Framework.Database.SQL
         {
             if (JoinType != null && JoinType != SqlJoinType.RIGHT)
             {
-                throw new ArgumentException("DO NOT MIX JOIN UP");
+                throw new ArgumentException(Resources.SqlJoinTypeMixedErrorMessage);
             }
 
             JoinType = SqlJoinType.RIGHT;
@@ -129,7 +130,7 @@ namespace HB.Framework.Database.SQL
         {
             if (JoinType != null && JoinType != SqlJoinType.FULL)
             {
-                throw new ArgumentException("DO NOT MIX JOIN UP");
+                throw new ArgumentException(Resources.SqlJoinTypeMixedErrorMessage);
             }
 
             JoinType = SqlJoinType.FULL;
@@ -143,7 +144,7 @@ namespace HB.Framework.Database.SQL
         {
             if (JoinType != null && JoinType != SqlJoinType.FULL)
             {
-                throw new ArgumentException("DO NOT MIX JOIN UP");
+                throw new ArgumentException(Resources.SqlJoinTypeMixedErrorMessage);
             }
 
             JoinType = SqlJoinType.FULL;
@@ -155,7 +156,7 @@ namespace HB.Framework.Database.SQL
         {
             if (JoinType != null && JoinType != SqlJoinType.CROSS)
             {
-                throw new ArgumentException("DO NOT MIX JOIN UP");
+                throw new ArgumentException(Resources.SqlJoinTypeMixedErrorMessage);
             }
 
             JoinType = SqlJoinType.CROSS;
@@ -169,7 +170,7 @@ namespace HB.Framework.Database.SQL
         {
             if (JoinType != null && JoinType != SqlJoinType.CROSS)
             {
-                throw new ArgumentException("DO NOT MIX JOIN UP");
+                throw new ArgumentException(Resources.SqlJoinTypeMixedErrorMessage);
             }
 
             JoinType = SqlJoinType.CROSS;

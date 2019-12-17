@@ -1,4 +1,5 @@
-﻿using System;
+﻿using HB.Framework.Database.Properties;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -23,12 +24,12 @@ namespace HB.Framework.Database
 
             if (oldVersion < 1)
             {
-                throw new ArgumentException("version should greater than 1.");
+                throw new ArgumentException(Resources.MigrateOldVersionErrorMessage);
             }
 
             if (newVersion != oldVersion + 1)
             {
-                throw new ArgumentException("Now days, you can only take 1 step further each time.");
+                throw new ArgumentException(Resources.MigrateVersionStepErrorMessage);
             }
 
             if (sql.IsNullOrEmpty())

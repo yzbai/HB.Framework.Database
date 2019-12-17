@@ -1,4 +1,5 @@
-﻿using System;
+﻿using HB.Framework.Database.Properties;
+using System;
 using System.Reflection;
 
 namespace HB.Framework.Database.SQL
@@ -16,7 +17,7 @@ namespace HB.Framework.Database.SQL
         {
             if (!enumType.IsEnum)
             {
-                throw new ArgumentException("Type not valid", nameof(enumType));
+                throw new ArgumentException(Resources.TypeNotValidErrorMessage, nameof(enumType));
             }
 
             EnumType = enumType;

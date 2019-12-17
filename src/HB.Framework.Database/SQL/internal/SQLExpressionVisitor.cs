@@ -272,7 +272,9 @@ namespace HB.Framework.Database.SQL
         {
             if (c.Value == null)
             {
+#pragma warning disable CA1303 // Do not pass literals as localized parameters
                 return new PartialSqlString("null");
+#pragma warning restore CA1303 // Do not pass literals as localized parameters
             }
 
             return c.Value;
@@ -614,7 +616,7 @@ namespace HB.Framework.Database.SQL
 
         private static bool IsTableField(Type type, object quotedExp, SQLExpressionVisitorContenxt context)
         {
-            string name = quotedExp.ToString().Replace(context.DatabaesEngine.QuotedChar, "");
+            string name = quotedExp.ToString().Replace(context.DatabaesEngine.QuotedChar, "", GlobalSettings.Comparison);
 
             DatabaseEntityDef entityDef = context.EntityDefFactory.GetDef(type);
 

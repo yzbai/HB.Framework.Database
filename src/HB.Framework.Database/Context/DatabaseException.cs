@@ -21,8 +21,7 @@ namespace HB.Framework.Database
         public string Operation { get; private set; }
 
 
-        public DatabaseException(Exception innerException,
-             string entityName, string message, [CallerMemberName]string operation = "")
+        public DatabaseException(Exception innerException, string entityName, string message, [CallerMemberName]string operation = "")
             : base(message, innerException)
         {
             if (innerException is DatabaseException databaseException)
@@ -42,8 +41,7 @@ namespace HB.Framework.Database
 
         }
 
-        public DatabaseException(DatabaseError error,
-             string entityName, string message, Exception innerException = null, [CallerMemberName]string operation = "")
+        public DatabaseException(DatabaseError error, string entityName, string message, Exception innerException = null, [CallerMemberName]string operation = "")
             : base(message, innerException)
         {
             Error = error;
@@ -75,6 +73,18 @@ namespace HB.Framework.Database
 
                 return _data;
             }
+        }
+
+        public DatabaseException()
+        {
+        }
+
+        public DatabaseException(string message) : base(message)
+        {
+        }
+
+        public DatabaseException(string message, Exception innerException) : base(message, innerException)
+        {
         }
     }
 }

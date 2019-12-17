@@ -51,7 +51,7 @@ namespace HB.Infrastructure.MySQL
 
                 return reader;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 if (isOwnedConnection)
                 {
@@ -79,7 +79,7 @@ namespace HB.Infrastructure.MySQL
 
         public static object ExecuteCommandScalar(string connectString, IDbCommand dbCommand)
         {
-            MySqlConnection conn = new MySqlConnection(connectString);
+            using MySqlConnection conn = new MySqlConnection(connectString);
             return ExecuteCommandScalar(conn, true, (MySqlCommand)dbCommand);
         }
 
@@ -104,7 +104,7 @@ namespace HB.Infrastructure.MySQL
 
                 rtObj = command.ExecuteScalar();
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 if (ex is MySqlException mySqlException)
                 {
@@ -132,7 +132,7 @@ namespace HB.Infrastructure.MySQL
 
         public static int ExecuteCommandNonQuery(string connectString, IDbCommand dbCommand)
         {
-            MySqlConnection conn = new MySqlConnection(connectString);
+            using MySqlConnection conn = new MySqlConnection(connectString);
 
             return ExecuteCommandNonQuery(conn, true, (MySqlCommand)dbCommand);
         }
@@ -159,7 +159,7 @@ namespace HB.Infrastructure.MySQL
 
                 rtInt = command.ExecuteNonQuery();
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 if (ex is MySqlException mySqlException)
                 {
@@ -340,7 +340,7 @@ namespace HB.Infrastructure.MySQL
 
         #region SP Reader
 
-        public static Tuple<IDbCommand,IDataReader> ExecuteSPReader(string connectString, string spName, IList<IDataParameter> dbParameters)
+        public static Tuple<IDbCommand, IDataReader> ExecuteSPReader(string connectString, string spName, IList<IDataParameter> dbParameters)
         {
             MySqlConnection conn = new MySqlConnection(connectString);
             conn.Open();
@@ -372,7 +372,7 @@ namespace HB.Infrastructure.MySQL
                     reader = command.ExecuteReader();
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 if (isOwedConnection)
                 {
@@ -396,7 +396,7 @@ namespace HB.Infrastructure.MySQL
 
             command.Parameters.Clear();
 
-            return new Tuple<IDbCommand, IDataReader>(command,reader);
+            return new Tuple<IDbCommand, IDataReader>(command, reader);
         }
 
         #endregion
@@ -406,7 +406,7 @@ namespace HB.Infrastructure.MySQL
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>")]
         public static int ExecuteSqlNonQuery(string connectionString, string sqlString)
         {
-            MySqlConnection conn = new MySqlConnection(connectionString);
+            using MySqlConnection conn = new MySqlConnection(connectionString);
 
             using MySqlCommand command = new MySqlCommand
             {
@@ -445,7 +445,7 @@ namespace HB.Infrastructure.MySQL
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>")]
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "<Pending>")]
-        public static Tuple<IDbCommand,IDataReader> ExecuteSqlReader(MySqlTransaction mySqlTransaction, string sqlString)
+        public static Tuple<IDbCommand, IDataReader> ExecuteSqlReader(MySqlTransaction mySqlTransaction, string sqlString)
         {
             MySqlCommand command = new MySqlCommand
             {
@@ -459,7 +459,7 @@ namespace HB.Infrastructure.MySQL
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>")]
         public static object ExecuteSqlScalar(string connectionString, string sqlString)
         {
-            MySqlConnection conn = new MySqlConnection(connectionString);
+            using MySqlConnection conn = new MySqlConnection(connectionString);
 
             using MySqlCommand command = new MySqlCommand
             {

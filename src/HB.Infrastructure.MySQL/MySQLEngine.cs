@@ -304,15 +304,28 @@ namespace HB.Infrastructure.MySQL
         public void Commit(IDbTransaction transaction)
         {
             IDbConnection dbConnection = transaction.Connection;
-            transaction.Commit();
-            dbConnection.Close();
+
+            try
+            {
+                transaction.Commit();
+            }
+            finally
+            {
+                dbConnection.Close();
+            }
         }
 
         public void Rollback(IDbTransaction transaction)
         {
             IDbConnection dbConnection = transaction.Connection;
-            transaction.Rollback();
-            dbConnection.Close();
+            try
+            {
+                transaction.Rollback();
+            }
+            finally
+            {
+                dbConnection.Close();
+            }
         }
 
         #endregion

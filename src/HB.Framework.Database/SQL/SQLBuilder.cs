@@ -391,10 +391,7 @@ namespace HB.Framework.Database.SQL
 
         public IDbCommand CreateBatchAddStatement<T>(IEnumerable<T> entities, string lastUser) where T : DatabaseEntity, new()
         {
-            if (entities == null || entities.Count() == 0)
-            {
-                throw new ArgumentNullException(nameof(entities));
-            }
+            ThrowIf.NullOrEmpty(entities, nameof(entities));
 
             StringBuilder innerBuilder = new StringBuilder();
             DatabaseEntityDef definition = _entityDefFactory.GetDef<T>();
@@ -471,10 +468,7 @@ namespace HB.Framework.Database.SQL
 
         public IDbCommand CreateBatchUpdateStatement<T>(IEnumerable<T> entities, string lastUser) where T : DatabaseEntity, new()
         {
-            if (entities == null || entities.Count() == 0)
-            {
-                throw new ArgumentNullException(nameof(entities));
-            }
+            ThrowIf.NullOrEmpty(entities, nameof(entities));
 
             StringBuilder innerBuilder = new StringBuilder();
             DatabaseEntityDef definition = _entityDefFactory.GetDef<T>();
@@ -532,10 +526,7 @@ namespace HB.Framework.Database.SQL
 
         public IDbCommand CreateBatchDeleteStatement<T>(IEnumerable<T> entities, string lastUser) where T : DatabaseEntity, new()
         {
-            if (entities == null || entities.Count() == 0)
-            {
-                throw new ArgumentNullException(nameof(entities));
-            }
+            ThrowIf.NullOrEmpty(entities, nameof(entities));
 
             StringBuilder innerBuilder = new StringBuilder();
             DatabaseEntityDef definition = _entityDefFactory.GetDef<T>();

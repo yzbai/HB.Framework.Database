@@ -6,7 +6,7 @@ namespace HB.Framework.Database.Entity
 {
     internal class DatabaseTypeConverterFactory : IDatabaseTypeConverterFactory
     {
-        private readonly IDictionary<Type, DatabaseTypeConverter> converterDict = new Dictionary<Type, DatabaseTypeConverter>();
+        private readonly IDictionary<Type, DatabaseTypeConverter> _converterDict = new Dictionary<Type, DatabaseTypeConverter>();
 
         public DatabaseTypeConverterFactory()
         {
@@ -20,14 +20,14 @@ namespace HB.Framework.Database.Entity
                 return null;
             }
 
-            if (converterDict.ContainsKey(type))
+            if (_converterDict.ContainsKey(type))
             {
-                return converterDict[type];
+                return _converterDict[type];
             }
 
             DatabaseTypeConverter typeConverter = Activator.CreateInstance(type) as DatabaseTypeConverter;
 
-            converterDict.Add(type, typeConverter);
+            _converterDict.Add(type, typeConverter);
 
             return typeConverter;
         }
