@@ -163,7 +163,7 @@ namespace HB.Infrastructure.MySQL
         /// <returns>数据库类型值的表达</returns>
         public static string GetDbValueStatement(object value, bool needQuoted)
         {
-            string valueStr = ValueConverter.TypeValueToDbValue(value);
+            string valueStr = ValueConverterUtil.TypeValueToStringValue(value);
 
             valueStr = SafeDbStatement(valueStr);
 

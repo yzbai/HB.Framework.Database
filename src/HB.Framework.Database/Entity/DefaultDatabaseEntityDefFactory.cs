@@ -230,7 +230,7 @@ namespace HB.Framework.Database.Entity
                 propertyDef.IsUnique = propertyAttr.Unique;
                 propertyDef.DbLength = propertyAttr.Length > 0 ? (int?)propertyAttr.Length : null;
                 propertyDef.IsLengthFixed = propertyAttr.FixedLength;
-                propertyDef.DbDefaultValue = ValueConverter.TypeValueToDbValue(propertyAttr.DefaultValue);
+                propertyDef.DbDefaultValue = ValueConverterUtil.TypeValueToStringValue(propertyAttr.DefaultValue);
                 propertyDef.DbDescription = propertyAttr.Description;
 
                 if (propertyAttr.Converter != null)

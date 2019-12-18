@@ -56,7 +56,7 @@ namespace HB.Framework.Database.Entity
                     }
 
                     object value = property.TypeConverter == null ?
-                        ValueConverter.DbValueToTypeValue(property.PropertyType, fieldValue) :
+                        ValueConverterUtil.DbValueToTypeValue(fieldValue, property.PropertyType) :
                         property.TypeConverter.DbValueToTypeValue(fieldValue);
 
                     property.SetValue(item, value);
@@ -121,7 +121,7 @@ namespace HB.Framework.Database.Entity
                     if (pDef != null)
                     {
                         object value = pDef.TypeConverter == null ?
-                            ValueConverter.DbValueToTypeValue(pDef.PropertyType, fieldValue) :
+                            ValueConverterUtil.DbValueToTypeValue(fieldValue, pDef.PropertyType) :
                             pDef.TypeConverter.DbValueToTypeValue(fieldValue);
 
                         pDef.SetValue(t1, value);
@@ -142,7 +142,7 @@ namespace HB.Framework.Database.Entity
                     if (pDef != null)
                     {
                         object value = pDef.TypeConverter == null ?
-                            ValueConverter.DbValueToTypeValue(pDef.PropertyType, fieldValue) :
+                            ValueConverterUtil.DbValueToTypeValue(fieldValue, pDef.PropertyType) :
                             pDef.TypeConverter.DbValueToTypeValue(fieldValue);
 
                         pDef.SetValue(t2, value);
@@ -227,7 +227,7 @@ namespace HB.Framework.Database.Entity
                     if (pDef != null)
                     {
                         object value = pDef.TypeConverter == null ?
-                            ValueConverter.DbValueToTypeValue(pDef.PropertyType, fieldValue) :
+                            ValueConverterUtil.DbValueToTypeValue(fieldValue, pDef.PropertyType) :
                             pDef.TypeConverter.DbValueToTypeValue(fieldValue);
 
                         pDef.SetValue(t1, value);
@@ -248,7 +248,7 @@ namespace HB.Framework.Database.Entity
                     if (pDef != null)
                     {
                         object value = pDef.TypeConverter == null ?
-                            ValueConverter.DbValueToTypeValue(pDef.PropertyType, fieldValue) :
+                            ValueConverterUtil.DbValueToTypeValue(fieldValue, pDef.PropertyType) :
                             pDef.TypeConverter.DbValueToTypeValue(fieldValue);
 
                         pDef.SetValue(t2, value);
@@ -269,7 +269,7 @@ namespace HB.Framework.Database.Entity
                     if (pDef != null)
                     {
                         object value = pDef.TypeConverter == null ?
-                            ValueConverter.DbValueToTypeValue(pDef.PropertyType, fieldValue) :
+                            ValueConverterUtil.DbValueToTypeValue(fieldValue, pDef.PropertyType) :
                             pDef.TypeConverter.DbValueToTypeValue(fieldValue);
 
                         pDef.SetValue(t3, value);
@@ -324,7 +324,7 @@ namespace HB.Framework.Database.Entity
                     DatabaseEntityPropertyDef property = definition.GetProperty(propertyNames[i]);
 
                     object value = property.TypeConverter == null ?
-                        ValueConverter.DbValueToTypeValue(property.PropertyType, reader[i]) :
+                        ValueConverterUtil.DbValueToTypeValue(reader[i], property.PropertyType) :
                         property.TypeConverter.DbValueToTypeValue(reader[i]);
 
                     property.SetValue(item, value);

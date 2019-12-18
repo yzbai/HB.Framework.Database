@@ -11,7 +11,6 @@ namespace HB.Framework.Database
 {
     public interface IDatabase : IDatabaseAsync
     {
-
         void Initialize(IEnumerable<Migration> migrations = null);
 
         IEnumerable<TSelect> Retrieve<TSelect, TFrom, TWhere>(
