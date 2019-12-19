@@ -102,10 +102,11 @@ namespace HB.Framework.Database
 
                     Commit(transactionContext);
                 }
-                catch (Exception ex)
+                catch
                 {
                     Rollback(transactionContext);
-                    throw new DatabaseException(DatabaseError.TableCreateError, "", $"Auto Create Table Failed, Database:{databaseName}, Reason:{ex.Message}", ex);
+                    //throw new DatabaseException(DatabaseError.TableCreateError, "", $"Auto Create Table Failed, Database:{databaseName}, Reason:{ex.Message}", ex);
+                    throw;
                 }
 
             });
@@ -171,10 +172,11 @@ namespace HB.Framework.Database
 
                     Commit(transactionContext);
                 }
-                catch (Exception ex)
+                catch
                 {
                     Rollback(transactionContext);
-                    throw new DatabaseException(DatabaseError.MigrateError, "", $"Migration Failed at Database:{databaseName}", ex);
+                    //throw new DatabaseException(DatabaseError.MigrateError, "", $"Migration Failed at Database:{databaseName}", ex);
+                    throw;
                 }
             });
         }

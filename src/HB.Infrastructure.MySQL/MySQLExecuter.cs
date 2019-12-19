@@ -64,7 +64,7 @@ namespace HB.Infrastructure.MySQL
 
                 if (ex is MySqlException mySqlException)
                 {
-                    throw new DatabaseException(mySqlException.Number, mySqlException.SqlState, mySqlException.Message, mySqlException);
+                    throw new DatabaseException(mySqlException.Number, mySqlException.SqlState, $"Message:{mySqlException.Message}, CommandText:{command.CommandText}", mySqlException);
                 }
                 else
                 {
@@ -108,7 +108,7 @@ namespace HB.Infrastructure.MySQL
             {
                 if (ex is MySqlException mySqlException)
                 {
-                    throw new DatabaseException(mySqlException.Number, mySqlException.SqlState, mySqlException.Message, mySqlException);
+                    throw new DatabaseException(mySqlException.Number, mySqlException.SqlState, $"Message:{mySqlException.Message}, CommandText:{command.CommandText}", mySqlException);
                 }
                 else
                 {
@@ -163,7 +163,7 @@ namespace HB.Infrastructure.MySQL
             {
                 if (ex is MySqlException mySqlException)
                 {
-                    throw new DatabaseException(mySqlException.Number, mySqlException.SqlState, mySqlException.Message, mySqlException);
+                    throw new DatabaseException(mySqlException.Number, mySqlException.SqlState, $"Message:{mySqlException.Message}, CommandText:{command.CommandText}", mySqlException);
                 }
                 else
                 {
@@ -263,7 +263,7 @@ namespace HB.Infrastructure.MySQL
             {
                 if (ex is MySqlException mySqlException)
                 {
-                    throw new DatabaseException(mySqlException.Number, mySqlException.SqlState, mySqlException.Message, mySqlException);
+                    throw new DatabaseException(mySqlException.Number, mySqlException.SqlState, $"Message:{mySqlException.Message}, CommandText:{command.CommandText}", mySqlException);
                 }
                 else
                 {
@@ -315,7 +315,7 @@ namespace HB.Infrastructure.MySQL
             {
                 if (ex is MySqlException mySqlException)
                 {
-                    throw new DatabaseException(mySqlException.Number, mySqlException.SqlState, mySqlException.Message, mySqlException);
+                    throw new DatabaseException(mySqlException.Number, mySqlException.SqlState, $"Message:{mySqlException.Message}, CommandText:{command.CommandText}", mySqlException);
                 }
                 else
                 {
@@ -386,7 +386,7 @@ namespace HB.Infrastructure.MySQL
 
                 if (ex is MySqlException mySqlException)
                 {
-                    throw new DatabaseException(mySqlException.Number, mySqlException.SqlState, mySqlException.Message, mySqlException);
+                    throw new DatabaseException(mySqlException.Number, mySqlException.SqlState, $"Message:{mySqlException.Message}, CommandText:{command.CommandText}", mySqlException);
                 }
                 else
                 {

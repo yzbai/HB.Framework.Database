@@ -61,7 +61,7 @@ namespace HB.Infrastructure.SQLite
 
                 if (ex is SqliteException sqliteException)
                 {
-                    throw new DatabaseException(sqliteException.SqliteErrorCode, sqliteException.SqliteExtendedErrorCode.ToString(), sqliteException.Message, sqliteException);
+                    throw new DatabaseException(sqliteException.SqliteErrorCode, sqliteException.SqliteExtendedErrorCode.ToString(), $"Message:{sqliteException.Message}, CommandText:{command.CommandText}", sqliteException);
                 }
                 else
                 {
@@ -105,7 +105,7 @@ namespace HB.Infrastructure.SQLite
             {
                 if (ex is SqliteException sqliteException)
                 {
-                    throw new DatabaseException(sqliteException.SqliteErrorCode, sqliteException.SqliteExtendedErrorCode.ToString(), sqliteException.Message, sqliteException);
+                    throw new DatabaseException(sqliteException.SqliteErrorCode, sqliteException.SqliteExtendedErrorCode.ToString(), $"Message:{sqliteException.Message}, CommandText:{command.CommandText}", sqliteException);
                 }
                 else
                 {
@@ -159,7 +159,7 @@ namespace HB.Infrastructure.SQLite
             {
                 if (ex is SqliteException sqliteException)
                 {
-                    throw new DatabaseException(sqliteException.SqliteErrorCode, sqliteException.SqliteExtendedErrorCode.ToString(), sqliteException.Message, sqliteException);
+                    throw new DatabaseException(sqliteException.SqliteErrorCode, sqliteException.SqliteExtendedErrorCode.ToString(), $"Message:{sqliteException.Message}, CommandText:{command.CommandText}", sqliteException);
                 }
                 else
                 {
