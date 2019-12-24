@@ -57,7 +57,7 @@ namespace HB.Framework.Database.SQL
             }
 
             if (whereCondition != null)
-            {           
+            {
                 command.CommandText += whereCondition.ToString();
 
                 foreach (KeyValuePair<string, object> pair in whereCondition.GetParameters())
@@ -125,7 +125,7 @@ namespace HB.Framework.Database.SQL
             return selectClause;
         }
 
-        public IDbCommand CreateRetrieveCommand<T>(SelectExpression<T> selectCondition=null, FromExpression<T> fromCondition = null, WhereExpression<T> whereCondition = null)
+        public IDbCommand CreateRetrieveCommand<T>(SelectExpression<T> selectCondition = null, FromExpression<T> fromCondition = null, WhereExpression<T> whereCondition = null)
             where T : DatabaseEntity, new()
         {
             if (selectCondition == null)
@@ -138,10 +138,10 @@ namespace HB.Framework.Database.SQL
             }
         }
 
-        public IDbCommand CreateCountCommand<T>(FromExpression<T> fromCondition = null, WhereExpression<T> whereCondition = null) 
+        public IDbCommand CreateCountCommand<T>(FromExpression<T> fromCondition = null, WhereExpression<T> whereCondition = null)
             where T : DatabaseEntity, new()
         {
-            return AssembleCommand(true,  "SELECT COUNT(1) ", fromCondition, whereCondition, null);
+            return AssembleCommand(true, "SELECT COUNT(1) ", fromCondition, whereCondition, null);
         }
 
         #endregion
@@ -389,7 +389,7 @@ namespace HB.Framework.Database.SQL
 
         #region Batch
 
-        public IDbCommand CreateBatchAddStatement<T>(IEnumerable<T> entities, string lastUser) where T : DatabaseEntity, new()
+        public IDbCommand CreateBatchAddCommand<T>(IEnumerable<T> entities, string lastUser) where T : DatabaseEntity, new()
         {
             ThrowIf.NullOrEmpty(entities, nameof(entities));
 
@@ -463,10 +463,10 @@ namespace HB.Framework.Database.SQL
 
             string sql = $"{TempTable_Drop(tempTableName, _databaseEngine.EngineType)}{TempTable_Create(tempTableName, _databaseEngine.EngineType)}{innerBuilder.ToString()}{TempTable_Select_All(tempTableName, _databaseEngine.EngineType)}{TempTable_Drop(tempTableName, _databaseEngine.EngineType)}";
 
-            return AssembleCommand<T,T>(false, sql, null, null, parameters);
+            return AssembleCommand<T, T>(false, sql, null, null, parameters);
         }
 
-        public IDbCommand CreateBatchUpdateStatement<T>(IEnumerable<T> entities, string lastUser) where T : DatabaseEntity, new()
+        public IDbCommand CreateBatchUpdateCommand<T>(IEnumerable<T> entities, string lastUser) where T : DatabaseEntity, new()
         {
             ThrowIf.NullOrEmpty(entities, nameof(entities));
 
@@ -479,7 +479,7 @@ namespace HB.Framework.Database.SQL
             foreach (T entity in entities)
             {
                 StringBuilder args = new StringBuilder();
-                
+
                 foreach (DatabaseEntityPropertyDef info in definition.Properties)
                 {
                     string parameterizedName = info.DbParameterizedName + number.ToString(GlobalSettings.Culture);
@@ -496,9 +496,9 @@ namespace HB.Framework.Database.SQL
                         {
                             args.AppendFormat(GlobalSettings.Culture, " {0}={1},", info.DbReservedName, parameterizedName);
                             parameters.Add(_databaseEngine.CreateParameter(parameterizedName, entity.Version + 1, info.DbFieldType));
-                            
+
                         }
-                        else if(info.PropertyName == "LastUser")
+                        else if (info.PropertyName == "LastUser")
                         {
                             args.AppendFormat(GlobalSettings.Culture, " {0}={1},", info.DbReservedName, parameterizedName);
                             parameters.Add(_databaseEngine.CreateParameter(parameterizedName, DbParameterValue_Statement(lastUser, info), info.DbFieldType));
@@ -506,7 +506,7 @@ namespace HB.Framework.Database.SQL
                         else
                         {
                             args.AppendFormat(GlobalSettings.Culture, " {0}={1},", info.DbReservedName, parameterizedName);
-                            parameters.Add(_databaseEngine.CreateParameter(parameterizedName, DbParameterValue_Statement(info.GetValue(entity),info), info.DbFieldType));
+                            parameters.Add(_databaseEngine.CreateParameter(parameterizedName, DbParameterValue_Statement(info.GetValue(entity), info), info.DbFieldType));
                         }
                     }
                 }
@@ -522,9 +522,9 @@ namespace HB.Framework.Database.SQL
             string sql = $"{TempTable_Drop(tempTableName, _databaseEngine.EngineType)}{TempTable_Create(tempTableName, _databaseEngine.EngineType)}{innerBuilder.ToString()}{TempTable_Select_All(tempTableName, _databaseEngine.EngineType)}{TempTable_Drop(tempTableName, _databaseEngine.EngineType)}";
 
             return AssembleCommand<T, T>(false, sql, null, null, parameters);
-        }       
+        }
 
-        public IDbCommand CreateBatchDeleteStatement<T>(IEnumerable<T> entities, string lastUser) where T : DatabaseEntity, new()
+        public IDbCommand CreateBatchDeleteCommand<T>(IEnumerable<T> entities, string lastUser) where T : DatabaseEntity, new()
         {
             ThrowIf.NullOrEmpty(entities, nameof(entities));
 
@@ -549,20 +549,21 @@ namespace HB.Framework.Database.SQL
 
         #region Create Table
 
-        public string GetTableCreateStatement(Type type, bool addDropStatement)
+        public IDbCommand CreateTableCommand(Type type, bool addDropStatement)
         {
-            if (_databaseEngine.EngineType == DatabaseEngineType.MySQL)
+            string sql = _databaseEngine.EngineType switch
             {
-                return MySQL_Table_Create_Statement(type, addDropStatement);
-            }
-            else if (_databaseEngine.EngineType == DatabaseEngineType.SQLite)
-            {
-                return SQLite_Table_Create_Statement(type, addDropStatement);
-            }
-            else
-            {
-                return string.Empty;
-            }
+                DatabaseEngineType.MySQL => MySQL_Table_Create_Statement(type, addDropStatement),
+                DatabaseEngineType.SQLite => SQLite_Table_Create_Statement(type, addDropStatement),
+                _ => string.Empty
+            };
+
+            IDbCommand command = _databaseEngine.CreateEmptyCommand();
+
+            command.CommandType = CommandType.Text;
+            command.CommandText = sql;
+
+            return command;
         }
 
         private string SQLite_Table_Create_Statement(Type type, bool addDropStatement)
@@ -602,7 +603,7 @@ namespace HB.Framework.Database.SQL
 
             string dropStatement = addDropStatement ? $"Drop table if exists {definition.DbTableReservedName};" : string.Empty;
 
-            return 
+            return
 $@"{dropStatement}
 CREATE TABLE {definition.DbTableReservedName} (
     ""Id""    INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -664,8 +665,8 @@ CREATE TABLE {definition.DbTableReservedName} (
                     binary = "";
                 }
 
-                string dbTypeStatement = info.TypeConverter == null 
-                    ? _databaseEngine.GetDbTypeStatement(info.PropertyType) 
+                string dbTypeStatement = info.TypeConverter == null
+                    ? _databaseEngine.GetDbTypeStatement(info.PropertyType)
                     : info.TypeConverter.TypeToDbTypeStatement(info.PropertyType);
 
                 if (length >= 16383) //因为utf8mb4编码，一个汉字4个字节
@@ -678,7 +679,7 @@ CREATE TABLE {definition.DbTableReservedName} (
                     throw new Exception($"字段长度太长。{info.EntityDef.EntityFullName} : {info.PropertyName}");
                 }
 
-                if(info.IsLengthFixed)
+                if (info.IsLengthFixed)
                 {
                     dbTypeStatement = "CHAR";
                 }
@@ -686,13 +687,13 @@ CREATE TABLE {definition.DbTableReservedName} (
                 sql.AppendFormat(GlobalSettings.Culture, " {0} {1}{2} {6} {3} {4} {5},",
                     info.DbReservedName,
                     dbTypeStatement,
-                    (length == 0 ||  dbTypeStatement == "MEDIUMTEXT") ? "" : "(" + length + ")",
+                    (length == 0 || dbTypeStatement == "MEDIUMTEXT") ? "" : "(" + length + ")",
                     info.IsNullable == true ? "" : " NOT NULL ",
                     string.IsNullOrEmpty(info.DbDefaultValue) ? "" : "DEFAULT " + info.DbDefaultValue,
                     !info.IsAutoIncrementPrimaryKey && !info.IsForeignKey && info.IsUnique ? " UNIQUE " : "",
                     binary
                     );
-                sql.AppendLine();              
+                sql.AppendLine();
             }
 
             string dropStatement = string.Empty;
@@ -710,7 +711,7 @@ CREATE TABLE {definition.DbTableReservedName} (
                 "`LastUser` varchar(100) DEFAULT NULL," + Environment.NewLine +
                 "`LastTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP," + Environment.NewLine +
                 "`Version` bigint(20) NOT NULL DEFAULT '0'," + Environment.NewLine +
-                " {1} " + 
+                " {1} " +
                 " PRIMARY KEY (`Id`) " + Environment.NewLine +
                 " ) ENGINE=InnoDB   DEFAULT CHARSET=utf8mb4;",
                 definition.DbTableReservedName, sql.ToString(), dropStatement);

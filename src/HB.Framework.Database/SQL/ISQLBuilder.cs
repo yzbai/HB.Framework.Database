@@ -13,7 +13,7 @@ namespace HB.Framework.Database.SQL
         IDbCommand CreateUpdateCommand<T>(WhereExpression<T> condition, T entity, string lastUser) where T : DatabaseEntity, new();
         //IDbCommand CreateUpdateKeyCommand<T>(WhereExpression<T> condition, string[] keys, object[] values, string lastUser) where T : DatabaseEntity, new();
 
-        IDbCommand CreateBatchAddStatement<T>(IEnumerable<T> entities, string lastUser) where T : DatabaseEntity, new();
+        IDbCommand CreateBatchAddCommand<T>(IEnumerable<T> entities, string lastUser) where T : DatabaseEntity, new();
 
         /// <summary>
         /// 不允许重复删除
@@ -22,7 +22,7 @@ namespace HB.Framework.Database.SQL
         /// <param name="entities"></param>
         /// <param name="lastUser"></param>
         /// <returns></returns>
-        IDbCommand CreateBatchDeleteStatement<T>(IEnumerable<T> entities, string lastUser) where T : DatabaseEntity, new();
+        IDbCommand CreateBatchDeleteCommand<T>(IEnumerable<T> entities, string lastUser) where T : DatabaseEntity, new();
 
         /// <summary>
         /// 允许重复更新
@@ -31,15 +31,9 @@ namespace HB.Framework.Database.SQL
         /// <param name="entities"></param>
         /// <param name="lastUser"></param>
         /// <returns></returns>
-        IDbCommand CreateBatchUpdateStatement<T>(IEnumerable<T> entities, string lastUser) where T : DatabaseEntity, new();
-        string GetTableCreateStatement(Type type, bool addDropStatement);
+        IDbCommand CreateBatchUpdateCommand<T>(IEnumerable<T> entities, string lastUser) where T : DatabaseEntity, new();
+        IDbCommand CreateTableCommand(Type type, bool addDropStatement);
         IDbCommand CreateDeleteCommand<T>(WhereExpression<T> condition, string lastUser) where T : DatabaseEntity, new();
-
-        SelectExpression<T> NewSelect<T>() where T : DatabaseEntity, new();
-
-        FromExpression<T> NewFrom<T>() where T : DatabaseEntity, new();
-
-        WhereExpression<T> NewWhere<T>() where T : DatabaseEntity, new();
 
         IDbCommand CreateRetrieveCommand<T>(SelectExpression<T> selectCondition = null, FromExpression<T> fromCondition = null, WhereExpression<T> whereCondition = null) 
             where T : DatabaseEntity, new();
@@ -57,5 +51,11 @@ namespace HB.Framework.Database.SQL
             where TSelect : DatabaseEntity, new()
             where TFrom : DatabaseEntity, new()
             where TWhere : DatabaseEntity, new();
+
+        SelectExpression<T> NewSelect<T>() where T : DatabaseEntity, new();
+
+        FromExpression<T> NewFrom<T>() where T : DatabaseEntity, new();
+
+        WhereExpression<T> NewWhere<T>() where T : DatabaseEntity, new();
     }
 }

@@ -16,7 +16,7 @@ namespace HB.Framework.Database.Engine
     /// 数据库接口,是对数据库能力的表达. 
     /// 多线程复用..
     /// </summary>
-    public interface IDatabaseEngine : IDatabaseEngineAsync
+    public interface IDatabaseEngine
     {
         #region 管理功能
 
@@ -33,49 +33,6 @@ namespace HB.Framework.Database.Engine
         void UpdateSystemVersion(string databaseName, int version, IDbTransaction transaction);
 
         bool IsTableExists(string databaseName, string tableName, IDbTransaction transaction);
-
-        #endregion
-
-        #region SP执行功能
-
-        /// <summary>
-        /// 使用后必须Dispose，必须使用using
-        /// </summary>
-        /// <param name="trans"></param>
-        /// <param name="spName"></param>
-        /// <param name="dbParameters"></param>
-        /// <returns></returns>
-        Tuple<IDbCommand, IDataReader> ExecuteSPReader(IDbTransaction trans, string dbName, string spName, IList<IDataParameter> dbParameters, bool useMaster);
-
-        object ExecuteSPScalar(IDbTransaction trans, string dbName, string spName, IList<IDataParameter> parameters, bool useMaster);
-
-        int ExecuteSPNonQuery(IDbTransaction trans, string dbName, string spName, IList<IDataParameter> parameters);
-
-        #endregion
-
-        #region Command执行功能
-
-        int ExecuteCommandNonQuery(IDbTransaction trans, string dbName, IDbCommand dbCommand);
-
-        /// <summary>
-        /// 使用后必须Dispose，必须使用using
-        /// </summary>
-        IDataReader ExecuteCommandReader(IDbTransaction trans, string dbName, IDbCommand dbCommand, bool useMaster);
-
-        object ExecuteCommandScalar(IDbTransaction trans, string dbName, IDbCommand dbCommand, bool useMaster);
-
-        #endregion
-
-        #region SQL 执行能力
-
-        int ExecuteSqlNonQuery(IDbTransaction Transaction, string dbName, string SQL);
-
-        /// <summary>
-        /// 使用后必须Dispose，必须使用using.
-        /// </summary>
-        Tuple<IDbCommand, IDataReader> ExecuteSqlReader(IDbTransaction Transaction, string dbName, string SQL, bool useMaster);
-
-        object ExecuteSqlScalar(IDbTransaction Transaction, string dbName, string SQL, bool useMaster);
 
         #endregion
 
@@ -101,20 +58,6 @@ namespace HB.Framework.Database.Engine
         /// <returns></returns>
         IDbCommand CreateEmptyCommand();
         
-
-        #endregion
-
-        #region 事务功能
-
-        /// <summary>
-        /// 创建 事务
-        /// </summary>
-        /// <param name="isolationLevel"></param>
-        /// <returns></returns>
-        IDbTransaction BeginTransaction(string dbName, IsolationLevel isolationLevel = IsolationLevel.ReadCommitted);
-
-        void Commit(IDbTransaction transaction);
-        void Rollback(IDbTransaction transaction);
 
         #endregion
 
@@ -177,7 +120,52 @@ namespace HB.Framework.Database.Engine
         /// <param name="type"></param>
         /// <returns></returns>
         bool IsValueNeedQuoted(Type type);
-        
+
+        #endregion
+
+        #region SP执行功能
+
+        /// <summary>
+        /// 使用后必须Dispose，必须使用using
+        /// </summary>
+        /// <param name="trans"></param>
+        /// <param name="spName"></param>
+        /// <param name="dbParameters"></param>
+        /// <returns></returns>
+        Task<Tuple<IDbCommand, IDataReader>> ExecuteSPReaderAsync(IDbTransaction trans, string dbName, string spName, IList<IDataParameter> dbParameters, bool useMaster);
+
+        Task<object> ExecuteSPScalarAsync(IDbTransaction trans, string dbName, string spName, IList<IDataParameter> parameters, bool useMaster);
+
+        Task<int> ExecuteSPNonQueryAsync(IDbTransaction trans, string dbName, string spName, IList<IDataParameter> parameters);
+
+        #endregion
+
+        #region Command执行功能
+
+        Task<int> ExecuteCommandNonQueryAsync(IDbTransaction trans, string dbName, IDbCommand dbCommand);
+
+        /// <summary>
+        /// 使用后必须Dispose，必须使用using
+        /// </summary>
+        Task<IDataReader> ExecuteCommandReaderAsync(IDbTransaction trans, string dbName, IDbCommand dbCommand, bool useMaster);
+
+        Task<object> ExecuteCommandScalarAsync(IDbTransaction trans, string dbName, IDbCommand dbCommand, bool useMaster);
+
+        #endregion
+
+        #region 事务功能
+
+        /// <summary>
+        /// 创建 事务
+        /// </summary>
+        /// <param name="isolationLevel"></param>
+        /// <returns></returns>
+        Task<IDbTransaction> BeginTransactionAsync(string dbName, IsolationLevel isolationLevel = IsolationLevel.ReadCommitted);
+
+        Task CommitAsync(IDbTransaction transaction);
+
+        Task RollbackAsync(IDbTransaction transaction);
+
         #endregion
     }
 }
