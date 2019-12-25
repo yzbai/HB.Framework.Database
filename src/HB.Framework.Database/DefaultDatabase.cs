@@ -68,7 +68,7 @@ namespace HB.Framework.Database
 
                         if (_databaseSettings.AutomaticCreateTable)
                         {
-                            AutoCreateTablesIfBrandNew();
+                            AutoCreateTablesIfBrandNewAsync().Wait();
                         }
 
                         Migarate(migrations);
@@ -77,12 +77,12 @@ namespace HB.Framework.Database
             }
         }
 
-        private void AutoCreateTablesIfBrandNew()
+        private async Task AutoCreateTablesIfBrandNewAsync()
         {
-            _databaseEngine.GetDatabaseNames().ForEach(databaseName =>
+            await _databaseEngine.GetDatabaseNames().ForEachAsync(async databaseName =>
             {
 
-                TransactionContext transactionContext = BeginTransaction(databaseName, IsolationLevel.Serializable);
+                TransactionContext transactionContext = await BeginTransactionAsync(databaseName, IsolationLevel.Serializable).ConfigureAwait(false);
 
                 try
                 {
@@ -92,7 +92,7 @@ namespace HB.Framework.Database
                     {
                         if (_databaseSettings.Version != 1)
                         {
-                            Rollback(transactionContext);
+                            await RollbackAsync(transactionContext).ConfigureAwait(false);
                             throw new DatabaseException(DatabaseError.TableCreateError, "", $"Database:{databaseName} does not exists, database Version must be 1");
                         }
 
@@ -101,16 +101,16 @@ namespace HB.Framework.Database
                         _databaseEngine.UpdateSystemVersion(databaseName, 1, transactionContext.Transaction);
                     }
 
-                    Commit(transactionContext);
+                    await CommitAsync(transactionContext).ConfigureAwait(false);
                 }
                 catch
                 {
-                    Rollback(transactionContext);
+                    await RollbackAsync(transactionContext).ConfigureAwait(false);
                     //throw new DatabaseException(DatabaseError.TableCreateError, "", $"Auto Create Table Failed, Database:{databaseName}, Reason:{ex.Message}", ex);
                     throw;
                 }
 
-            });
+            }).ConfigureAwait(false);
         }
 
         private Task<int> CreateTableAsync(DatabaseEntityDef def, TransactionContext transContext)

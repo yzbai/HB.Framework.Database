@@ -15,7 +15,7 @@ namespace HB.Infrastructure.MySQL
     /// <summary>
     /// MySql数据库
     /// </summary>
-    internal partial class MySQLEngine : IDatabaseEngine
+    internal class MySQLEngine : IDatabaseEngine
     {
         #region 自身 & 构建
 
@@ -78,142 +78,6 @@ namespace HB.Infrastructure.MySQL
 
         #endregion
 
-        #region SP执行功能
-
-        /// <summary>
-        /// 使用完毕后必须Dispose
-        /// </summary>
-        /// <param name="Transaction"></param>
-        /// <param name="spName"></param>
-        /// <param name="dbParameters"></param>
-        /// <returns></returns>
-        public Tuple<IDbCommand,IDataReader> ExecuteSPReader(IDbTransaction Transaction, string dbName, string spName, IList<IDataParameter> dbParameters, bool useMaster)
-        {
-            if (Transaction == null)
-            {
-                return MySQLExecuter.ExecuteSPReader(GetConnectionString(dbName, useMaster), spName, dbParameters);
-            }
-            else
-            {
-                return MySQLExecuter.ExecuteSPReader((MySqlTransaction)Transaction, spName, dbParameters);
-            }
-        }
-
-        public object ExecuteSPScalar(IDbTransaction Transaction, string dbName, string spName, IList<IDataParameter> parameters, bool useMaster)
-        {
-            if (Transaction == null)
-            {
-                return MySQLExecuter.ExecuteSPScalar(GetConnectionString(dbName, useMaster), spName, parameters);
-            }
-            else
-            {
-                return MySQLExecuter.ExecuteSPScalar((MySqlTransaction)Transaction, spName, parameters);
-            }
-        }
-
-        public int ExecuteSPNonQuery(IDbTransaction Transaction, string dbName, string spName, IList<IDataParameter> parameters)
-        {
-            if (Transaction == null)
-            {
-                return MySQLExecuter.ExecuteSPNonQuery(GetConnectionString(dbName, true), spName, parameters);
-            }
-            else
-            {
-                return MySQLExecuter.ExecuteSPNonQuery((MySqlTransaction)Transaction, spName, parameters);
-            }
-        }
-
-        #endregion
-
-        #region Command执行功能
-
-        public int ExecuteCommandNonQuery(IDbTransaction Transaction, string dbName, IDbCommand dbCommand)
-        {
-            if (Transaction == null)
-            {
-                return MySQLExecuter.ExecuteCommandNonQuery(GetConnectionString(dbName, true), dbCommand);
-            }
-            else
-            {
-                return MySQLExecuter.ExecuteCommandNonQuery((MySqlTransaction)Transaction, dbCommand);
-            }
-        }
-
-        /// <summary>
-        /// 使用完毕后必须Dispose，必须使用using
-        /// </summary>
-        /// <param name="Transaction"></param>
-        /// <param name="dbCommand"></param>
-        /// <returns></returns>
-        public IDataReader ExecuteCommandReader(IDbTransaction Transaction, string dbName, IDbCommand dbCommand, bool useMaster)
-        {
-            if (Transaction == null)
-            {
-                return MySQLExecuter.ExecuteCommandReader(GetConnectionString(dbName, useMaster), dbCommand);
-            }
-            else
-            {
-                return MySQLExecuter.ExecuteCommandReader((MySqlTransaction)Transaction, dbCommand);
-            }
-        }
-
-        public object ExecuteCommandScalar(IDbTransaction Transaction, string dbName, IDbCommand dbCommand, bool useMaster)
-        {
-            if (Transaction == null)
-            {
-                return MySQLExecuter.ExecuteCommandScalar(GetConnectionString(dbName, useMaster), dbCommand);
-            }
-            else
-            {
-                return MySQLExecuter.ExecuteCommandScalar((MySqlTransaction)Transaction, dbCommand);
-            }
-        }
-
-        #endregion
-
-        #region SQL 执行能力
-
-        public int ExecuteSqlNonQuery(IDbTransaction Transaction, string dbName, string SQL)
-        {
-            if (Transaction == null)
-            {
-                return MySQLExecuter.ExecuteSqlNonQuery(GetConnectionString(dbName, true), SQL);
-            }
-            else
-            {
-                return MySQLExecuter.ExecuteSqlNonQuery((MySqlTransaction)Transaction, SQL);
-            }
-        }
-
-        /// <summary>
-        /// 使用后必须Dispose，必须使用using.
-        /// </summary>
-        public Tuple<IDbCommand, IDataReader> ExecuteSqlReader(IDbTransaction Transaction, string dbName, string SQL, bool useMaster)
-        {
-            if (Transaction == null)
-            {
-                return MySQLExecuter.ExecuteSqlReader(GetConnectionString(dbName, useMaster), SQL);
-            }
-            else
-            {
-                return MySQLExecuter.ExecuteSqlReader((MySqlTransaction)Transaction, SQL);
-            }
-        }
-
-        public object ExecuteSqlScalar(IDbTransaction Transaction, string dbName, string SQL, bool useMaster)
-        {
-            if (Transaction == null)
-            {
-                return MySQLExecuter.ExecuteSqlScalar(GetConnectionString(dbName, useMaster), SQL);
-            }
-            else
-            {
-                return MySQLExecuter.ExecuteSqlScalar((MySqlTransaction)Transaction, SQL);
-            }
-        }
-
-        #endregion
-
         #region 创建功能
 
         public IDataParameter CreateParameter(string name, object value, DbType dbType)
@@ -250,7 +114,6 @@ namespace HB.Infrastructure.MySQL
         public string QuotedChar { get { return MySQLLocalism.QuotedChar; } }
 
         public string ReservedChar { get { return MySQLLocalism.ReservedChar; } }
-        
 
         public string GetQuotedStatement(string name)
         {
@@ -289,47 +152,6 @@ namespace HB.Infrastructure.MySQL
 
         #endregion
 
-        #region 事务
-
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "<Pending>")]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Code Quality", "IDE0067:Dispose objects before losing scope", Justification = "<Pending>")]
-        public IDbTransaction BeginTransaction(string dbName, IsolationLevel isolationLevel = IsolationLevel.ReadCommitted)
-        {
-            MySqlConnection conn = new MySqlConnection(GetConnectionString(dbName, true));
-            conn.Open();
-
-            return conn.BeginTransaction(isolationLevel);
-        }
-
-        public void Commit(IDbTransaction transaction)
-        {
-            IDbConnection dbConnection = transaction.Connection;
-
-            try
-            {
-                transaction.Commit();
-            }
-            finally
-            {
-                dbConnection.Close();
-            }
-        }
-
-        public void Rollback(IDbTransaction transaction)
-        {
-            IDbConnection dbConnection = transaction.Connection;
-            try
-            {
-                transaction.Rollback();
-            }
-            finally
-            {
-                dbConnection.Close();
-            }
-        }
-
-        #endregion
-
         #region SystemInfo
 
         private const string _systemInfoTableName = "tb_sys_info";
@@ -349,25 +171,30 @@ INSERT INTO `tb_sys_info`(`Name`, `Value`) VALUES('DatabaseName', '{0}');";
 
         private const string _tbSysInfoUpdateVersion = @"UPDATE `tb_sys_info` SET `Value` = '{0}' WHERE `Name` = 'Version';";
 
-        private const string _isTableExistsStatement = "SELECT count(1) FROM information_schema.TABLES WHERE table_name ='{0}' and table_schema='{1}';";
+        private const string _isTableExistsStatement = "SELECT count(1) FROM information_schema.TABLES WHERE table_name =@tableName and table_schema=@databaseName;";
 
         public IEnumerable<string> GetDatabaseNames()
         {
             return _options.Connections.Select(s => s.DatabaseName);
         }
 
-        public bool IsTableExists(string databaseName, string tableName, IDbTransaction transaction)
+        public async Task<bool> IsTableExistsAsync(string databaseName, string tableName, IDbTransaction transaction)
         {
-            string sql = string.Format(GlobalSettings.Culture, _isTableExistsStatement, tableName, databaseName);
+            using IDbCommand command = CreateEmptyCommand();
+            
+            command.CommandType = CommandType.Text;
+            command.CommandText = _isTableExistsStatement;
+            command.Parameters.Add(CreateParameter("@tableName", tableName));
+            command.Parameters.Add(CreateParameter("@databaseName", databaseName));
 
-            object result = ExecuteSqlScalar(transaction, databaseName, sql, false);
+            object result = await ExecuteCommandScalarAsync(transaction, databaseName, command, true).ConfigureAwait(false);
 
             return Convert.ToBoolean(result, GlobalSettings.Culture);
         }
 
         public SystemInfo GetSystemInfo(string databaseName, IDbTransaction transaction)
         {
-            if (!IsTableExists(databaseName, _systemInfoTableName, transaction))
+            if (!IsTableExistsAsync(databaseName, _systemInfoTableName, transaction))
             {
                 return new SystemInfo
                 {
@@ -412,23 +239,131 @@ INSERT INTO `tb_sys_info`(`Name`, `Value`) VALUES('DatabaseName', '{0}');";
         }
 
         #endregion
+
+        #region SP 能力
+
+        public Task<Tuple<IDbCommand, IDataReader>> ExecuteSPReaderAsync(IDbTransaction Transaction, string dbName, string spName, IList<IDataParameter> dbParameters, bool useMaster = false)
+        {
+            if (Transaction == null)
+            {
+                return MySQLExecuter.ExecuteSPReaderAsync(GetConnectionString(dbName, useMaster), spName, dbParameters);
+            }
+            else
+            {
+                return MySQLExecuter.ExecuteSPReaderAsync((MySqlTransaction)Transaction, spName, dbParameters);
+            }
+        }
+
+        public Task<object> ExecuteSPScalarAsync(IDbTransaction Transaction, string dbName, string spName, IList<IDataParameter> parameters, bool useMaster = false)
+        {
+            if (Transaction == null)
+            {
+                return MySQLExecuter.ExecuteSPScalarAsync(GetConnectionString(dbName, useMaster), spName, parameters);
+            }
+            else
+            {
+                return MySQLExecuter.ExecuteSPScalarAsync((MySqlTransaction)Transaction, spName, parameters);
+            }
+        }
+
+        public Task<int> ExecuteSPNonQueryAsync(IDbTransaction Transaction, string dbName, string spName, IList<IDataParameter> parameters)
+        {
+            if (Transaction == null)
+            {
+                return MySQLExecuter.ExecuteSPNonQueryAsync(GetConnectionString(dbName, true), spName, parameters);
+            }
+            else
+            {
+                return MySQLExecuter.ExecuteSPNonQueryAsync((MySqlTransaction)Transaction, spName, parameters);
+            }
+        }
+
+        #endregion
+
+        #region Command 能力
+
+        public Task<int> ExecuteCommandNonQueryAsync(IDbTransaction Transaction, string dbName, IDbCommand dbCommand)
+        {
+            if (Transaction == null)
+            {
+                return MySQLExecuter.ExecuteCommandNonQueryAsync(GetConnectionString(dbName, true), dbCommand);
+            }
+            else
+            {
+                return MySQLExecuter.ExecuteCommandNonQueryAsync((MySqlTransaction)Transaction, dbCommand);
+            }
+        }
+
+        public Task<IDataReader> ExecuteCommandReaderAsync(IDbTransaction Transaction, string dbName, IDbCommand dbCommand, bool useMaster = false)
+        {
+            if (Transaction == null)
+            {
+                return MySQLExecuter.ExecuteCommandReaderAsync(GetConnectionString(dbName, useMaster), dbCommand);
+            }
+            else
+            {
+                return MySQLExecuter.ExecuteCommandReaderAsync((MySqlTransaction)Transaction, dbCommand);
+            }
+        }
+
+        public Task<object> ExecuteCommandScalarAsync(IDbTransaction Transaction, string dbName, IDbCommand dbCommand, bool useMaster = false)
+        {
+            if (Transaction == null)
+            {
+                return MySQLExecuter.ExecuteCommandScalarAsync(GetConnectionString(dbName, useMaster), dbCommand);
+            }
+            else
+            {
+                return MySQLExecuter.ExecuteCommandScalarAsync((MySqlTransaction)Transaction, dbCommand);
+            }
+        }
+
+        #endregion
+
+        #region 事务
+
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "<Pending>")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Code Quality", "IDE0067:Dispose objects before losing scope", Justification = "<Pending>")]
+        public async Task<IDbTransaction> BeginTransactionAsync(string dbName, IsolationLevel isolationLevel = IsolationLevel.ReadCommitted)
+        {
+            MySqlConnection conn = new MySqlConnection(GetConnectionString(dbName, true));
+            await conn.OpenAsync().ConfigureAwait(false);
+
+            return await conn.BeginTransactionAsync(isolationLevel).ConfigureAwait(false);
+        }
+
+        public async Task CommitAsync(IDbTransaction transaction)
+        {
+            MySqlTransaction mySqlTransaction = transaction as MySqlTransaction;
+
+            MySqlConnection connection = mySqlTransaction.Connection;
+
+            try
+            {
+                await mySqlTransaction.CommitAsync().ConfigureAwait(false);
+            }
+            finally
+            {
+                connection.Close();
+            }
+        }
+
+        public async Task RollbackAsync(IDbTransaction transaction)
+        {
+            MySqlTransaction mySqlTransaction = transaction as MySqlTransaction;
+
+            MySqlConnection connection = mySqlTransaction.Connection;
+
+            try
+            {
+                await mySqlTransaction.RollbackAsync().ConfigureAwait(false);
+            }
+            finally
+            {
+                connection.Close();
+            }
+        }
+
+        #endregion
     }
 }
-//public DataTable CreateEmptyDataTable(string dbName, string tableName)
-//{
-//    return MySQLTableCache.CreateEmptyDataTable(GetConnectionString(dbName, true), tableName);
-//}
-
-//public DataTable ExecuteSqlDataTable(IDbTransaction transaction, string dbName, string SQL)
-//{
-//    if (transaction == null)
-//    {
-//        return MySQLExecuter.ExecuteSqlDataTable(GetConnectionString(dbName, true), SQL);
-//    }
-//    else
-//    {
-//        return MySQLExecuter.ExecuteSqlDataTable((MySqlTransaction)transaction, SQL);
-//    }
-//}
-
-//#endregion

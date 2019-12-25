@@ -4,6 +4,7 @@ using MySql.Data.MySqlClient;
 using System.Data;
 using HB.Framework.Database;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace HB.Infrastructure.MySQL
 {
@@ -11,42 +12,124 @@ namespace HB.Infrastructure.MySQL
     /// 动态SQL和SP执行
     /// 具体执行步骤都要有异常捕捉，直接抛出给上一层
     /// </summary>
-    internal static partial class MySQLExecuter
+    internal static class MySQLExecuter
     {
-        #region Comand Reader
+        //#region SQL
 
-        public static IDataReader ExecuteCommandReader(MySqlTransaction mySqlTransaction, IDbCommand dbCommand)
+        //[System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>")]
+        //public static int ExecuteSqlNonQuery(string connectionString, string sqlString)
+        //{
+        //    using MySqlConnection conn = new MySqlConnection(connectionString);
+
+        //    using MySqlCommand command = new MySqlCommand
+        //    {
+        //        CommandType = CommandType.Text,
+        //        CommandText = MySQLLocalism.SafeDbStatement(sqlString)
+        //    };
+        //    return ExecuteCommandNonQuery(conn, true, command);
+        //}
+
+        //[System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>")]
+        //public static int ExecuteSqlNonQuery(MySqlTransaction mySqlTransaction, string sqlString)
+        //{
+        //    using MySqlCommand command = new MySqlCommand
+        //    {
+        //        CommandType = CommandType.Text,
+        //        CommandText = MySQLLocalism.SafeDbStatement(sqlString),
+        //        Transaction = mySqlTransaction
+        //    };
+        //    return ExecuteCommandNonQuery(mySqlTransaction.Connection, false, command);
+        //}
+
+        //[System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>")]
+        //[System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "<Pending>")]
+        //public static Tuple<IDbCommand, IDataReader> ExecuteSqlReader(string connectionString, string sqlString)
+        //{
+        //    MySqlConnection conn = new MySqlConnection(connectionString);
+
+        //    MySqlCommand command = new MySqlCommand
+        //    {
+        //        CommandType = CommandType.Text,
+        //        CommandText = MySQLLocalism.SafeDbStatement(sqlString)
+        //    };
+
+        //    return new Tuple<IDbCommand, IDataReader>(command, ExecuteCommandReader(conn, true, command));
+        //}
+
+        //[System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>")]
+        //[System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "<Pending>")]
+        //public static Tuple<IDbCommand, IDataReader> ExecuteSqlReader(MySqlTransaction mySqlTransaction, string sqlString)
+        //{
+        //    MySqlCommand command = new MySqlCommand
+        //    {
+        //        CommandType = CommandType.Text,
+        //        CommandText = MySQLLocalism.SafeDbStatement(sqlString),
+        //        Transaction = mySqlTransaction
+        //    };
+        //    return new Tuple<IDbCommand, IDataReader>(command, ExecuteCommandReader(mySqlTransaction.Connection, false, command));
+        //}
+
+        //[System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>")]
+        //public static object ExecuteSqlScalar(string connectionString, string sqlString)
+        //{
+        //    using MySqlConnection conn = new MySqlConnection(connectionString);
+
+        //    using MySqlCommand command = new MySqlCommand
+        //    {
+        //        CommandType = CommandType.Text,
+        //        CommandText = MySQLLocalism.SafeDbStatement(sqlString)
+        //    };
+        //    return ExecuteCommandScalar(conn, true, command);
+        //}
+
+        //[System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>")]
+        //public static object ExecuteSqlScalar(MySqlTransaction mySqlTransaction, string sqlString)
+        //{
+        //    using MySqlCommand command = new MySqlCommand
+        //    {
+        //        CommandType = CommandType.Text,
+        //        CommandText = MySQLLocalism.SafeDbStatement(sqlString),
+        //        Transaction = mySqlTransaction
+        //    };
+        //    return ExecuteCommandScalar(mySqlTransaction.Connection, false, command);
+        //}
+
+        //#endregion
+
+        #region Command Reader
+
+        public static Task<IDataReader> ExecuteCommandReaderAsync(MySqlTransaction mySqlTransaction, IDbCommand dbCommand)
         {
             dbCommand.Transaction = mySqlTransaction;
-            return ExecuteCommandReader(mySqlTransaction.Connection, false, (MySqlCommand)dbCommand);
+            return ExecuteCommandReaderAsync(mySqlTransaction.Connection, false, (MySqlCommand)dbCommand);
         }
 
-        public static IDataReader ExecuteCommandReader(string connectString, IDbCommand dbCommand)
+        public static Task<IDataReader> ExecuteCommandReaderAsync(string connectString, IDbCommand dbCommand)
         {
             MySqlConnection conn = new MySqlConnection(connectString);
-            return ExecuteCommandReader(conn, true, (MySqlCommand)dbCommand);
+            return ExecuteCommandReaderAsync(conn, true, (MySqlCommand)dbCommand);
         }
 
-        private static IDataReader ExecuteCommandReader(MySqlConnection connection, bool isOwnedConnection, MySqlCommand command)
+        private static async Task<IDataReader> ExecuteCommandReaderAsync(MySqlConnection connection, bool isOwnedConnection, MySqlCommand command)
         {
-            MySqlDataReader reader = null;
+            IDataReader reader = null;
 
             try
             {
                 if (connection.State != ConnectionState.Open)
                 {
-                    connection.Open();
+                    await connection.OpenAsync().ConfigureAwait(false);
                 }
 
                 command.Connection = connection;
 
                 if (isOwnedConnection)
                 {
-                    reader = command.ExecuteReader(CommandBehavior.CloseConnection);
+                    reader = await command.ExecuteReaderAsync(CommandBehavior.CloseConnection).ConfigureAwait(false);
                 }
                 else
                 {
-                    reader = command.ExecuteReader();
+                    reader = await command.ExecuteReaderAsync().ConfigureAwait(false);
                 }
 
                 return reader;
@@ -57,6 +140,7 @@ namespace HB.Infrastructure.MySQL
                 {
                     connection.Close();
                 }
+
                 if (reader != null)
                 {
                     reader.Close();
@@ -77,19 +161,19 @@ namespace HB.Infrastructure.MySQL
 
         #region Command Scalar
 
-        public static object ExecuteCommandScalar(string connectString, IDbCommand dbCommand)
+        public static Task<object> ExecuteCommandScalarAsync(string connectString, IDbCommand dbCommand)
         {
             using MySqlConnection conn = new MySqlConnection(connectString);
-            return ExecuteCommandScalar(conn, true, (MySqlCommand)dbCommand);
+            return ExecuteCommandScalarAsync(conn, true, (MySqlCommand)dbCommand);
         }
 
-        public static object ExecuteCommandScalar(MySqlTransaction mySqlTransaction, IDbCommand dbCommand)
+        public static Task<object> ExecuteCommandScalarAsync(MySqlTransaction mySqlTransaction, IDbCommand dbCommand)
         {
             dbCommand.Transaction = mySqlTransaction;
-            return ExecuteCommandScalar(mySqlTransaction.Connection, false, (MySqlCommand)dbCommand);
+            return ExecuteCommandScalarAsync(mySqlTransaction.Connection, false, (MySqlCommand)dbCommand);
         }
 
-        private static object ExecuteCommandScalar(MySqlConnection connection, bool isOwnedConnection, MySqlCommand command)
+        private static async Task<object> ExecuteCommandScalarAsync(MySqlConnection connection, bool isOwnedConnection, MySqlCommand command)
         {
             object rtObj = null;
 
@@ -97,12 +181,12 @@ namespace HB.Infrastructure.MySQL
             {
                 if (connection.State != ConnectionState.Open)
                 {
-                    connection.Open();
+                    await connection.OpenAsync().ConfigureAwait(false);
                 }
 
                 command.Connection = connection;
 
-                rtObj = command.ExecuteScalar();
+                rtObj = await command.ExecuteScalarAsync().ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -119,7 +203,7 @@ namespace HB.Infrastructure.MySQL
             {
                 if (isOwnedConnection)
                 {
-                    connection.Close();
+                    await connection.CloseAsync().ConfigureAwait(false);
                 }
             }
 
@@ -128,22 +212,22 @@ namespace HB.Infrastructure.MySQL
 
         #endregion
 
-        #region Command NonQuery
+        #region Comand NonQuery
 
-        public static int ExecuteCommandNonQuery(string connectString, IDbCommand dbCommand)
+        public static Task<int> ExecuteCommandNonQueryAsync(string connectString, IDbCommand dbCommand)
         {
             using MySqlConnection conn = new MySqlConnection(connectString);
 
-            return ExecuteCommandNonQuery(conn, true, (MySqlCommand)dbCommand);
+            return ExecuteCommandNonQueryAsync(conn, true, (MySqlCommand)dbCommand);
         }
 
-        public static int ExecuteCommandNonQuery(MySqlTransaction mySqlTransaction, IDbCommand dbCommand)
+        public static Task<int> ExecuteCommandNonQueryAsync(MySqlTransaction mySqlTransaction, IDbCommand dbCommand)
         {
             dbCommand.Transaction = mySqlTransaction;
-            return ExecuteCommandNonQuery(mySqlTransaction.Connection, false, (MySqlCommand)dbCommand);
+            return ExecuteCommandNonQueryAsync(mySqlTransaction.Connection, false, (MySqlCommand)dbCommand);
         }
 
-        private static int ExecuteCommandNonQuery(MySqlConnection conn, bool isOwnedConnection, MySqlCommand command)
+        private static async Task<int> ExecuteCommandNonQueryAsync(MySqlConnection conn, bool isOwnedConnection, MySqlCommand command)
         {
             int rtInt = -1;
 
@@ -151,13 +235,12 @@ namespace HB.Infrastructure.MySQL
             {
                 if (conn.State != ConnectionState.Open)
                 {
-                    //TODO: 要用Polly来确保吗?
-                    conn.Open();
+                    await conn.OpenAsync().ConfigureAwait(false);
                 }
 
                 command.Connection = conn;
 
-                rtInt = command.ExecuteNonQuery();
+                rtInt = await command.ExecuteNonQueryAsync().ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -174,7 +257,7 @@ namespace HB.Infrastructure.MySQL
             {
                 if (isOwnedConnection)
                 {
-                    conn.Close();
+                    await conn.CloseAsync().ConfigureAwait(false);
                 }
             }
 
@@ -185,30 +268,16 @@ namespace HB.Infrastructure.MySQL
 
         #region SP NonQuery
 
-        #region private utility methods & constructors
-
-        private static void AttachParameters(MySqlCommand command, IEnumerable<IDataParameter> commandParameters)
-        {
-            foreach (IDataParameter p in commandParameters)
-            {
-                //check for derived output value with no value assigned
-                if ((p.Direction == ParameterDirection.InputOutput) && (p.Value == null))
-                {
-                    p.Value = DBNull.Value;
-                }
-
-                command.Parameters.Add(p);
-            }
-        }
+        #region Privates
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>")]
-        private static void PrepareCommand(MySqlCommand command, MySqlConnection connection, MySqlTransaction transaction,
+        private static async Task PrepareCommandAsync(MySqlCommand command, MySqlConnection connection, MySqlTransaction transaction,
             CommandType commandType, string commandText, IEnumerable<IDataParameter> commandParameters)
         {
             //if the provided connection is not open, we will open it
             if (connection.State != ConnectionState.Open)
             {
-                connection.Open();
+                await connection.OpenAsync().ConfigureAwait(false);
             }
 
             //associate the connection with the command
@@ -237,27 +306,27 @@ namespace HB.Infrastructure.MySQL
 
         #endregion
 
-        public static int ExecuteSPNonQuery(string connectString, string spName, IList<IDataParameter> parameters)
+        public static Task<int> ExecuteSPNonQueryAsync(string connectString, string spName, IList<IDataParameter> parameters)
         {
             MySqlConnection conn = new MySqlConnection(connectString);
-            return ExecuteSPNonQuery(conn, null, true, spName, parameters);
+            return ExecuteSPNonQueryAsync(conn, null, true, spName, parameters);
         }
 
-        public static int ExecuteSPNonQuery(MySqlTransaction mySqlTransaction, string spName, IList<IDataParameter> parameters)
+        public static Task<int> ExecuteSPNonQueryAsync(MySqlTransaction mySqlTransaction, string spName, IList<IDataParameter> parameters)
         {
-            return ExecuteSPNonQuery(mySqlTransaction.Connection, mySqlTransaction, false, spName, parameters);
+            return ExecuteSPNonQueryAsync(mySqlTransaction.Connection, mySqlTransaction, false, spName, parameters);
         }
 
-        private static int ExecuteSPNonQuery(MySqlConnection conn, MySqlTransaction trans, bool isOwnedConnection, string spName, IList<IDataParameter> parameters)
+        private static async Task<int> ExecuteSPNonQueryAsync(MySqlConnection conn, MySqlTransaction trans, bool isOwnedConnection, string spName, IList<IDataParameter> parameters)
         {
             int rtInt = -1;
             MySqlCommand command = new MySqlCommand();
 
-            PrepareCommand(command, conn, trans, CommandType.StoredProcedure, spName, parameters);
+            await PrepareCommandAsync(command, conn, trans, CommandType.StoredProcedure, spName, parameters).ConfigureAwait(false);
 
             try
             {
-                rtInt = command.ExecuteNonQuery();
+                rtInt = await command.ExecuteNonQueryAsync().ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -276,11 +345,10 @@ namespace HB.Infrastructure.MySQL
                 {
                     conn.Close();
                 }
-
-                command.Parameters.Clear();
-                command.Dispose();
             }
 
+            command.Parameters.Clear();
+            command.Dispose();
 
             return rtInt;
         }
@@ -289,27 +357,27 @@ namespace HB.Infrastructure.MySQL
 
         #region SP Scalar
 
-        public static object ExecuteSPScalar(string connectString, string spName, IList<IDataParameter> parameters)
+        public static Task<object> ExecuteSPScalarAsync(MySqlTransaction mySqlTransaction, string spName, IList<IDataParameter> parameters)
+        {
+            return ExecuteSPScalarAsync(mySqlTransaction.Connection, mySqlTransaction, false, spName, parameters);
+        }
+
+        public static Task<object> ExecuteSPScalarAsync(string connectString, string spName, IList<IDataParameter> parameters)
         {
             MySqlConnection conn = new MySqlConnection(connectString);
-            return ExecuteSPScalar(conn, null, true, spName, parameters);
+            return ExecuteSPScalarAsync(conn, null, true, spName, parameters);
         }
 
-        public static object ExecuteSPScalar(MySqlTransaction mySqlTransaction, string spName, IList<IDataParameter> parameters)
-        {
-            return ExecuteSPScalar(mySqlTransaction.Connection, mySqlTransaction, false, spName, parameters);
-        }
-
-        private static object ExecuteSPScalar(MySqlConnection conn, MySqlTransaction trans, bool isOwnedConnection, string spName, IList<IDataParameter> parameters)
+        private static async Task<object> ExecuteSPScalarAsync(MySqlConnection conn, MySqlTransaction trans, bool isOwnedConnection, string spName, IList<IDataParameter> parameters)
         {
             object rtObj = null;
             MySqlCommand command = new MySqlCommand();
 
-            PrepareCommand(command, conn, trans, CommandType.StoredProcedure, spName, parameters);
+            await PrepareCommandAsync(command, conn, trans, CommandType.StoredProcedure, spName, parameters).ConfigureAwait(false);
 
             try
             {
-                rtObj = command.ExecuteScalar();
+                rtObj = await command.ExecuteScalarAsync().ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -328,10 +396,9 @@ namespace HB.Infrastructure.MySQL
                 {
                     conn.Close();
                 }
-
-                command.Parameters.Clear();
-                command.Dispose();
             }
+            command.Parameters.Clear();
+            command.Dispose();
 
             return rtObj;
         }
@@ -340,36 +407,36 @@ namespace HB.Infrastructure.MySQL
 
         #region SP Reader
 
-        public static Tuple<IDbCommand, IDataReader> ExecuteSPReader(string connectString, string spName, IList<IDataParameter> dbParameters)
+        public static async Task<Tuple<IDbCommand, IDataReader>> ExecuteSPReaderAsync(string connectString, string spName, IList<IDataParameter> dbParameters)
         {
             MySqlConnection conn = new MySqlConnection(connectString);
-            conn.Open();
+            await conn.OpenAsync().ConfigureAwait(false);
 
-            return ExecuteSPReader(conn, null, true, spName, dbParameters);
+            return await ExecuteSPReaderAsync(conn, null, true, spName, dbParameters).ConfigureAwait(false);
         }
 
-        public static Tuple<IDbCommand, IDataReader> ExecuteSPReader(MySqlTransaction mySqlTransaction, string spName, IList<IDataParameter> dbParameters)
+        public static Task<Tuple<IDbCommand, IDataReader>> ExecuteSPReaderAsync(MySqlTransaction mySqlTransaction, string spName, IList<IDataParameter> dbParameters)
         {
-            return ExecuteSPReader(mySqlTransaction.Connection, mySqlTransaction, false, spName, dbParameters);
+            return ExecuteSPReaderAsync(mySqlTransaction.Connection, mySqlTransaction, false, spName, dbParameters);
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "<Pending>")]
-        private static Tuple<IDbCommand, IDataReader> ExecuteSPReader(MySqlConnection connection, MySqlTransaction mySqlTransaction, bool isOwedConnection, string spName, IList<IDataParameter> dbParameters)
+        private static async Task<Tuple<IDbCommand, IDataReader>> ExecuteSPReaderAsync(MySqlConnection connection, MySqlTransaction mySqlTransaction, bool isOwedConnection, string spName, IList<IDataParameter> dbParameters)
         {
             MySqlCommand command = new MySqlCommand();
 
-            PrepareCommand(command, connection, mySqlTransaction, CommandType.StoredProcedure, spName, dbParameters);
-            MySqlDataReader reader = null;
+            await PrepareCommandAsync(command, connection, mySqlTransaction, CommandType.StoredProcedure, spName, dbParameters).ConfigureAwait(false);
+            IDataReader reader = null;
 
             try
             {
                 if (isOwedConnection)
                 {
-                    reader = command.ExecuteReader(CommandBehavior.CloseConnection);
+                    reader = await command.ExecuteReaderAsync(CommandBehavior.CloseConnection).ConfigureAwait(false);
                 }
                 else
                 {
-                    reader = command.ExecuteReader();
+                    reader = await command.ExecuteReaderAsync().ConfigureAwait(false);
                 }
             }
             catch (Exception ex)
@@ -400,148 +467,5 @@ namespace HB.Infrastructure.MySQL
         }
 
         #endregion
-
-        #region SQL
-
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>")]
-        public static int ExecuteSqlNonQuery(string connectionString, string sqlString)
-        {
-            using MySqlConnection conn = new MySqlConnection(connectionString);
-
-            using MySqlCommand command = new MySqlCommand
-            {
-                CommandType = CommandType.Text,
-                CommandText = MySQLLocalism.SafeDbStatement(sqlString)
-            };
-            return ExecuteCommandNonQuery(conn, true, command);
-        }
-
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>")]
-        public static int ExecuteSqlNonQuery(MySqlTransaction mySqlTransaction, string sqlString)
-        {
-            using MySqlCommand command = new MySqlCommand
-            {
-                CommandType = CommandType.Text,
-                CommandText = MySQLLocalism.SafeDbStatement(sqlString),
-                Transaction = mySqlTransaction
-            };
-            return ExecuteCommandNonQuery(mySqlTransaction.Connection, false, command);
-        }
-
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>")]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "<Pending>")]
-        public static Tuple<IDbCommand, IDataReader> ExecuteSqlReader(string connectionString, string sqlString)
-        {
-            MySqlConnection conn = new MySqlConnection(connectionString);
-
-            MySqlCommand command = new MySqlCommand
-            {
-                CommandType = CommandType.Text,
-                CommandText = MySQLLocalism.SafeDbStatement(sqlString)
-            };
-
-            return new Tuple<IDbCommand, IDataReader>(command, ExecuteCommandReader(conn, true, command));
-        }
-
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>")]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "<Pending>")]
-        public static Tuple<IDbCommand, IDataReader> ExecuteSqlReader(MySqlTransaction mySqlTransaction, string sqlString)
-        {
-            MySqlCommand command = new MySqlCommand
-            {
-                CommandType = CommandType.Text,
-                CommandText = MySQLLocalism.SafeDbStatement(sqlString),
-                Transaction = mySqlTransaction
-            };
-            return new Tuple<IDbCommand, IDataReader>(command, ExecuteCommandReader(mySqlTransaction.Connection, false, command));
-        }
-
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>")]
-        public static object ExecuteSqlScalar(string connectionString, string sqlString)
-        {
-            using MySqlConnection conn = new MySqlConnection(connectionString);
-
-            using MySqlCommand command = new MySqlCommand
-            {
-                CommandType = CommandType.Text,
-                CommandText = MySQLLocalism.SafeDbStatement(sqlString)
-            };
-            return ExecuteCommandScalar(conn, true, command);
-        }
-
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>")]
-        public static object ExecuteSqlScalar(MySqlTransaction mySqlTransaction, string sqlString)
-        {
-            using MySqlCommand command = new MySqlCommand
-            {
-                CommandType = CommandType.Text,
-                CommandText = MySQLLocalism.SafeDbStatement(sqlString),
-                Transaction = mySqlTransaction
-            };
-            return ExecuteCommandScalar(mySqlTransaction.Connection, false, command);
-        }
-
-        #endregion
-
-        //#region SqlDataTable
-
-        //public static DataTable ExecuteSqlDataTable(string connectString, string sqlString)
-        //{
-        //    MySqlConnection conn = new MySqlConnection(connectString);
-        //    return ExecuteSqlDataTable(conn, sqlString, true);
-        //}
-
-        //public static DataTable ExecuteSqlDataTable(MySqlTransaction mySqlTransaction, string sqlString)
-        //{
-        //    if (mySqlTransaction == null)
-        //    {
-        //        throw new ArgumentNullException(nameof(mySqlTransaction), "ExecuteSqlReader方法不接收NULL参数");
-        //    }
-
-        //    return ExecuteSqlDataTable(mySqlTransaction.Connection, sqlString, false);
-        //}
-
-        //private static DataTable ExecuteSqlDataTable(MySqlConnection connection, string sqlString, bool isOwndConnection)
-        //{
-
-        //    throw new NotImplementedException();
-
-        //    //DataTable table = new DataTable();
-
-        //    //try
-        //    //{
-        //    //    if (connection.State != ConnectionState.Open)
-        //    //    {
-        //    //        connection.Open();
-        //    //    }
-
-        //    //    using (MySqlCommand command = connection.CreateCommand())
-        //    //    {
-        //    //        command.CommandText = sqlString;
-        //    //        command.CommandType = CommandType.Text;
-
-        //    //        using (MySqlDataAdapter adapter = new MySqlDataAdapter(command))
-        //    //        {
-        //    //            adapter.Fill(table);
-        //    //        }
-        //    //    }
-
-        //    //    return table;
-        //    //}
-        //    //catch (Exception ex)
-        //    //{
-        //    //    throw ex;
-        //    //}
-        //    //finally
-        //    //{
-        //    //    if (isOwndConnection)
-        //    //    {
-        //    //        connection.Close();
-        //    //    }
-        //    //}
-        //}
-
-        //#endregion
-
     }
 }

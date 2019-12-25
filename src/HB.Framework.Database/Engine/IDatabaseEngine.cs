@@ -32,7 +32,7 @@ namespace HB.Framework.Database.Engine
 
         void UpdateSystemVersion(string databaseName, int version, IDbTransaction transaction);
 
-        bool IsTableExists(string databaseName, string tableName, IDbTransaction transaction);
+        bool IsTableExistsAsync(string databaseName, string tableName, IDbTransaction transaction);
 
         #endregion
 
