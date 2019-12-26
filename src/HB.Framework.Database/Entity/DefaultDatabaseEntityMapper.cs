@@ -1,5 +1,4 @@
-﻿using HB.Framework.Common;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 
@@ -19,6 +18,12 @@ namespace HB.Framework.Database.Entity
 
         #region 表行与实体间映射
 
+        /// <summary>
+        /// ToList
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <returns></returns>
+        /// <exception cref="IndexOutOfRangeException">Ignore.</exception>
         public IList<T> ToList<T>(IDataReader reader)
             where T : DatabaseEntity, new()
         {
@@ -71,6 +76,12 @@ namespace HB.Framework.Database.Entity
             return lst;
         }
 
+        /// <summary>
+        /// ToList
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <returns></returns>
+        /// <exception cref="IndexOutOfRangeException">Ignore.</exception>
         public IList<Tuple<TSource, TTarget>> ToList<TSource, TTarget>(IDataReader reader)
             where TSource : DatabaseEntity, new()
             where TTarget : DatabaseEntity, new()
@@ -168,6 +179,12 @@ namespace HB.Framework.Database.Entity
             return lst;
         }
 
+        /// <summary>
+        /// ToList
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <returns></returns>
+        /// <exception cref="IndexOutOfRangeException">Ignore.</exception>
         public IList<Tuple<TSource, TTarget2, TTarget3>> ToList<TSource, TTarget2, TTarget3>(IDataReader reader)
             where TSource : DatabaseEntity, new()
             where TTarget2 : DatabaseEntity, new()
@@ -300,6 +317,12 @@ namespace HB.Framework.Database.Entity
             return lst;
         }
 
+        /// <summary>
+        /// ToObject
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <param name="item"></param>
+        /// <exception cref="IndexOutOfRangeException">Ignore.</exception>
         public void ToObject<T>(IDataReader reader, T item) where T : DatabaseEntity, new()
         {
             if (reader == null)

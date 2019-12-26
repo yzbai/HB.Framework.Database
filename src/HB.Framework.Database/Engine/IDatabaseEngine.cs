@@ -28,12 +28,6 @@ namespace HB.Framework.Database.Engine
 
         IEnumerable<string> GetDatabaseNames();
 
-        SystemInfo GetSystemInfo(string databaseName, IDbTransaction transaction);
-
-        void UpdateSystemVersion(string databaseName, int version, IDbTransaction transaction);
-
-        bool IsTableExistsAsync(string databaseName, string tableName, IDbTransaction transaction);
-
         #endregion
 
         #region 创建功能
@@ -132,23 +126,29 @@ namespace HB.Framework.Database.Engine
         /// <param name="spName"></param>
         /// <param name="dbParameters"></param>
         /// <returns></returns>
+        /// <exception cref="DatabaseException"></exception>
         Task<Tuple<IDbCommand, IDataReader>> ExecuteSPReaderAsync(IDbTransaction trans, string dbName, string spName, IList<IDataParameter> dbParameters, bool useMaster);
 
+        /// <exception cref="DatabaseException"></exception>
         Task<object> ExecuteSPScalarAsync(IDbTransaction trans, string dbName, string spName, IList<IDataParameter> parameters, bool useMaster);
 
+        /// <exception cref="DatabaseException"></exception>
         Task<int> ExecuteSPNonQueryAsync(IDbTransaction trans, string dbName, string spName, IList<IDataParameter> parameters);
 
         #endregion
 
         #region Command执行功能
 
+        /// <exception cref="DatabaseException"></exception>
         Task<int> ExecuteCommandNonQueryAsync(IDbTransaction trans, string dbName, IDbCommand dbCommand);
 
         /// <summary>
         /// 使用后必须Dispose，必须使用using
         /// </summary>
+        /// <exception cref="DatabaseException"></exception>
         Task<IDataReader> ExecuteCommandReaderAsync(IDbTransaction trans, string dbName, IDbCommand dbCommand, bool useMaster);
 
+        /// <exception cref="DatabaseException"></exception>
         Task<object> ExecuteCommandScalarAsync(IDbTransaction trans, string dbName, IDbCommand dbCommand, bool useMaster);
 
         #endregion
@@ -169,23 +169,3 @@ namespace HB.Framework.Database.Engine
         #endregion
     }
 }
-///// <summary>
-///// 创建 空白DataTable
-///// </summary>
-///// <param name="tableName"></param>
-///// <returns></returns>
-////DataTable CreateEmptyDataTable(string dbName, string tableName);
-//#region SQL执行功能 - Unsafe
-
-///// <summary>
-///// 使用后必须Dispose，必须使用using. 在MySql中，IDataReader.Close工作不正常。解决之前不要用
-///// </summary>
-//IDataReader ExecuteSqlReader(IDbTransaction trans, string dbName, string SQL, bool useMaster);
-
-//object ExecuteSqlScalar(IDbTransaction trans, string dbName, string SQL, bool useMaster);
-
-//int ExecuteSqlNonQuery(IDbTransaction trans, string dbName, string SQL);
-
-//DataTable ExecuteSqlDataTable(IDbTransaction trans, string dbName, string SQL);
-
-//#endregion

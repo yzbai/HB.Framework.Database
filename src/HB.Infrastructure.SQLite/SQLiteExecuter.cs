@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Threading.Tasks;
 using HB.Framework.Database;
 using Microsoft.Data.Sqlite;
 
@@ -11,23 +12,45 @@ namespace HB.Infrastructure.SQLite
     /// 动态SQL和SP执行
     /// 具体执行步骤都要有异常捕捉，直接抛出给上一层
     /// </summary>
-    internal static partial class SQLiteExecuter
+    internal static class SQLiteExecuter
     {
-        #region Comand Reader
+        #region Command Reader
 
-        public static IDataReader ExecuteCommandReader(SqliteTransaction sqliteTransaction, IDbCommand dbCommand)
+        /// <summary>
+        /// ExecuteCommandReaderAsync
+        /// </summary>
+        /// <param name="sqliteTransaction"></param>
+        /// <param name="dbCommand"></param>
+        /// <returns></returns>
+        /// <exception cref="DatabaseException"></exception>
+        public static Task<IDataReader> ExecuteCommandReaderAsync(SqliteTransaction sqliteTransaction, IDbCommand dbCommand)
         {
             dbCommand.Transaction = sqliteTransaction;
-            return ExecuteCommandReader(sqliteTransaction.Connection, false, (SqliteCommand)dbCommand);
+            return ExecuteCommandReaderAsync(sqliteTransaction.Connection, false, (SqliteCommand)dbCommand);
         }
 
-        public static IDataReader ExecuteCommandReader(string connectString, IDbCommand dbCommand)
+        /// <summary>
+        /// ExecuteCommandReaderAsync
+        /// </summary>
+        /// <param name="connectString"></param>
+        /// <param name="dbCommand"></param>
+        /// <returns></returns>
+        /// <exception cref="DatabaseException"></exception>
+        public static Task<IDataReader> ExecuteCommandReaderAsync(string connectString, IDbCommand dbCommand)
         {
             SqliteConnection conn = new SqliteConnection(connectString);
-            return ExecuteCommandReader(conn, true, (SqliteCommand)dbCommand);
+            return ExecuteCommandReaderAsync(conn, true, (SqliteCommand)dbCommand);
         }
 
-        private static IDataReader ExecuteCommandReader(SqliteConnection connection, bool isOwnedConnection, SqliteCommand command)
+        /// <summary>
+        /// ExecuteCommandReaderAsync
+        /// </summary>
+        /// <param name="connection"></param>
+        /// <param name="isOwnedConnection"></param>
+        /// <param name="command"></param>
+        /// <returns></returns>
+        /// <exception cref="DatabaseException"></exception>
+        private static async Task<IDataReader> ExecuteCommandReaderAsync(SqliteConnection connection, bool isOwnedConnection, SqliteCommand command)
         {
             SqliteDataReader reader = null;
 
@@ -35,23 +58,23 @@ namespace HB.Infrastructure.SQLite
             {
                 if (connection.State != ConnectionState.Open)
                 {
-                    connection.Open();
+                    await connection.OpenAsync().ConfigureAwait(false);
                 }
 
                 command.Connection = connection;
 
                 if (isOwnedConnection)
                 {
-                    reader = command.ExecuteReader(CommandBehavior.CloseConnection);
+                    reader = (SqliteDataReader)await command.ExecuteReaderAsync(CommandBehavior.CloseConnection).ConfigureAwait(false);
                 }
                 else
                 {
-                    reader = command.ExecuteReader();
+                    reader = (SqliteDataReader)await command.ExecuteReaderAsync().ConfigureAwait(false);
                 }
 
                 return reader;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 if (isOwnedConnection)
                 {
@@ -65,7 +88,11 @@ namespace HB.Infrastructure.SQLite
 
                 if (ex is SqliteException sqliteException)
                 {
-                    throw new DatabaseException(sqliteException.SqliteErrorCode, sqliteException.SqliteExtendedErrorCode.ToString(), $"Message:{sqliteException.Message}, CommandText:{command.CommandText}", sqliteException);
+                    throw new DatabaseException(
+                        sqliteException.SqliteErrorCode, 
+                        sqliteException.SqliteExtendedErrorCode.ToString(GlobalSettings.Culture), 
+                        $"Message:{sqliteException.Message}, CommandText:{command.CommandText}", 
+                        sqliteException);
                 }
                 else
                 {
@@ -78,19 +105,41 @@ namespace HB.Infrastructure.SQLite
 
         #region Command Scalar
 
-        public static object ExecuteCommandScalar(string connectString, IDbCommand dbCommand)
+        /// <summary>
+        /// ExecuteCommandScalarAsync
+        /// </summary>
+        /// <param name="connectString"></param>
+        /// <param name="dbCommand"></param>
+        /// <returns></returns>
+        /// <exception cref="DatabaseException"></exception>
+        public static Task<object> ExecuteCommandScalarAsync(string connectString, IDbCommand dbCommand)
         {
-            SqliteConnection conn = new SqliteConnection(connectString);
-            return ExecuteCommandScalar(conn, true, (SqliteCommand)dbCommand);
+            using SqliteConnection conn = new SqliteConnection(connectString);
+            return ExecuteCommandScalarAsync(conn, true, (SqliteCommand)dbCommand);
         }
 
-        public static object ExecuteCommandScalar(SqliteTransaction sqliteTransaction, IDbCommand dbCommand)
+        /// <summary>
+        /// ExecuteCommandScalarAsync
+        /// </summary>
+        /// <param name="sqliteTransaction"></param>
+        /// <param name="dbCommand"></param>
+        /// <returns></returns>
+        /// <exception cref="DatabaseException"></exception>
+        public static Task<object> ExecuteCommandScalarAsync(SqliteTransaction sqliteTransaction, IDbCommand dbCommand)
         {
             dbCommand.Transaction = sqliteTransaction;
-            return ExecuteCommandScalar(sqliteTransaction.Connection, false, (SqliteCommand)dbCommand);
+            return ExecuteCommandScalarAsync(sqliteTransaction.Connection, false, (SqliteCommand)dbCommand);
         }
 
-        private static object ExecuteCommandScalar(SqliteConnection connection, bool isOwnedConnection, SqliteCommand command)
+        /// <summary>
+        /// ExecuteCommandScalarAsync
+        /// </summary>
+        /// <param name="connection"></param>
+        /// <param name="isOwnedConnection"></param>
+        /// <param name="command"></param>
+        /// <returns></returns>
+        /// <exception cref="DatabaseException"></exception>
+        private static async Task<object> ExecuteCommandScalarAsync(SqliteConnection connection, bool isOwnedConnection, SqliteCommand command)
         {
             object rtObj = null;
 
@@ -98,18 +147,22 @@ namespace HB.Infrastructure.SQLite
             {
                 if (connection.State != ConnectionState.Open)
                 {
-                    connection.Open();
+                    await connection.OpenAsync().ConfigureAwait(false);
                 }
 
                 command.Connection = connection;
 
-                rtObj = command.ExecuteScalar();
+                rtObj = await command.ExecuteScalarAsync().ConfigureAwait(false);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 if (ex is SqliteException sqliteException)
                 {
-                    throw new DatabaseException(sqliteException.SqliteErrorCode, sqliteException.SqliteExtendedErrorCode.ToString(), $"Message:{sqliteException.Message}, CommandText:{command.CommandText}", sqliteException);
+                    throw new DatabaseException(
+                        sqliteException.SqliteErrorCode, 
+                        sqliteException.SqliteExtendedErrorCode.ToString(GlobalSettings.Culture), 
+                        $"Message:{sqliteException.Message}, CommandText:{command.CommandText}", 
+                        sqliteException);
                 }
                 else
                 {
@@ -129,22 +182,44 @@ namespace HB.Infrastructure.SQLite
 
         #endregion
 
-        #region Command NonQuery
+        #region Comand NonQuery
 
-        public static int ExecuteCommandNonQuery(string connectString, IDbCommand dbCommand)
+        /// <summary>
+        /// ExecuteCommandNonQueryAsync
+        /// </summary>
+        /// <param name="connectString"></param>
+        /// <param name="dbCommand"></param>
+        /// <returns></returns>
+        /// <exception cref="DatabaseException"></exception>
+        public static Task<int> ExecuteCommandNonQueryAsync(string connectString, IDbCommand dbCommand)
         {
-            SqliteConnection conn = new SqliteConnection(connectString);
+            using SqliteConnection conn = new SqliteConnection(connectString);
 
-            return ExecuteCommandNonQuery(conn, true, (SqliteCommand)dbCommand);
+            return ExecuteCommandNonQueryAsync(conn, true, (SqliteCommand)dbCommand);
         }
 
-        public static int ExecuteCommandNonQuery(SqliteTransaction sqliteTransaction, IDbCommand dbCommand)
+        /// <summary>
+        /// ExecuteCommandNonQueryAsync
+        /// </summary>
+        /// <param name="sqliteTransaction"></param>
+        /// <param name="dbCommand"></param>
+        /// <returns></returns>
+        /// <exception cref="DatabaseException"></exception>
+        public static Task<int> ExecuteCommandNonQueryAsync(SqliteTransaction sqliteTransaction, IDbCommand dbCommand)
         {
             dbCommand.Transaction = sqliteTransaction;
-            return ExecuteCommandNonQuery(sqliteTransaction.Connection, false, (SqliteCommand)dbCommand);
+            return ExecuteCommandNonQueryAsync(sqliteTransaction.Connection, false, (SqliteCommand)dbCommand);
         }
 
-        private static int ExecuteCommandNonQuery(SqliteConnection conn, bool isOwnedConnection, SqliteCommand command)
+        /// <summary>
+        /// ExecuteCommandNonQueryAsync
+        /// </summary>
+        /// <param name="conn"></param>
+        /// <param name="isOwnedConnection"></param>
+        /// <param name="command"></param>
+        /// <returns></returns>
+        /// <exception cref="DatabaseException"></exception>
+        private static async Task<int> ExecuteCommandNonQueryAsync(SqliteConnection conn, bool isOwnedConnection, SqliteCommand command)
         {
             int rtInt = -1;
 
@@ -152,19 +227,22 @@ namespace HB.Infrastructure.SQLite
             {
                 if (conn.State != ConnectionState.Open)
                 {
-                    //TODO: 要用Polly来确保吗?
-                    conn.Open();
+                    await conn.OpenAsync().ConfigureAwait(false);
                 }
 
                 command.Connection = conn;
 
-                rtInt = command.ExecuteNonQuery();
+                rtInt = await command.ExecuteNonQueryAsync().ConfigureAwait(false);
             }
             catch (Exception ex)
             {
                 if (ex is SqliteException sqliteException)
                 {
-                    throw new DatabaseException(sqliteException.SqliteErrorCode, sqliteException.SqliteExtendedErrorCode.ToString(), $"Message:{sqliteException.Message}, CommandText:{command.CommandText}", sqliteException);
+                    throw new DatabaseException(
+                        sqliteException.SqliteErrorCode, 
+                        sqliteException.SqliteExtendedErrorCode.ToString(GlobalSettings.Culture), 
+                        $"Message:{sqliteException.Message}, CommandText:{command.CommandText}", 
+                        sqliteException);
                 }
                 else
                 {
@@ -180,89 +258,6 @@ namespace HB.Infrastructure.SQLite
             }
 
             return rtInt;
-        }
-
-        #endregion
-
-        #region SQL
-
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>")]
-        public static int ExecuteSqlNonQuery(string connectionString, string sqlString)
-        {
-            SqliteConnection conn = new SqliteConnection(connectionString);
-
-            using SqliteCommand command = new SqliteCommand
-            {
-                CommandType = CommandType.Text,
-                CommandText = SQLiteLocalism.SafeDbStatement(sqlString)
-            };
-            return ExecuteCommandNonQuery(conn, true, command);
-        }
-
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>")]
-        public static int ExecuteSqlNonQuery(SqliteTransaction sqliteTransaction, string sqlString)
-        {
-            using SqliteCommand command = new SqliteCommand
-            {
-                CommandType = CommandType.Text,
-                CommandText = SQLiteLocalism.SafeDbStatement(sqlString),
-                Transaction = sqliteTransaction
-            };
-            return ExecuteCommandNonQuery(sqliteTransaction.Connection, false, command);
-        }
-
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>")]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "<Pending>")]
-        public static Tuple<IDbCommand, IDataReader> ExecuteSqlReader(string connectionString, string sqlString)
-        {
-            SqliteConnection conn = new SqliteConnection(connectionString);
-
-            SqliteCommand command = new SqliteCommand
-            {
-                CommandType = CommandType.Text,
-                CommandText = SQLiteLocalism.SafeDbStatement(sqlString)
-            };
-
-            return new Tuple<IDbCommand, IDataReader>(command, ExecuteCommandReader(conn, true, command));
-        }
-
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>")]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "<Pending>")]
-        public static Tuple<IDbCommand, IDataReader> ExecuteSqlReader(SqliteTransaction sqliteTransaction, string sqlString)
-        {
-            SqliteCommand command = new SqliteCommand
-            {
-                CommandType = CommandType.Text,
-                CommandText = SQLiteLocalism.SafeDbStatement(sqlString),
-                Transaction = sqliteTransaction
-            };
-
-            return new Tuple<IDbCommand, IDataReader>(command, ExecuteCommandReader(sqliteTransaction.Connection, false, command));
-        }
-
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>")]
-        public static object ExecuteSqlScalar(string connectionString, string sqlString)
-        {
-            SqliteConnection conn = new SqliteConnection(connectionString);
-
-            using SqliteCommand command = new SqliteCommand
-            {
-                CommandType = CommandType.Text,
-                CommandText = SQLiteLocalism.SafeDbStatement(sqlString)
-            };
-            return ExecuteCommandScalar(conn, true, command);
-        }
-
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>")]
-        public static object ExecuteSqlScalar(SqliteTransaction sqliteTransaction, string sqlString)
-        {
-            using SqliteCommand command = new SqliteCommand
-            {
-                CommandType = CommandType.Text,
-                CommandText = SQLiteLocalism.SafeDbStatement(sqlString),
-                Transaction = sqliteTransaction
-            };
-            return ExecuteCommandScalar(sqliteTransaction.Connection, false, command);
         }
 
         #endregion

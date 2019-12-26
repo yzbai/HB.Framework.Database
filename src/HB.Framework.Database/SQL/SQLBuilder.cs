@@ -549,6 +549,13 @@ namespace HB.Framework.Database.SQL
 
         #region Create Table
 
+        /// <summary>
+        /// CreateTableCommand
+        /// </summary>
+        /// <param name="type"></param>
+        /// <param name="addDropStatement"></param>
+        /// <returns></returns>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
         public IDbCommand CreateTableCommand(Type type, bool addDropStatement)
         {
             string sql = _databaseEngine.EngineType switch
@@ -615,8 +622,13 @@ CREATE TABLE {definition.DbTableReservedName} (
 );";
         }
 
-        //TODO: 目前只适用Mysql，需要后期改造
-        //TODO: 处理长文本 Text， MediumText， LongText
+        /// <summary>
+        /// MySQL_Table_Create_Statement
+        /// </summary>
+        /// <param name="type"></param>
+        /// <param name="addDropStatement"></param>
+        /// <returns></returns>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
         private string MySQL_Table_Create_Statement(Type type, bool addDropStatement)
         {
             StringBuilder sql = new StringBuilder();
@@ -676,7 +688,7 @@ CREATE TABLE {definition.DbTableReservedName} (
 
                 if (length >= 4194303)
                 {
-                    throw new Exception($"字段长度太长。{info.EntityDef.EntityFullName} : {info.PropertyName}");
+                    throw new DatabaseException($"字段长度太长。{info.EntityDef.EntityFullName} : {info.PropertyName}");
                 }
 
                 if (info.IsLengthFixed)
@@ -717,7 +729,105 @@ CREATE TABLE {definition.DbTableReservedName} (
                 definition.DbTableReservedName, sql.ToString(), dropStatement);
         }
 
-        #endregion              
+        #endregion
+
+        #region SystemInfo
+
+        private const string _mysql_tbSysInfoCreate =
+@"CREATE TABLE `tb_sys_info` (
+	`Id` int (11) NOT NULL AUTO_INCREMENT, 
+	`Name` varchar(100) DEFAULT NULL, 
+	`Value` varchar(1024) DEFAULT NULL,
+	PRIMARY KEY(`Id`),
+	UNIQUE KEY `Name_UNIQUE` (`Name`)
+);
+INSERT INTO `tb_sys_info`(`Name`, `Value`) VALUES('Version', '1');
+INSERT INTO `tb_sys_info`(`Name`, `Value`) VALUES('DatabaseName', @databaseName);";
+
+        private const string _mysql_tbSysInfoUpdateVersion = @"UPDATE `tb_sys_info` SET `Value` = @Value WHERE `Name` = 'Version';";
+
+        private const string _mysql_tbSysInfoRetrieve = @"SELECT * FROM `tb_sys_info`;";
+
+        private const string _mysql_isTableExistsStatement = "SELECT count(1) FROM information_schema.TABLES WHERE table_name =@tableName and table_schema=@databaseName;";
+
+        private const string _sqlite_tbSysInfoCreate =
+@"CREATE TABLE ""tb_sys_info"" (
+    ""Id"" INTEGER PRIMARY KEY AUTOINCREMENT,
+	""Name"" TEXT UNIQUE, 
+	""Value"" TEXT
+);
+INSERT INTO ""tb_sys_info""(""Name"", ""Value"") VALUES('Version', '1');
+INSERT INTO ""tb_sys_info""(""Name"", ""Value"") VALUES('DatabaseName', @databaseName);";
+
+        private const string _sqlite_tbSysInfoUpdateVersion = @"UPDATE ""tb_sys_info"" SET ""Value"" = @Value WHERE ""Name"" = 'Version';";
+
+        private const string _sqlite_tbSysInfoRetrieve = @"SELECT * FROM ""tb_sys_info"";";
+
+        private const string _sqlite_isTableExistsStatement = "SELECT count(1) FROM sqlite_master where type='table' and name=@tableName;";
+
+        public IDbCommand CreateIsTableExistCommand(string databaseName, string tableName)
+        {
+            IDbCommand command = _databaseEngine.CreateEmptyCommand();
+
+            command.CommandType = CommandType.Text;
+            command.CommandText = _databaseEngine.EngineType switch
+            {
+                DatabaseEngineType.MySQL => _mysql_isTableExistsStatement,
+                DatabaseEngineType.SQLite => _sqlite_isTableExistsStatement,
+                _ => string.Empty
+            };
+            command.Parameters.Add(_databaseEngine.CreateParameter("@tableName", tableName));
+            command.Parameters.Add(_databaseEngine.CreateParameter("@databaseName", databaseName));
+
+            return command;
+        }
+
+        public IDbCommand CreateRetrieveSystemInfoCommand()
+        {
+            IDbCommand command = _databaseEngine.CreateEmptyCommand();
+            command.CommandType = CommandType.Text;
+            command.CommandText = _databaseEngine.EngineType switch
+            {
+                DatabaseEngineType.MySQL => _mysql_tbSysInfoRetrieve,
+                DatabaseEngineType.SQLite => _sqlite_tbSysInfoRetrieve,
+                _ => string.Empty
+            };
+
+            return command;
+        }
+
+        public IDbCommand CreateUpdateSystemVersionCommand(string databaseName, int version)
+        {
+            IDbCommand command = _databaseEngine.CreateEmptyCommand();
+            command.CommandType = CommandType.Text;
+
+            if (version == 1)
+            {
+                command.CommandText = _databaseEngine.EngineType switch
+                {
+                    DatabaseEngineType.MySQL => _mysql_tbSysInfoCreate,
+                    DatabaseEngineType.SQLite => _sqlite_tbSysInfoCreate,
+                    _ => string.Empty
+                };
+
+                command.Parameters.Add(_databaseEngine.CreateParameter("@databaseName", databaseName));
+            }
+            else
+            {
+                command.CommandText = _databaseEngine.EngineType switch
+                {
+                    DatabaseEngineType.MySQL => _mysql_tbSysInfoUpdateVersion,
+                    DatabaseEngineType.SQLite => _sqlite_tbSysInfoUpdateVersion,
+                    _ => string.Empty
+                };
+
+                command.Parameters.Add(_databaseEngine.CreateParameter("@Value", version));
+            }
+
+            return command;
+        }
+
+        #endregion
 
         #region Create SelectCondition, FromCondition, WhereCondition
 
@@ -739,41 +849,3 @@ CREATE TABLE {definition.DbTableReservedName} (
         #endregion
     }
 }
-//#region Update Key
-
-//private string GetUpdateKeyStatement(DatabaseEntityDef modelDef, string[] keys, object[] values, string lastUser)
-//{
-//    StringBuilder args = new StringBuilder();
-
-//    int length = keys.Length;
-
-//    for (int i = 0; i < length; i++)
-//    {
-//        string key = keys[i];
-//        DatabaseEntityPropertyDef info = modelDef.GetProperty(key);
-//        string dbValueStatement = info.TypeConverter == null ?
-//            _databaseEngine.GetDbValueStatement(values[i], needQuoted: true) :
-//            _databaseEngine.GetQuotedStatement(info.TypeConverter.TypeValueToDbValue(values[i]));
-//        args.AppendFormat(GlobalSettings.Culture, " {0}={1},", _databaseEngine.GetReservedStatement(key), dbValueStatement);
-//    }
-
-//    args.AppendFormat(GlobalSettings.Culture, " {0}={1},", _databaseEngine.GetReservedStatement("Version"), _databaseEngine.GetReservedStatement("Version") + " + 1");
-//    args.AppendFormat(GlobalSettings.Culture, " {0}={1}", _databaseEngine.GetReservedStatement("LastUser"), _databaseEngine.GetDbValueStatement(lastUser, needQuoted: true));
-
-//    string statement = string.Format(GlobalSettings.Culture, "UPDATE {0} SET {1} ", modelDef.DbTableReservedName, args.ToString());
-
-//    return statement;
-//}
-
-//public IDbCommand CreateUpdateKeyCommand<T>(WhereExpression<T> condition, string[] keys, object[] values, string lastUser) where T : DatabaseEntity, new()
-//{
-//    DatabaseEntityDef definition = _entityDefFactory.GetDef<T>();
-
-//    //List<IDataParameter> parameters = new List<IDataParameter>();
-
-//    string updateKeyStatement = GetUpdateKeyStatement(definition, keys, values, lastUser);
-
-//    return AssembleCommand<T, T>(false, updateKeyStatement, null, condition, null);
-//}
-
-//#endregion

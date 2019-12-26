@@ -142,7 +142,7 @@ namespace HB.Infrastructure.SQLite
 
         public static string GetQuoted(string name)
         {
-            return QuotedChar + name.Replace(QuotedChar, QuotedChar + QuotedChar) + QuotedChar;
+            return QuotedChar + name.Replace(QuotedChar, QuotedChar + QuotedChar, GlobalSettings.Comparison) + QuotedChar;
         }
 
         public static string GetParameterized(string name)
@@ -163,7 +163,7 @@ namespace HB.Infrastructure.SQLite
         /// <returns>数据库类型值的表达</returns>
         public static string GetDbValueStatement(object value, bool needQuoted)
         {
-            string valueStr = ValueConverter.TypeValueToDbValue(value);
+            string valueStr = ValueConverterUtil.TypeValueToStringValue(value);
 
             valueStr = SafeDbStatement(valueStr);
 
@@ -194,9 +194,9 @@ namespace HB.Infrastructure.SQLite
             //TODO:增加对值的过滤，预防SQL注入
             return dbValueStatement.ToString(GlobalSettings.Culture)
                 //.Replace("'", "''")
-                .Replace("--", "")
-                .Replace("/*", "")
-                .Replace("*/", "");
+                .Replace("--", "", GlobalSettings.Comparison)
+                .Replace("/*", "", GlobalSettings.Comparison)
+                .Replace("*/", "", GlobalSettings.Comparison);
         }
     }
 }

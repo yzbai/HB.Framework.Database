@@ -9,6 +9,12 @@ namespace HB.Framework.Database.SQL
     //http://blogs.msdn.com/b/mattwar/archive/2007/07/31/linq-building-an-iqueryable-provider-part-ii.aspx
     internal abstract class ExpressionVisitor
     {
+        /// <summary>
+        /// Visit
+        /// </summary>
+        /// <param name="exp"></param>
+        /// <returns></returns>
+        /// <exception cref="Exception"></exception>
         protected virtual Expression Visit(Expression exp)
         {
             if (exp == null)
@@ -78,6 +84,12 @@ namespace HB.Framework.Database.SQL
             }
         }
 
+        /// <summary>
+        /// VisitBinding
+        /// </summary>
+        /// <param name="binding"></param>
+        /// <returns></returns>
+        /// <exception cref="Exception"></exception>
         protected virtual MemberBinding VisitBinding(MemberBinding binding)
         {
             return binding.BindingType switch

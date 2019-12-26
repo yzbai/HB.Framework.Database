@@ -30,9 +30,9 @@ namespace HB.Infrastructure.MySQL
 
         private MySQLEngine() { }
 
-        public MySQLEngine(IOptions<MySQLOptions> options) : this()
+        public MySQLEngine(IOptions<MySQLOptions> options, ILoggerFactory loggerFactory) : this()
         {
-            //MySqlConnectorLogManager.Provider = new MicrosoftExtensionsLoggingLoggerProvider(loggerFactory);
+            MySqlConnectorLogManager.Provider = new MicrosoftExtensionsLoggingLoggerProvider(loggerFactory);
 
             _options = options.Value;
 
@@ -76,13 +76,19 @@ namespace HB.Infrastructure.MySQL
             return _connectionStringDict[dbName + "_0"];
         }
 
+        public IEnumerable<string> GetDatabaseNames()
+        {
+            return _options.Connections.Select(s => s.DatabaseName);
+        }
+
         #endregion
 
         #region 创建功能
 
         public IDataParameter CreateParameter(string name, object value, DbType dbType)
         {
-            MySqlParameter parameter = new MySqlParameter {
+            MySqlParameter parameter = new MySqlParameter
+            {
                 ParameterName = name,
                 Value = value,
                 DbType = dbType
@@ -92,7 +98,8 @@ namespace HB.Infrastructure.MySQL
 
         public IDataParameter CreateParameter(string name, object value)
         {
-            MySqlParameter parameter = new MySqlParameter {
+            MySqlParameter parameter = new MySqlParameter
+            {
                 ParameterName = name,
                 Value = value
             };
@@ -152,96 +159,18 @@ namespace HB.Infrastructure.MySQL
 
         #endregion
 
-        #region SystemInfo
-
-        private const string _systemInfoTableName = "tb_sys_info";
-
-        private const string _tbSysInfoCreate =
-@"CREATE TABLE `tb_sys_info` (
-	`Id` int (11) NOT NULL AUTO_INCREMENT, 
-	`Name` varchar(100) DEFAULT NULL, 
-	`Value` varchar(1024) DEFAULT NULL,
-	PRIMARY KEY(`Id`),
-	UNIQUE KEY `Name_UNIQUE` (`Name`)
-);
-INSERT INTO `tb_sys_info`(`Name`, `Value`) VALUES('Version', '1');
-INSERT INTO `tb_sys_info`(`Name`, `Value`) VALUES('DatabaseName', '{0}');";
-
-        private const string _tbSysInfoRetrieve = @"SELECT * FROM `tb_sys_info`;";
-
-        private const string _tbSysInfoUpdateVersion = @"UPDATE `tb_sys_info` SET `Value` = '{0}' WHERE `Name` = 'Version';";
-
-        private const string _isTableExistsStatement = "SELECT count(1) FROM information_schema.TABLES WHERE table_name =@tableName and table_schema=@databaseName;";
-
-        public IEnumerable<string> GetDatabaseNames()
-        {
-            return _options.Connections.Select(s => s.DatabaseName);
-        }
-
-        public async Task<bool> IsTableExistsAsync(string databaseName, string tableName, IDbTransaction transaction)
-        {
-            using IDbCommand command = CreateEmptyCommand();
-            
-            command.CommandType = CommandType.Text;
-            command.CommandText = _isTableExistsStatement;
-            command.Parameters.Add(CreateParameter("@tableName", tableName));
-            command.Parameters.Add(CreateParameter("@databaseName", databaseName));
-
-            object result = await ExecuteCommandScalarAsync(transaction, databaseName, command, true).ConfigureAwait(false);
-
-            return Convert.ToBoolean(result, GlobalSettings.Culture);
-        }
-
-        public SystemInfo GetSystemInfo(string databaseName, IDbTransaction transaction)
-        {
-            if (!IsTableExistsAsync(databaseName, _systemInfoTableName, transaction))
-            {
-                return new SystemInfo
-                {
-                    DatabaseName = databaseName,
-                    Version = 0
-                };
-            }
-
-            Tuple<IDbCommand, IDataReader> tuple = null;
-
-            try
-            {
-                tuple = ExecuteSqlReader(transaction, databaseName, _tbSysInfoRetrieve, false);
-
-                SystemInfo systemInfo = new SystemInfo { DatabaseName = databaseName };
-
-                while (tuple.Item2.Read())
-                {
-                    systemInfo.Add(tuple.Item2["Name"].ToString(), tuple.Item2["Value"].ToString());
-                }
-
-                return systemInfo;
-            }
-            finally
-            {
-                tuple.Item2?.Dispose();
-                tuple.Item1?.Dispose();
-            }
-        }
-
-        public void UpdateSystemVersion(string databaseName, int version, IDbTransaction transaction)
-        {
-            if (version == 1)
-            {
-                //创建SystemInfo
-                ExecuteSqlNonQuery(transaction, databaseName, string.Format(GlobalSettings.Culture, _tbSysInfoCreate, databaseName));
-            }
-            else
-            {
-                ExecuteSqlNonQuery(transaction, databaseName, string.Format(GlobalSettings.Culture, _tbSysInfoUpdateVersion, version));
-            }
-        }
-
-        #endregion
-
         #region SP 能力
 
+        /// <summary>
+        /// ExecuteSPReaderAsync
+        /// </summary>
+        /// <param name="Transaction"></param>
+        /// <param name="dbName"></param>
+        /// <param name="spName"></param>
+        /// <param name="dbParameters"></param>
+        /// <param name="useMaster"></param>
+        /// <returns></returns>
+        /// <exception cref="DatabaseException"></exception>
         public Task<Tuple<IDbCommand, IDataReader>> ExecuteSPReaderAsync(IDbTransaction Transaction, string dbName, string spName, IList<IDataParameter> dbParameters, bool useMaster = false)
         {
             if (Transaction == null)
@@ -254,6 +183,16 @@ INSERT INTO `tb_sys_info`(`Name`, `Value`) VALUES('DatabaseName', '{0}');";
             }
         }
 
+        /// <summary>
+        /// ExecuteSPScalarAsync
+        /// </summary>
+        /// <param name="Transaction"></param>
+        /// <param name="dbName"></param>
+        /// <param name="spName"></param>
+        /// <param name="parameters"></param>
+        /// <param name="useMaster"></param>
+        /// <returns></returns>
+        /// <exception cref="DatabaseException"></exception>
         public Task<object> ExecuteSPScalarAsync(IDbTransaction Transaction, string dbName, string spName, IList<IDataParameter> parameters, bool useMaster = false)
         {
             if (Transaction == null)
@@ -266,6 +205,15 @@ INSERT INTO `tb_sys_info`(`Name`, `Value`) VALUES('DatabaseName', '{0}');";
             }
         }
 
+        /// <summary>
+        /// ExecuteSPNonQueryAsync
+        /// </summary>
+        /// <param name="Transaction"></param>
+        /// <param name="dbName"></param>
+        /// <param name="spName"></param>
+        /// <param name="parameters"></param>
+        /// <returns></returns>
+        /// <exception cref="DatabaseException"></exception>
         public Task<int> ExecuteSPNonQueryAsync(IDbTransaction Transaction, string dbName, string spName, IList<IDataParameter> parameters)
         {
             if (Transaction == null)
@@ -282,6 +230,14 @@ INSERT INTO `tb_sys_info`(`Name`, `Value`) VALUES('DatabaseName', '{0}');";
 
         #region Command 能力
 
+        /// <summary>
+        /// ExecuteCommandNonQueryAsync
+        /// </summary>
+        /// <param name="Transaction"></param>
+        /// <param name="dbName"></param>
+        /// <param name="dbCommand"></param>
+        /// <returns></returns>
+        /// <exception cref="DatabaseException"></exception>
         public Task<int> ExecuteCommandNonQueryAsync(IDbTransaction Transaction, string dbName, IDbCommand dbCommand)
         {
             if (Transaction == null)
@@ -294,6 +250,15 @@ INSERT INTO `tb_sys_info`(`Name`, `Value`) VALUES('DatabaseName', '{0}');";
             }
         }
 
+        /// <summary>
+        /// ExecuteCommandReaderAsync
+        /// </summary>
+        /// <param name="Transaction"></param>
+        /// <param name="dbName"></param>
+        /// <param name="dbCommand"></param>
+        /// <param name="useMaster"></param>
+        /// <returns></returns>
+        /// <exception cref="DatabaseException"></exception>
         public Task<IDataReader> ExecuteCommandReaderAsync(IDbTransaction Transaction, string dbName, IDbCommand dbCommand, bool useMaster = false)
         {
             if (Transaction == null)
@@ -306,6 +271,15 @@ INSERT INTO `tb_sys_info`(`Name`, `Value`) VALUES('DatabaseName', '{0}');";
             }
         }
 
+        /// <summary>
+        /// ExecuteCommandScalarAsync
+        /// </summary>
+        /// <param name="Transaction"></param>
+        /// <param name="dbName"></param>
+        /// <param name="dbCommand"></param>
+        /// <param name="useMaster"></param>
+        /// <returns></returns>
+        /// <exception cref="DatabaseException"></exception>
         public Task<object> ExecuteCommandScalarAsync(IDbTransaction Transaction, string dbName, IDbCommand dbCommand, bool useMaster = false)
         {
             if (Transaction == null)

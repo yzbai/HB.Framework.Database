@@ -22,10 +22,6 @@ namespace HB.Framework.Database
     /// </summary>
     internal class DefaultDatabase : IDatabase
     {
-        private static readonly object _lockerObj = new object();
-
-        private bool _initialized = false;
-
         private readonly DatabaseSettings _databaseSettings;
         private readonly IDatabaseEngine _databaseEngine;
         private readonly IDatabaseEntityDefFactory _entityDefFactory;
@@ -56,27 +52,28 @@ namespace HB.Framework.Database
 
         #region Initialize
 
-        public void Initialize(IEnumerable<Migration> migrations = null)
+        /// <summary>
+        /// InitializeAsync
+        /// </summary>
+        /// <param name="migrations"></param>
+        /// <returns></returns>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
+        public async Task InitializeAsync(IEnumerable<Migration> migrations = null)
         {
-            if (!_initialized)
+
+            if (_databaseSettings.AutomaticCreateTable)
             {
-                lock (_lockerObj)
-                {
-                    if (!_initialized)
-                    {
-                        _initialized = true;
-
-                        if (_databaseSettings.AutomaticCreateTable)
-                        {
-                            AutoCreateTablesIfBrandNewAsync().Wait();
-                        }
-
-                        Migarate(migrations);
-                    }
-                }
+                await AutoCreateTablesIfBrandNewAsync().ConfigureAwait(false);
             }
+
+            await MigarateAsync(migrations).ConfigureAwait(false);
         }
 
+        /// <summary>
+        /// AutoCreateTablesIfBrandNewAsync
+        /// </summary>
+        /// <returns></returns>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
         private async Task AutoCreateTablesIfBrandNewAsync()
         {
             await _databaseEngine.GetDatabaseNames().ForEachAsync(async databaseName =>
@@ -86,7 +83,7 @@ namespace HB.Framework.Database
 
                 try
                 {
-                    SystemInfo sys = _databaseEngine.GetSystemInfo(databaseName, transactionContext.Transaction);
+                    SystemInfo sys = await GetSystemInfoAsync(databaseName, transactionContext.Transaction).ConfigureAwait(false);
                     //表明是新数据库
                     if (sys.Version == 0)
                     {
@@ -98,7 +95,7 @@ namespace HB.Framework.Database
 
                         await CreateTablesByDatabaseAsync(databaseName, transactionContext).ConfigureAwait(false);
 
-                        _databaseEngine.UpdateSystemVersion(databaseName, 1, transactionContext.Transaction);
+                        await UpdateSystemVersionAsync(databaseName, 1, transactionContext.Transaction).ConfigureAwait(false);
                     }
 
                     await CommitAsync(transactionContext).ConfigureAwait(false);
@@ -113,6 +110,13 @@ namespace HB.Framework.Database
             }).ConfigureAwait(false);
         }
 
+        /// <summary>
+        /// CreateTableAsync
+        /// </summary>
+        /// <param name="def"></param>
+        /// <param name="transContext"></param>
+        /// <returns></returns>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
         private Task<int> CreateTableAsync(DatabaseEntityDef def, TransactionContext transContext)
         {
             IDbCommand command = _sqlBuilder.CreateTableCommand(def.EntityType, false);
@@ -120,6 +124,13 @@ namespace HB.Framework.Database
             return _databaseEngine.ExecuteCommandNonQueryAsync(transContext.Transaction, def.DatabaseName, command);
         }
 
+        /// <summary>
+        /// CreateTablesByDatabaseAsync
+        /// </summary>
+        /// <param name="databaseName"></param>
+        /// <param name="transactionContext"></param>
+        /// <returns></returns>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
         private async Task CreateTablesByDatabaseAsync(string databaseName, TransactionContext transactionContext)
         {
             await _entityDefFactory
@@ -128,57 +139,68 @@ namespace HB.Framework.Database
                 .ConfigureAwait(false);
         }
 
-        private void Migarate(IEnumerable<Migration> migrations)
+        /// <summary>
+        /// Migarate
+        /// </summary>
+        /// <param name="migrations"></param>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
+        private async Task MigarateAsync(IEnumerable<Migration> migrations)
         {
             if (migrations != null && migrations.Any(m => m.NewVersion <= m.OldVersion))
             {
                 throw new DatabaseException(DatabaseError.MigrateError, "", Resources.MigrationVersionErrorMessage);
             }
 
-            _databaseEngine.GetDatabaseNames().ForEach(databaseName =>
-            {
+            await _databaseEngine.GetDatabaseNames().ForEachAsync(async databaseName =>
+             {
 
-                TransactionContext transactionContext = BeginTransaction(databaseName, IsolationLevel.Serializable);
+                 TransactionContext transactionContext = await BeginTransactionAsync(databaseName, IsolationLevel.Serializable).ConfigureAwait(false);
 
-                try
-                {
-                    SystemInfo sys = _databaseEngine.GetSystemInfo(databaseName, transactionContext.Transaction);
+                 try
+                 {
+                     SystemInfo sys = await GetSystemInfoAsync(databaseName, transactionContext.Transaction).ConfigureAwait(false);
 
-                    if (sys.Version < _databaseSettings.Version)
-                    {
-                        if (migrations == null)
-                        {
-                            throw new DatabaseException(DatabaseError.MigrateError, "", $"Lack Migrations for {sys.DatabaseName}");
-                        }
+                     if (sys.Version < _databaseSettings.Version)
+                     {
+                         if (migrations == null)
+                         {
+                             throw new DatabaseException(DatabaseError.MigrateError, "", $"Lack Migrations for {sys.DatabaseName}");
+                         }
 
-                        IOrderedEnumerable<Migration> curOrderedMigrations = migrations
-                            .Where(m => m.TargetSchema.Equals(sys.DatabaseName, GlobalSettings.ComparisonIgnoreCase))
-                            .OrderBy(m => m.OldVersion);
+                         IOrderedEnumerable<Migration> curOrderedMigrations = migrations
+                             .Where(m => m.TargetSchema.Equals(sys.DatabaseName, GlobalSettings.ComparisonIgnoreCase))
+                             .OrderBy(m => m.OldVersion);
 
-                        if (curOrderedMigrations == null)
-                        {
-                            throw new DatabaseException(DatabaseError.MigrateError, "", $"Lack Migrations for {sys.DatabaseName}");
-                        }
+                         if (curOrderedMigrations == null)
+                         {
+                             throw new DatabaseException(DatabaseError.MigrateError, "", $"Lack Migrations for {sys.DatabaseName}");
+                         }
 
-                        if (!CheckMigration(sys.Version, _databaseSettings.Version, curOrderedMigrations))
-                        {
-                            throw new DatabaseException(DatabaseError.MigrateError, "", $"Can not perform Migration on ${sys.DatabaseName}, because the migrations provided is not sufficient.");
-                        }
+                         if (!CheckMigration(sys.Version, _databaseSettings.Version, curOrderedMigrations))
+                         {
+                             throw new DatabaseException(DatabaseError.MigrateError, "", $"Can not perform Migration on ${sys.DatabaseName}, because the migrations provided is not sufficient.");
+                         }
 
-                        curOrderedMigrations.ForEach(migration => _databaseEngine.ExecuteSqlNonQuery(transactionContext.Transaction, databaseName, migration.SqlStatement));
+                         await curOrderedMigrations.ForEachAsync(async migration =>
+                         {
+                             IDbCommand command = _databaseEngine.CreateEmptyCommand();
+                             command.CommandType = CommandType.Text;
+                             command.CommandText = migration.SqlStatement;
+                             await _databaseEngine.ExecuteCommandNonQueryAsync(transactionContext.Transaction, databaseName, command).ConfigureAwait(false);
+                         }).ConfigureAwait(false);
 
-                        _databaseEngine.UpdateSystemVersion(sys.DatabaseName, _databaseSettings.Version, transactionContext.Transaction);
-                    }
+                         await UpdateSystemVersionAsync(sys.DatabaseName, _databaseSettings.Version, transactionContext.Transaction).ConfigureAwait(false);
+                     }
 
-                    Commit(transactionContext);
-                }
-                catch
-                {
-                    Rollback(transactionContext);
-                    //throw new DatabaseException(DatabaseError.MigrateError, "", $"Migration Failed at Database:{databaseName}", ex);
-                    throw;
-                }
-            });
+                     await CommitAsync(transactionContext).ConfigureAwait(false);
+                 }
+                 catch
+                 {
+                     await RollbackAsync(transactionContext).ConfigureAwait(false);
+                     //throw new DatabaseException(DatabaseError.MigrateError, "", $"Migration Failed at Database:{databaseName}", ex);
+                     throw;
+                 }
+             }).ConfigureAwait(false);
         }
 
         private static bool CheckMigration(int startVersion, int endVersion, IOrderedEnumerable<Migration> curOrderedMigrations)
@@ -198,6 +220,80 @@ namespace HB.Framework.Database
             }
 
             return curVersion == endVersion;
+        }
+
+        #endregion
+
+        #region SystemInfo
+
+        private const string _systemInfoTableName = "tb_sys_info";
+
+        /// <summary>
+        /// IsTableExistsAsync
+        /// </summary>
+        /// <param name="databaseName"></param>
+        /// <param name="tableName"></param>
+        /// <param name="transaction"></param>
+        /// <returns></returns>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
+        /// <exception cref="InvalidCastException">Ignore.</exception>
+        private async Task<bool> IsTableExistsAsync(string databaseName, string tableName, IDbTransaction transaction)
+        {
+            using IDbCommand command = _sqlBuilder.CreateIsTableExistCommand(databaseName, tableName);
+
+            object result = await _databaseEngine.ExecuteCommandScalarAsync(transaction, databaseName, command, true).ConfigureAwait(false);
+
+            return Convert.ToBoolean(result, GlobalSettings.Culture);
+        }
+
+        /// <summary>
+        /// GetSystemInfoAsync
+        /// </summary>
+        /// <param name="databaseName"></param>
+        /// <param name="transaction"></param>
+        /// <returns></returns>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
+        public async Task<SystemInfo> GetSystemInfoAsync(string databaseName, IDbTransaction transaction)
+        {
+            bool isExisted = await IsTableExistsAsync(databaseName, _systemInfoTableName, transaction).ConfigureAwait(false);
+
+            if (!isExisted)
+            {
+                return new SystemInfo
+                {
+                    DatabaseName = databaseName,
+                    Version = 0
+                };
+            }
+
+            using IDbCommand command = _sqlBuilder.CreateRetrieveSystemInfoCommand();
+
+            using IDataReader reader = await _databaseEngine.ExecuteCommandReaderAsync(transaction, databaseName, command, false).ConfigureAwait(false);
+
+            SystemInfo systemInfo = new SystemInfo { DatabaseName = databaseName };
+
+            while (reader.Read())
+            {
+                systemInfo.Add(reader["Name"].ToString(), reader["Value"].ToString());
+            }
+
+            return systemInfo;
+        }
+
+
+        /// <summary>
+        /// UpdateSystemVersionAsync
+        /// </summary>
+        /// <param name="databaseName"></param>
+        /// <param name="version"></param>
+        /// <param name="transaction"></param>
+        /// <returns></returns>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
+        public async Task UpdateSystemVersionAsync(string databaseName, int version, IDbTransaction transaction)
+        {
+            using IDbCommand command = _sqlBuilder.CreateUpdateSystemVersionCommand(databaseName, version);
+
+            await _databaseEngine.ExecuteCommandNonQueryAsync(transaction, databaseName, command).ConfigureAwait(false);
         }
 
         #endregion
@@ -687,11 +783,7 @@ namespace HB.Framework.Database
             catch (Exception ex)
             {
                 string message = $"from:{fromCondition.ToString()}, where:{whereCondition.ToString()}";
-                DatabaseException exception = new DatabaseException(ex, "RetrieveAsync", entityDef.EntityFullName, message);
-
-                //_logger.LogException(exception);
-
-                throw exception;
+                throw new DatabaseException(ex, "RetrieveAsync", entityDef.EntityFullName, message);
             }
             finally
             {

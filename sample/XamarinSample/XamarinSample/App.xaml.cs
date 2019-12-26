@@ -54,7 +54,7 @@ namespace XamarinSample
 
             IDatabase database = serviceProvider.GetRequiredService<IDatabase>();
 
-            database.Initialize();
+            database.InitializeAsync();
 
             return database;
         }

@@ -24,8 +24,9 @@ namespace HB.Framework.Database
         Task<long> CountAsync<T>(WhereExpression<T> condition, TransactionContext transContext) where T : DatabaseEntity, new();
         Task DeleteAsync<T>(T item, TransactionContext transContext) where T : DatabaseEntity, new();
         FromExpression<T> From<T>() where T : DatabaseEntity, new();
-        string GetTableCreateStatement(Type type, bool addDropStatement);
-        void Initialize(IEnumerable<Migration> migrations = null);
+
+        Task InitializeAsync(IEnumerable<Migration> migrations = null);
+
         Task<IEnumerable<T>> PageAsync<T>(Expression<Func<T, bool>> whereExpr, long pageNumber, long perPageCount, TransactionContext transContext) where T : DatabaseEntity, new();
         Task<IEnumerable<T>> PageAsync<T>(FromExpression<T> fromCondition, WhereExpression<T> whereCondition, long pageNumber, long perPageCount, TransactionContext transContext) where T : DatabaseEntity, new();
         Task<IEnumerable<T>> PageAsync<T>(long pageNumber, long perPageCount, TransactionContext transContext) where T : DatabaseEntity, new();

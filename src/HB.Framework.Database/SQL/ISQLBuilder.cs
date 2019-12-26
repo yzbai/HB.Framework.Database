@@ -32,6 +32,8 @@ namespace HB.Framework.Database.SQL
         /// <param name="lastUser"></param>
         /// <returns></returns>
         IDbCommand CreateBatchUpdateCommand<T>(IEnumerable<T> entities, string lastUser) where T : DatabaseEntity, new();
+
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
         IDbCommand CreateTableCommand(Type type, bool addDropStatement);
         IDbCommand CreateDeleteCommand<T>(WhereExpression<T> condition, string lastUser) where T : DatabaseEntity, new();
 
@@ -51,6 +53,13 @@ namespace HB.Framework.Database.SQL
             where TSelect : DatabaseEntity, new()
             where TFrom : DatabaseEntity, new()
             where TWhere : DatabaseEntity, new();
+
+
+        IDbCommand CreateIsTableExistCommand(string databaseName, string tableName);
+
+        IDbCommand CreateRetrieveSystemInfoCommand();
+
+        IDbCommand CreateUpdateSystemVersionCommand(string databaseName, int version);
 
         SelectExpression<T> NewSelect<T>() where T : DatabaseEntity, new();
 

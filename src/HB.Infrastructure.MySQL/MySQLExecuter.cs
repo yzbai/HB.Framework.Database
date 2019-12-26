@@ -14,102 +14,42 @@ namespace HB.Infrastructure.MySQL
     /// </summary>
     internal static class MySQLExecuter
     {
-        //#region SQL
-
-        //[System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>")]
-        //public static int ExecuteSqlNonQuery(string connectionString, string sqlString)
-        //{
-        //    using MySqlConnection conn = new MySqlConnection(connectionString);
-
-        //    using MySqlCommand command = new MySqlCommand
-        //    {
-        //        CommandType = CommandType.Text,
-        //        CommandText = MySQLLocalism.SafeDbStatement(sqlString)
-        //    };
-        //    return ExecuteCommandNonQuery(conn, true, command);
-        //}
-
-        //[System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>")]
-        //public static int ExecuteSqlNonQuery(MySqlTransaction mySqlTransaction, string sqlString)
-        //{
-        //    using MySqlCommand command = new MySqlCommand
-        //    {
-        //        CommandType = CommandType.Text,
-        //        CommandText = MySQLLocalism.SafeDbStatement(sqlString),
-        //        Transaction = mySqlTransaction
-        //    };
-        //    return ExecuteCommandNonQuery(mySqlTransaction.Connection, false, command);
-        //}
-
-        //[System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>")]
-        //[System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "<Pending>")]
-        //public static Tuple<IDbCommand, IDataReader> ExecuteSqlReader(string connectionString, string sqlString)
-        //{
-        //    MySqlConnection conn = new MySqlConnection(connectionString);
-
-        //    MySqlCommand command = new MySqlCommand
-        //    {
-        //        CommandType = CommandType.Text,
-        //        CommandText = MySQLLocalism.SafeDbStatement(sqlString)
-        //    };
-
-        //    return new Tuple<IDbCommand, IDataReader>(command, ExecuteCommandReader(conn, true, command));
-        //}
-
-        //[System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>")]
-        //[System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "<Pending>")]
-        //public static Tuple<IDbCommand, IDataReader> ExecuteSqlReader(MySqlTransaction mySqlTransaction, string sqlString)
-        //{
-        //    MySqlCommand command = new MySqlCommand
-        //    {
-        //        CommandType = CommandType.Text,
-        //        CommandText = MySQLLocalism.SafeDbStatement(sqlString),
-        //        Transaction = mySqlTransaction
-        //    };
-        //    return new Tuple<IDbCommand, IDataReader>(command, ExecuteCommandReader(mySqlTransaction.Connection, false, command));
-        //}
-
-        //[System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>")]
-        //public static object ExecuteSqlScalar(string connectionString, string sqlString)
-        //{
-        //    using MySqlConnection conn = new MySqlConnection(connectionString);
-
-        //    using MySqlCommand command = new MySqlCommand
-        //    {
-        //        CommandType = CommandType.Text,
-        //        CommandText = MySQLLocalism.SafeDbStatement(sqlString)
-        //    };
-        //    return ExecuteCommandScalar(conn, true, command);
-        //}
-
-        //[System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>")]
-        //public static object ExecuteSqlScalar(MySqlTransaction mySqlTransaction, string sqlString)
-        //{
-        //    using MySqlCommand command = new MySqlCommand
-        //    {
-        //        CommandType = CommandType.Text,
-        //        CommandText = MySQLLocalism.SafeDbStatement(sqlString),
-        //        Transaction = mySqlTransaction
-        //    };
-        //    return ExecuteCommandScalar(mySqlTransaction.Connection, false, command);
-        //}
-
-        //#endregion
-
         #region Command Reader
 
+        /// <summary>
+        /// ExecuteCommandReaderAsync
+        /// </summary>
+        /// <param name="mySqlTransaction"></param>
+        /// <param name="dbCommand"></param>
+        /// <returns></returns>
+        /// <exception cref="DatabaseException"></exception>
         public static Task<IDataReader> ExecuteCommandReaderAsync(MySqlTransaction mySqlTransaction, IDbCommand dbCommand)
         {
             dbCommand.Transaction = mySqlTransaction;
             return ExecuteCommandReaderAsync(mySqlTransaction.Connection, false, (MySqlCommand)dbCommand);
         }
 
+        /// <summary>
+        /// ExecuteCommandReaderAsync
+        /// </summary>
+        /// <param name="connectString"></param>
+        /// <param name="dbCommand"></param>
+        /// <returns></returns>
+        /// <exception cref="DatabaseException"></exception>
         public static Task<IDataReader> ExecuteCommandReaderAsync(string connectString, IDbCommand dbCommand)
         {
             MySqlConnection conn = new MySqlConnection(connectString);
             return ExecuteCommandReaderAsync(conn, true, (MySqlCommand)dbCommand);
         }
 
+        /// <summary>
+        /// ExecuteCommandReaderAsync
+        /// </summary>
+        /// <param name="connection"></param>
+        /// <param name="isOwnedConnection"></param>
+        /// <param name="command"></param>
+        /// <returns></returns>
+        /// <exception cref="DatabaseException"></exception>
         private static async Task<IDataReader> ExecuteCommandReaderAsync(MySqlConnection connection, bool isOwnedConnection, MySqlCommand command)
         {
             IDataReader reader = null;
@@ -161,18 +101,40 @@ namespace HB.Infrastructure.MySQL
 
         #region Command Scalar
 
+        /// <summary>
+        /// ExecuteCommandScalarAsync
+        /// </summary>
+        /// <param name="connectString"></param>
+        /// <param name="dbCommand"></param>
+        /// <returns></returns>
+        /// <exception cref="DatabaseException"></exception>
         public static Task<object> ExecuteCommandScalarAsync(string connectString, IDbCommand dbCommand)
         {
             using MySqlConnection conn = new MySqlConnection(connectString);
             return ExecuteCommandScalarAsync(conn, true, (MySqlCommand)dbCommand);
         }
 
+        /// <summary>
+        /// ExecuteCommandScalarAsync
+        /// </summary>
+        /// <param name="mySqlTransaction"></param>
+        /// <param name="dbCommand"></param>
+        /// <returns></returns>
+        /// <exception cref="DatabaseException"></exception>
         public static Task<object> ExecuteCommandScalarAsync(MySqlTransaction mySqlTransaction, IDbCommand dbCommand)
         {
             dbCommand.Transaction = mySqlTransaction;
             return ExecuteCommandScalarAsync(mySqlTransaction.Connection, false, (MySqlCommand)dbCommand);
         }
 
+        /// <summary>
+        /// ExecuteCommandScalarAsync
+        /// </summary>
+        /// <param name="connection"></param>
+        /// <param name="isOwnedConnection"></param>
+        /// <param name="command"></param>
+        /// <returns></returns>
+        /// <exception cref="DatabaseException"></exception>
         private static async Task<object> ExecuteCommandScalarAsync(MySqlConnection connection, bool isOwnedConnection, MySqlCommand command)
         {
             object rtObj = null;
@@ -214,6 +176,13 @@ namespace HB.Infrastructure.MySQL
 
         #region Comand NonQuery
 
+        /// <summary>
+        /// ExecuteCommandNonQueryAsync
+        /// </summary>
+        /// <param name="connectString"></param>
+        /// <param name="dbCommand"></param>
+        /// <returns></returns>
+        /// <exception cref="DatabaseException"></exception>
         public static Task<int> ExecuteCommandNonQueryAsync(string connectString, IDbCommand dbCommand)
         {
             using MySqlConnection conn = new MySqlConnection(connectString);
@@ -221,12 +190,27 @@ namespace HB.Infrastructure.MySQL
             return ExecuteCommandNonQueryAsync(conn, true, (MySqlCommand)dbCommand);
         }
 
+        /// <summary>
+        /// ExecuteCommandNonQueryAsync
+        /// </summary>
+        /// <param name="mySqlTransaction"></param>
+        /// <param name="dbCommand"></param>
+        /// <returns></returns>
+        /// <exception cref="DatabaseException"></exception>
         public static Task<int> ExecuteCommandNonQueryAsync(MySqlTransaction mySqlTransaction, IDbCommand dbCommand)
         {
             dbCommand.Transaction = mySqlTransaction;
             return ExecuteCommandNonQueryAsync(mySqlTransaction.Connection, false, (MySqlCommand)dbCommand);
         }
 
+        /// <summary>
+        /// ExecuteCommandNonQueryAsync
+        /// </summary>
+        /// <param name="conn"></param>
+        /// <param name="isOwnedConnection"></param>
+        /// <param name="command"></param>
+        /// <returns></returns>
+        /// <exception cref="DatabaseException"></exception>
         private static async Task<int> ExecuteCommandNonQueryAsync(MySqlConnection conn, bool isOwnedConnection, MySqlCommand command)
         {
             int rtInt = -1;
@@ -304,19 +288,59 @@ namespace HB.Infrastructure.MySQL
             return;
         }
 
+        private static void AttachParameters(MySqlCommand command, IEnumerable<IDataParameter> commandParameters)
+        {
+            foreach (IDataParameter p in commandParameters)
+            {
+                //check for derived output value with no value assigned
+                if ((p.Direction == ParameterDirection.InputOutput) && (p.Value == null))
+                {
+                    p.Value = DBNull.Value;
+                }
+
+                command.Parameters.Add(p);
+            }
+        }
+
         #endregion
 
+        /// <summary>
+        /// ExecuteSPNonQueryAsync
+        /// </summary>
+        /// <param name="connectString"></param>
+        /// <param name="spName"></param>
+        /// <param name="parameters"></param>
+        /// <returns></returns>
+        /// <exception cref="DatabaseException"></exception>
         public static Task<int> ExecuteSPNonQueryAsync(string connectString, string spName, IList<IDataParameter> parameters)
         {
             MySqlConnection conn = new MySqlConnection(connectString);
             return ExecuteSPNonQueryAsync(conn, null, true, spName, parameters);
         }
 
+        /// <summary>
+        /// ExecuteSPNonQueryAsync
+        /// </summary>
+        /// <param name="mySqlTransaction"></param>
+        /// <param name="spName"></param>
+        /// <param name="parameters"></param>
+        /// <returns></returns>
+        /// <exception cref="DatabaseException"></exception>
         public static Task<int> ExecuteSPNonQueryAsync(MySqlTransaction mySqlTransaction, string spName, IList<IDataParameter> parameters)
         {
             return ExecuteSPNonQueryAsync(mySqlTransaction.Connection, mySqlTransaction, false, spName, parameters);
         }
 
+        /// <summary>
+        /// ExecuteSPNonQueryAsync
+        /// </summary>
+        /// <param name="conn"></param>
+        /// <param name="trans"></param>
+        /// <param name="isOwnedConnection"></param>
+        /// <param name="spName"></param>
+        /// <param name="parameters"></param>
+        /// <returns></returns>
+        /// <exception cref="DatabaseException"></exception>
         private static async Task<int> ExecuteSPNonQueryAsync(MySqlConnection conn, MySqlTransaction trans, bool isOwnedConnection, string spName, IList<IDataParameter> parameters)
         {
             int rtInt = -1;
@@ -357,17 +381,43 @@ namespace HB.Infrastructure.MySQL
 
         #region SP Scalar
 
+        /// <summary>
+        /// ExecuteSPScalarAsync
+        /// </summary>
+        /// <param name="mySqlTransaction"></param>
+        /// <param name="spName"></param>
+        /// <param name="parameters"></param>
+        /// <returns></returns>
+        /// <exception cref="DatabaseException"></exception>
         public static Task<object> ExecuteSPScalarAsync(MySqlTransaction mySqlTransaction, string spName, IList<IDataParameter> parameters)
         {
             return ExecuteSPScalarAsync(mySqlTransaction.Connection, mySqlTransaction, false, spName, parameters);
         }
 
+        /// <summary>
+        /// ExecuteSPScalarAsync
+        /// </summary>
+        /// <param name="connectString"></param>
+        /// <param name="spName"></param>
+        /// <param name="parameters"></param>
+        /// <returns></returns>
+        /// <exception cref="DatabaseException"></exception>
         public static Task<object> ExecuteSPScalarAsync(string connectString, string spName, IList<IDataParameter> parameters)
         {
             MySqlConnection conn = new MySqlConnection(connectString);
             return ExecuteSPScalarAsync(conn, null, true, spName, parameters);
         }
 
+        /// <summary>
+        /// ExecuteSPScalarAsync
+        /// </summary>
+        /// <param name="conn"></param>
+        /// <param name="trans"></param>
+        /// <param name="isOwnedConnection"></param>
+        /// <param name="spName"></param>
+        /// <param name="parameters"></param>
+        /// <returns></returns>
+        /// <exception cref="DatabaseException"></exception>
         private static async Task<object> ExecuteSPScalarAsync(MySqlConnection conn, MySqlTransaction trans, bool isOwnedConnection, string spName, IList<IDataParameter> parameters)
         {
             object rtObj = null;
@@ -407,6 +457,14 @@ namespace HB.Infrastructure.MySQL
 
         #region SP Reader
 
+        /// <summary>
+        /// ExecuteSPReaderAsync
+        /// </summary>
+        /// <param name="connectString"></param>
+        /// <param name="spName"></param>
+        /// <param name="dbParameters"></param>
+        /// <returns></returns>
+        /// <exception cref="DatabaseException"></exception>
         public static async Task<Tuple<IDbCommand, IDataReader>> ExecuteSPReaderAsync(string connectString, string spName, IList<IDataParameter> dbParameters)
         {
             MySqlConnection conn = new MySqlConnection(connectString);
@@ -415,11 +473,29 @@ namespace HB.Infrastructure.MySQL
             return await ExecuteSPReaderAsync(conn, null, true, spName, dbParameters).ConfigureAwait(false);
         }
 
+        /// <summary>
+        /// ExecuteSPReaderAsync
+        /// </summary>
+        /// <param name="mySqlTransaction"></param>
+        /// <param name="spName"></param>
+        /// <param name="dbParameters"></param>
+        /// <returns></returns>
+        /// <exception cref="DatabaseException"></exception>
         public static Task<Tuple<IDbCommand, IDataReader>> ExecuteSPReaderAsync(MySqlTransaction mySqlTransaction, string spName, IList<IDataParameter> dbParameters)
         {
             return ExecuteSPReaderAsync(mySqlTransaction.Connection, mySqlTransaction, false, spName, dbParameters);
         }
 
+        /// <summary>
+        /// ExecuteSPReaderAsync
+        /// </summary>
+        /// <param name="connection"></param>
+        /// <param name="mySqlTransaction"></param>
+        /// <param name="isOwedConnection"></param>
+        /// <param name="spName"></param>
+        /// <param name="dbParameters"></param>
+        /// <returns></returns>
+        /// <exception cref="DatabaseException"></exception>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "<Pending>")]
         private static async Task<Tuple<IDbCommand, IDataReader>> ExecuteSPReaderAsync(MySqlConnection connection, MySqlTransaction mySqlTransaction, bool isOwedConnection, string spName, IList<IDataParameter> dbParameters)
         {
