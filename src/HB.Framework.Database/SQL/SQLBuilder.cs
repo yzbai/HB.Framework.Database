@@ -580,7 +580,7 @@ namespace HB.Framework.Database.SQL
 
             if (definition.DbTableReservedName.IsNullOrEmpty())
             {
-                return null;
+                throw new DatabaseException($"Type : {definition.EntityFullName} has null or empty DbTableReservedName");
             }
 
             foreach (DatabaseEntityPropertyDef info in definition.Properties)
@@ -636,7 +636,7 @@ CREATE TABLE {definition.DbTableReservedName} (
 
             if (definition.DbTableReservedName.IsNullOrEmpty())
             {
-                return null;
+                throw new DatabaseException($"Type : {definition.EntityFullName} has null or empty DbTableReservedName");
             }
 
             foreach (DatabaseEntityPropertyDef info in definition.Properties)

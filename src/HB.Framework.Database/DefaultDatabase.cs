@@ -319,13 +319,13 @@ namespace HB.Framework.Database
 
         #region 表创建SQL
 
-        public string GetTableCreateCommand(Type type, bool addDropStatement)
-        {
+        //public string GetTableCreateCommand(Type type, bool addDropStatement)
+        //{
 
-            IDbCommand command = _databaseEngine.CreateEmptyCommand();
-            command.CommandType = CommandType.Text;
-            command.CommandText = _sqlBuilder.CreateTableCommand(type, addDropStatement);
-        }
+        //    IDbCommand command = _databaseEngine.CreateEmptyCommand();
+        //    command.CommandType = CommandType.Text;
+        //    command.CommandText = _sqlBuilder.CreateTableCommand(type, addDropStatement);
+        //}
 
         #endregion
 

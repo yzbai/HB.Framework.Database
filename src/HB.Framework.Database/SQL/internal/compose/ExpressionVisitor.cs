@@ -80,7 +80,7 @@ namespace HB.Framework.Database.SQL
                 case ExpressionType.ListInit:
                     return VisitListInit((ListInitExpression)exp);
                 default:
-                    throw new Exception(string.Format(GlobalSettings.Culture, "Unhandled expression type: '{0}'", exp.NodeType));
+                    throw new DatabaseException($"Unhandled expression type: {exp.NodeType}");
             }
         }
 
@@ -97,7 +97,7 @@ namespace HB.Framework.Database.SQL
                 MemberBindingType.Assignment => VisitMemberAssignment((MemberAssignment)binding),
                 MemberBindingType.MemberBinding => VisitMemberMemberBinding((MemberMemberBinding)binding),
                 MemberBindingType.ListBinding => VisitMemberListBinding((MemberListBinding)binding),
-                _ => throw new Exception(string.Format(GlobalSettings.Culture, "Unhandled binding type '{0}'", binding.BindingType)),
+                _ => throw new DatabaseException($"Unhandled binding type {binding.BindingType}")
             };
         }
 

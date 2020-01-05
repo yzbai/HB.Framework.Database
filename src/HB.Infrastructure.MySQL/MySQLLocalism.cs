@@ -165,38 +165,17 @@ namespace HB.Infrastructure.MySQL
         {
             string valueStr = ValueConverterUtil.TypeValueToStringValue(value);
 
-            valueStr = SafeDbStatement(valueStr);
-
             if (valueStr == null)
             {
                 return null;
             }
 
-            if (needQuoted && MySQLLocalism.IsValueNeedQuoted(value.GetType()))
+            if (needQuoted && IsValueNeedQuoted(value.GetType()))
             {
                 valueStr = GetQuoted(valueStr);
             }
 
             return valueStr;
-        }
-
-        /// <summary>
-        /// 将数据库值表达，进行安全过滤
-        /// </summary>
-        /// <param name="dbValue"></param>
-        /// <returns></returns>
-        public static string SafeDbStatement(string dbValueStatement)
-        {
-            if (string.IsNullOrEmpty(dbValueStatement))
-            {
-                return dbValueStatement;
-            }
-            //TODO:增加对值的过滤，预防SQL注入
-            return dbValueStatement.ToString(GlobalSettings.Culture)
-                //.Replace("'", "''")
-                .Replace("--", "", GlobalSettings.Comparison)
-                .Replace("/*", "", GlobalSettings.Comparison)
-                .Replace("*/", "", GlobalSettings.Comparison);
         }
     }
 }
