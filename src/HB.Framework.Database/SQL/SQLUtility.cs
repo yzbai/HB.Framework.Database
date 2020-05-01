@@ -1,5 +1,6 @@
-﻿using System;
-using System.Globalization;
+﻿#nullable enable
+
+using System;
 
 namespace HB.Framework.Database.SQL
 {
@@ -27,7 +28,7 @@ namespace HB.Framework.Database.SQL
                 return false;
             }
 
-            foreach (var obj in ThrowIf.Null(list, nameof(list)))
+            foreach (object? obj in ThrowIf.Null(list, nameof(list)))
             {
                 if (obj == null)
                 {

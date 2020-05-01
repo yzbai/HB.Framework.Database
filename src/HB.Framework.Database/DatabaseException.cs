@@ -1,27 +1,28 @@
-﻿using System;
+﻿#nullable enable
+
+using System;
 using System.Collections;
 using System.Data.Common;
 using System.Runtime.CompilerServices;
-using System.Runtime.Serialization;
 
 namespace HB.Framework.Database
 {
     public class DatabaseException : DbException
     {
-        private IDictionary _data;
+        private IDictionary? _data;
 
         public DatabaseError Error { get; private set; }
 
         public int InnerNumber { get; private set; }
 
-        public string InnerSqlState { get; private set; }
+        public string? InnerSqlState { get; private set; }
 
-        public string EntityName { get; private set; }
+        public string? EntityName { get; private set; }
 
-        public string Operation { get; private set; }
+        public string? Operation { get; private set; }
 
 
-        public DatabaseException(Exception innerException, string entityName, string message, [CallerMemberName]string operation = "")
+        public DatabaseException(Exception innerException, string entityName, string message, [CallerMemberName] string operation = "")
             : base(message, innerException)
         {
             if (innerException is DatabaseException databaseException)
@@ -35,13 +36,13 @@ namespace HB.Framework.Database
             {
                 Error = DatabaseError.InnerError;
             }
-            
+
             Operation = operation;
             EntityName = entityName;
 
         }
 
-        public DatabaseException(DatabaseError error, string entityName, string message, Exception innerException = null, [CallerMemberName]string operation = "")
+        public DatabaseException(DatabaseError error, string? entityName, string? message = null, Exception? innerException = null, [CallerMemberName] string? operation = "")
             : base(message, innerException)
         {
             Error = error;
@@ -49,7 +50,7 @@ namespace HB.Framework.Database
             EntityName = entityName;
         }
 
-        public DatabaseException(int number, string sqlState, string message, Exception innerException = null) : base(message, innerException)
+        public DatabaseException(int number, string? sqlState, string message, Exception? innerException = null) : base(message, innerException)
         {
             InnerNumber = number;
             InnerSqlState = sqlState;

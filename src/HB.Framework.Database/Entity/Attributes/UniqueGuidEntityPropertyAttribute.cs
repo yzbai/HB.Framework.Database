@@ -1,4 +1,6 @@
-﻿namespace HB.Framework.Database.Entity
+﻿#nullable enable
+
+namespace HB.Framework.Database.Entity
 {
     public class UniqueGuidEntityPropertyAttribute : GuidEntityPropertyAttribute
     {

@@ -33,6 +33,8 @@
 
         TransactionError = 7,
         TableCreateError = 8,
-        MigrateError = 9
+        MigrateError = 9,
+        NotATableModel = 10,
+        TransactionConnectionIsNull = 11
     }
 }

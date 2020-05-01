@@ -1,4 +1,6 @@
-﻿using HB.Framework.Common;
+﻿#nullable enable
+
+using HB.Framework.Common;
 using System;
 
 

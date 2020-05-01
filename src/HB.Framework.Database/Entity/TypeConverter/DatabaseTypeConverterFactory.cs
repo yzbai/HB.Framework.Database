@@ -1,6 +1,7 @@
-﻿using System;
+﻿#nullable enable
+
+using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace HB.Framework.Database.Entity
 {
@@ -8,12 +9,9 @@ namespace HB.Framework.Database.Entity
     {
         private readonly IDictionary<Type, DatabaseTypeConverter> _converterDict = new Dictionary<Type, DatabaseTypeConverter>();
 
-        public DatabaseTypeConverterFactory()
-        {
+        public DatabaseTypeConverterFactory() { }
 
-        }
-
-        public DatabaseTypeConverter GetTypeConverter(Type type)
+        public DatabaseTypeConverter? GetTypeConverter(Type type)
         {
             if (!type.IsSubclassOf(typeof(DatabaseTypeConverter)))
             {
@@ -25,9 +23,12 @@ namespace HB.Framework.Database.Entity
                 return _converterDict[type];
             }
 
-            DatabaseTypeConverter typeConverter = Activator.CreateInstance(type) as DatabaseTypeConverter;
+            DatabaseTypeConverter? typeConverter = Activator.CreateInstance(type) as DatabaseTypeConverter;
 
-            _converterDict.Add(type, typeConverter);
+            if (typeConverter != null)
+            {
+                _converterDict.Add(type, typeConverter);
+            }
 
             return typeConverter;
         }

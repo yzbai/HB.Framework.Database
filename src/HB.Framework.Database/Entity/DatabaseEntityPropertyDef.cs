@@ -1,6 +1,7 @@
 ﻿using System;
-using System.Reflection;
 using System.Data;
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 
 namespace HB.Framework.Database.Entity
 {
@@ -38,17 +39,17 @@ namespace HB.Framework.Database.Entity
         /// <summary>
         /// 是否是数据库表字段
         /// </summary>
-        public bool IsTableProperty { get; set; } = false;
+        public bool IsTableProperty { get; set; }
         /// <summary>
         /// 数据库引号化后的名称
         /// IsTableProperty为false时无意义
         /// </summary>
-        public string DbReservedName { get; set; }
+        public string? DbReservedName { get; set; }
         /// <summary>
         /// 数据库参数化后的名称
         /// IsTableProperty为false时无意义
         /// </summary>
-        public string DbParameterizedName { get; set; }
+        public string? DbParameterizedName { get; set; }
         /// <summary>
         /// 数据库中对应类型
         /// IsTableProperty为false时无意义
@@ -68,18 +69,18 @@ namespace HB.Framework.Database.Entity
         /// 是否唯一值
         /// IsTableProperty为false时无意义
         /// </summary>
-        public bool IsUnique { get; set; } = false;
+        public bool IsUnique { get; set; }
 
         /// <summary>
         /// 是否可空
         /// IsTableProperty为false时无意义
         /// </summary>
-        public bool IsNullable { get; set; } = true;
+        public bool IsNullable { get; set; }
 
         /// <summary>
         /// 长度是否限定
         /// </summary>
-        public bool IsLengthFixed { get; set; } = false;
+        public bool IsLengthFixed { get; set; }
         /// <summary>
         /// 数据库字段长度
         /// IsTableProperty为false时无意义
@@ -89,18 +90,25 @@ namespace HB.Framework.Database.Entity
         /// 数据库默认值
         /// IsTableProperty为false时无意义
         /// </summary>
-        public string DbDefaultValue { get; set; }
+        public string? DbDefaultValue { get; set; }
         /// <summary>
         /// 数据库中备注、描述
         /// IsTableProperty为false时无意义
         /// </summary>
-        public string DbDescription { get; set; }
+        public string? DbDescription { get; set; }
 
         #endregion
 
-        public DatabaseTypeConverter TypeConverter { get; set; }
+        public DatabaseTypeConverter? TypeConverter { get; set; }
 
-        public DatabaseEntityPropertyDef() { }
+        public DatabaseEntityPropertyDef(DatabaseEntityDef entityDef, PropertyInfo propertyInfo)
+        {
+            EntityDef = entityDef;
+            PropertyName = propertyInfo.Name;
+            PropertyType = propertyInfo.PropertyType;
+            GetMethod = propertyInfo.GetGetMethod();
+            SetMethod = propertyInfo.GetSetMethod();
+        }
         /// <summary>
         /// 获取值
         /// </summary>

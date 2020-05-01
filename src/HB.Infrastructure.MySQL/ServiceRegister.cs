@@ -1,9 +1,7 @@
-﻿using HB.Framework.Database;
-using HB.Framework.Database.Engine;
+﻿using HB.Framework.Database.Engine;
 using HB.Infrastructure.MySQL;
 using Microsoft.Extensions.Configuration;
 using System;
-using System.Linq;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -21,6 +19,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
             return services;
         }
+
         public static IServiceCollection AddMySQL(this IServiceCollection services, Action<MySQLOptions> databaseEngineOptionsSetup)
         {
             services.AddOptions();

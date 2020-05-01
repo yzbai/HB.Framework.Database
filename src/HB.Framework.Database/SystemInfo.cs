@@ -1,23 +1,31 @@
-﻿using System;
+﻿#nullable enable
+using HB.Framework.Database.Properties;
+using System;
 using System.Collections.Generic;
-using System.Text;
+using System.Diagnostics.CodeAnalysis;
 
 namespace HB.Framework.Database
 {
     /// <summary>
     /// 内部表tb_sys_info中的键值对
     /// </summary>
-    public class SystemInfo
+    class SystemInfo
     {
         private readonly IDictionary<string, string> _sysDict = new Dictionary<string, string>();
 
+        [NotNull, DisallowNull]
         public string DatabaseName
         {
             get
             {
-                return _sysDict[SystemInfoNames.DatabaseName];
+                if (_sysDict.TryGetValue(SystemInfoNames.DatabaseName, out string value))
+                {
+                    return value;
+                }
+
+                throw new KeyNotFoundException(Resources.DatabaseNameNotFoundInSystemInfoTable);
             }
-            set
+            private set
             {
                 _sysDict[SystemInfoNames.DatabaseName] = value;
             }
@@ -27,7 +35,12 @@ namespace HB.Framework.Database
         {
             get
             {
-                return Convert.ToInt32(_sysDict[SystemInfoNames.Version], GlobalSettings.Culture);
+                if (_sysDict.TryGetValue(SystemInfoNames.Version, out string vlaue))
+                {
+                    return Convert.ToInt32(vlaue, GlobalSettings.Culture);
+                }
+
+                throw new KeyNotFoundException(Resources.VersionNotFoundInSystemInfoTable);
             }
             set
             {
@@ -36,12 +49,12 @@ namespace HB.Framework.Database
         }
 
 
-        public SystemInfo()
+        public SystemInfo(string databaseName)
         {
-
+            DatabaseName = databaseName;
         }
 
-        public void Add(string name, string value)
+        public void Set(string name, string value)
         {
             _sysDict[name] = value;
         }

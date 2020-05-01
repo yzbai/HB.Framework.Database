@@ -61,6 +61,15 @@ namespace HB.Framework.Database.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to DatabaseName not found in SystemInfo Table..
+        /// </summary>
+        internal static string DatabaseNameNotFoundInSystemInfoTable {
+            get {
+                return ResourceManager.GetString("DatabaseNameNotFoundInSystemInfoTable", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to version should greater than 1..
         /// </summary>
         internal static string MigrateOldVersionErrorMessage {
@@ -79,7 +88,7 @@ namespace HB.Framework.Database.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to oldVersion should always lower than newVersions in Database Migrations.
+        ///   Looks up a localized string similar to oldVersion should always lower than newVersions in Database Migrations..
         /// </summary>
         internal static string MigrationVersionErrorMessage {
             get {
@@ -88,7 +97,7 @@ namespace HB.Framework.Database.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to DO NOT MIX JOIN UP.
+        ///   Looks up a localized string similar to DO NOT MIX JOIN UP..
         /// </summary>
         internal static string SqlJoinTypeMixedErrorMessage {
             get {
@@ -97,7 +106,7 @@ namespace HB.Framework.Database.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to use a already finished transactioncontenxt.
+        ///   Looks up a localized string similar to use a already finished transactioncontenxt..
         /// </summary>
         internal static string TransactionAlreadyFinishedMessage {
             get {
@@ -106,7 +115,7 @@ namespace HB.Framework.Database.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Type not valid.
+        ///   Looks up a localized string similar to Type not valid..
         /// </summary>
         internal static string TypeNotValidErrorMessage {
             get {
@@ -115,7 +124,16 @@ namespace HB.Framework.Database.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Database Version should greater than 0.
+        ///   Looks up a localized string similar to Version not found in SystemInfo Table..
+        /// </summary>
+        internal static string VersionNotFoundInSystemInfoTable {
+            get {
+                return ResourceManager.GetString("VersionNotFoundInSystemInfoTable", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Database Version should greater than 0..
         /// </summary>
         internal static string VersionShouldBePositiveMessage {
             get {

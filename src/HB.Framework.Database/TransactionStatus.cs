@@ -1,4 +1,6 @@
-﻿namespace HB.Framework.Database
+﻿#nullable enable
+
+namespace HB.Framework.Database
 {
     public enum TransactionStatus
     {

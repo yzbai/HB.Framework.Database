@@ -1,8 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using HB.Framework.Database;
+﻿using HB.Framework.Database;
 using Microsoft.Extensions.Options;
+using System.Collections.Generic;
 
 namespace HB.Infrastructure.MySQL
 {

@@ -8,12 +8,12 @@ namespace HB.Framework.DatabaseTests.Data
     public class BookEntity : DatabaseEntity
     {
         [UniqueGuidEntityProperty]
-        public string Guid { get; set; }
+        public string Guid { get; set; } = default!;
 
         [EntityProperty]
-        public string Name { get; set; }
+        public string Name { get; set; } = default!;
 
         [EntityProperty]
-        public double Price { get; set; }
+        public double Price { get; set; } = default!;
     }
 }

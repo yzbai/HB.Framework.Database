@@ -1,9 +1,8 @@
-﻿using HB.Framework.Database;
+﻿#nullable enable
+
+using HB.Framework.Database;
 using HB.Framework.Database.Entity;
 using HB.Framework.Database.SQL;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Microsoft.Extensions.DependencyInjection
 {

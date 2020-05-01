@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -23,7 +24,7 @@ namespace HB.Framework.DatabaseTests
             {
                 "MySQL" => _mysql,
                 "SQLite" => _sqlite,
-                _ => null
+                _ => throw new ArgumentException(nameof(databaseType))
             };
 
         public MutipleTableTest(ITestOutputHelper testOutputHelper, ServiceFixture serviceFixture)
@@ -36,11 +37,11 @@ namespace HB.Framework.DatabaseTests
             _mysql.InitializeAsync();
             _sqlite.InitializeAsync();
 
-            AddSomeData();
+            AddSomeDataAsync().Wait();
 
         }
 
-        private void AddSomeData()
+        private async Task AddSomeDataAsync()
         {
             A a1 = new A { Name = "a1" };
             A a2 = new A { Name = "a2" };
@@ -62,50 +63,50 @@ namespace HB.Framework.DatabaseTests
             C c5 = new C { AId = a2.Guid };
             C c6 = new C { AId = a3.Guid };
 
-            _mysql.Add(a2, null);
-            _mysql.Add(a1, null);
-            _mysql.Add(a3, null);
+            await _mysql.AddAsync(a2, null);
+            await _mysql.AddAsync(a1, null);
+            await _mysql.AddAsync(a3, null);
 
-            _mysql.Add(b1, null);
-            _mysql.Add(b2, null);
+            await _mysql.AddAsync(b1, null);
+            await _mysql.AddAsync(b2, null);
 
-            _mysql.Add(a1b1, null);
-            _mysql.Add(a1b2, null);
-            _mysql.Add(a2b1, null);
-            _mysql.Add(a3b2, null);
+            await _mysql.AddAsync(a1b1, null);
+            await _mysql.AddAsync(a1b2, null);
+            await _mysql.AddAsync(a2b1, null);
+            await _mysql.AddAsync(a3b2, null);
 
-            _mysql.Add(c1, null);
-            _mysql.Add(c2, null);
-            _mysql.Add(c3, null);
-            _mysql.Add(c4, null);
-            _mysql.Add(c5, null);
-            _mysql.Add(c6, null);
+            await _mysql.AddAsync(c1, null);
+            await _mysql.AddAsync(c2, null);
+            await _mysql.AddAsync(c3, null);
+            await _mysql.AddAsync(c4, null);
+            await _mysql.AddAsync(c5, null);
+            await _mysql.AddAsync(c6, null);
 
 
-            _sqlite.Add(a2, null);
-            _sqlite.Add(a1, null);
-            _sqlite.Add(a3, null);
+            await _sqlite.AddAsync(a2, null);
+            await _sqlite.AddAsync(a1, null);
+            await _sqlite.AddAsync(a3, null);
 
-            _sqlite.Add(b1, null);
-            _sqlite.Add(b2, null);
+            await _sqlite.AddAsync(b1, null);
+            await _sqlite.AddAsync(b2, null);
 
-            _sqlite.Add(a1b1, null);
-            _sqlite.Add(a1b2, null);
-            _sqlite.Add(a2b1, null);
-            _sqlite.Add(a3b2, null);
+            await _sqlite.AddAsync(a1b1, null);
+            await _sqlite.AddAsync(a1b2, null);
+            await _sqlite.AddAsync(a2b1, null);
+            await _sqlite.AddAsync(a3b2, null);
 
-            _sqlite.Add(c1, null);
-            _sqlite.Add(c2, null);
-            _sqlite.Add(c3, null);
-            _sqlite.Add(c4, null);
-            _sqlite.Add(c5, null);
-            _sqlite.Add(c6, null);
+            await _sqlite.AddAsync(c1, null);
+            await _sqlite.AddAsync(c2, null);
+            await _sqlite.AddAsync(c3, null);
+            await _sqlite.AddAsync(c4, null);
+            await _sqlite.AddAsync(c5, null);
+            await _sqlite.AddAsync(c6, null);
         }
 
         [Theory]
         [InlineData("MySQL")]
         [InlineData("SQLite")]
-        public void Test_1_ThreeTable_JoinTest(string databaseType)
+        public async Task Test_1_ThreeTable_JoinTestAsync(string databaseType)
         {
             IDatabase database = GetDatabase(databaseType);
 
@@ -117,7 +118,7 @@ namespace HB.Framework.DatabaseTests
 
             try
             {
-                var result = database.Retrieve<A, AB, B>(from, database.Where<A>(), null);
+                IEnumerable<Tuple<A, AB?, B?>>? result = await database.RetrieveAsync<A, AB, B>(from, database.Where<A>(), null);
                 Assert.True(result.Count() > 0);
             }
             catch(Exception ex)
@@ -133,7 +134,7 @@ namespace HB.Framework.DatabaseTests
         [Theory]
         [InlineData("MySQL")]
         [InlineData("SQLite")]
-        public void Test_2_TwoTable_JoinTest(string databaseType)
+        public async Task Test_2_TwoTable_JoinTestAsync(string databaseType)
         {
             IDatabase database = GetDatabase(databaseType);
             var from = database
@@ -143,7 +144,7 @@ namespace HB.Framework.DatabaseTests
 
             try
             {
-                var result = database.Retrieve<C, A>(from, database.Where<C>(), null);
+                IEnumerable<Tuple<C, A?>>? result = await database.RetrieveAsync<C, A>(from, database.Where<C>(), null).ConfigureAwait(false);
                 Assert.True(result.Count() > 0);
             }
             catch (Exception ex)
@@ -161,7 +162,7 @@ namespace HB.Framework.DatabaseTests
         public string Guid { get; set; } = SecurityUtil.CreateUniqueToken();
 
         [EntityProperty]
-        public string Name { get; set; }
+        public string Name { get; set; } = default!;
     }
 
     public class B : DatabaseEntity
@@ -170,7 +171,7 @@ namespace HB.Framework.DatabaseTests
         public string Guid { get; set; } = SecurityUtil.CreateUniqueToken();
 
         [EntityProperty]
-        public string Name { get; set; }
+        public string Name { get; set; } = default!;
     }
 
     public class AB : DatabaseEntity
@@ -179,10 +180,10 @@ namespace HB.Framework.DatabaseTests
         public string Guid { get; set; } = SecurityUtil.CreateUniqueToken();
 
         [EntityProperty]
-        public string AId { get; set; }
+        public string AId { get; set; } = default!;
 
         [EntityProperty]
-        public string BId { get; set; }
+        public string BId { get; set; } = default!;
     }
 
     public class C : DatabaseEntity
@@ -191,10 +192,10 @@ namespace HB.Framework.DatabaseTests
         public string Guid { get; set; } = SecurityUtil.CreateUniqueToken();
 
         [EntityProperty]
-        public string Name { get; set; }
+        public string Name { get; set; } = default!;
 
         [EntityProperty]
-        public string AId { get; set; }
+        public string AId { get; set; } = default!;
     }
 
 }

@@ -1,17 +1,14 @@
-﻿using System;
+﻿#nullable enable
+
+using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 
 //
 namespace HB.Framework.Database.Engine
 {
-    public enum DatabaseEngineType
-    {
-        MySQL,
-        SQLite,
-        MSSQLSERVER
-    }
     /// <summary>
     /// 数据库接口,是对数据库能力的表达. 
     /// 多线程复用..
@@ -107,7 +104,8 @@ namespace HB.Framework.Database.Engine
         /// </summary>
         /// <param name="value">类的值</param>
         /// <returns>数据库类的值的表达</returns>
-        string GetDbValueStatement(object value, bool needQuoted);
+        [return: NotNullIfNotNull("value")]
+        string? GetDbValueStatement(object? value, bool needQuoted);
         /// <summary>
         /// 类型对应的数据库类型的值是否需要引号化
         /// </summary>
@@ -127,29 +125,29 @@ namespace HB.Framework.Database.Engine
         /// <param name="dbParameters"></param>
         /// <returns></returns>
         /// <exception cref="DatabaseException"></exception>
-        Task<Tuple<IDbCommand, IDataReader>> ExecuteSPReaderAsync(IDbTransaction trans, string dbName, string spName, IList<IDataParameter> dbParameters, bool useMaster);
+        Task<Tuple<IDbCommand, IDataReader>> ExecuteSPReaderAsync(IDbTransaction? trans, string dbName, string spName, IList<IDataParameter> dbParameters, bool useMaster);
 
         /// <exception cref="DatabaseException"></exception>
-        Task<object> ExecuteSPScalarAsync(IDbTransaction trans, string dbName, string spName, IList<IDataParameter> parameters, bool useMaster);
+        Task<object> ExecuteSPScalarAsync(IDbTransaction? trans, string dbName, string spName, IList<IDataParameter> parameters, bool useMaster);
 
         /// <exception cref="DatabaseException"></exception>
-        Task<int> ExecuteSPNonQueryAsync(IDbTransaction trans, string dbName, string spName, IList<IDataParameter> parameters);
+        Task<int> ExecuteSPNonQueryAsync(IDbTransaction? trans, string dbName, string spName, IList<IDataParameter> parameters);
 
         #endregion
 
         #region Command执行功能
 
         /// <exception cref="DatabaseException"></exception>
-        Task<int> ExecuteCommandNonQueryAsync(IDbTransaction trans, string dbName, IDbCommand dbCommand);
+        Task<int> ExecuteCommandNonQueryAsync(IDbTransaction? trans, string dbName, IDbCommand dbCommand);
 
         /// <summary>
         /// 使用后必须Dispose，必须使用using
         /// </summary>
         /// <exception cref="DatabaseException"></exception>
-        Task<IDataReader> ExecuteCommandReaderAsync(IDbTransaction trans, string dbName, IDbCommand dbCommand, bool useMaster);
+        Task<IDataReader> ExecuteCommandReaderAsync(IDbTransaction? trans, string dbName, IDbCommand dbCommand, bool useMaster);
 
         /// <exception cref="DatabaseException"></exception>
-        Task<object> ExecuteCommandScalarAsync(IDbTransaction trans, string dbName, IDbCommand dbCommand, bool useMaster);
+        Task<object> ExecuteCommandScalarAsync(IDbTransaction? trans, string dbName, IDbCommand dbCommand, bool useMaster);
 
         #endregion
 

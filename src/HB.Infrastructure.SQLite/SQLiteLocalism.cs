@@ -3,6 +3,7 @@ using HB.Framework.Database.Entity;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 
@@ -17,7 +18,7 @@ namespace HB.Infrastructure.SQLite
         /// <summary>
         /// 表达
         /// </summary>
-        public string Statement { get; set; }
+        public string Statement { get; set; } = default!;
         /// <summary>
         /// 这个类型的值是否需要引号化
         /// </summary>
@@ -161,16 +162,18 @@ namespace HB.Infrastructure.SQLite
         /// </summary>
         /// <param name="value">类型值</param>
         /// <returns>数据库类型值的表达</returns>
-        public static string GetDbValueStatement(object value, bool needQuoted)
+        [return: NotNullIfNotNull("value")]
+        public static string? GetDbValueStatement(object? value, bool needQuoted)
         {
+            if (value == null)
+            {
+                return null;
+            }
+
             string valueStr = ValueConverterUtil.TypeValueToStringValue(value);
 
             valueStr = SafeDbStatement(valueStr);
 
-            if (valueStr == null)
-            {
-                return null;
-            }
 
             if (needQuoted && IsValueNeedQuoted(value.GetType()))
             {

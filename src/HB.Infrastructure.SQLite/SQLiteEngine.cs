@@ -7,6 +7,7 @@ using Microsoft.Data.Sqlite;
 using System.Linq;
 using Microsoft.Extensions.Options;
 using System.Threading.Tasks;
+using System.Diagnostics.CodeAnalysis;
 
 namespace HB.Infrastructure.SQLite
 {
@@ -15,17 +16,15 @@ namespace HB.Infrastructure.SQLite
         #region 自身 & 构建
 
         private readonly SQLiteOptions _options;
-        private Dictionary<string, string> _connectionStringDict;
+        private readonly Dictionary<string, string> _connectionStringDict = new Dictionary<string, string>();
 
         public DatabaseSettings DatabaseSettings => _options.DatabaseSettings;
 
         public DatabaseEngineType EngineType => DatabaseEngineType.SQLite;
 
-        public string FirstDefaultDatabaseName { get; private set; }
+        [NotNull, DisallowNull] public string? FirstDefaultDatabaseName { get; private set; }
 
-        private SQLiteEngine() { }
-
-        public SQLiteEngine(IOptions<SQLiteOptions> options) : this()
+        public SQLiteEngine(IOptions<SQLiteOptions> options)
         {
             //MySqlConnectorLogManager.Provider = new MicrosoftExtensionsLoggingLoggerProvider(loggerFactory);
 
@@ -36,8 +35,6 @@ namespace HB.Infrastructure.SQLite
 
         private void SetConnectionStrings()
         {
-            _connectionStringDict = new Dictionary<string, string>();
-
             foreach (DatabaseConnectionSettings schemaInfo in _options.Connections)
             {
                 if (FirstDefaultDatabaseName.IsNullOrEmpty())
@@ -142,7 +139,8 @@ namespace HB.Infrastructure.SQLite
             return SQLiteLocalism.GetDbTypeStatement(type);
         }
 
-        public string GetDbValueStatement(object value, bool needQuoted)
+        [return: NotNullIfNotNull("value")]
+        public string? GetDbValueStatement(object? value, bool needQuoted)
         {
             return SQLiteLocalism.GetDbValueStatement(value, needQuoted);
         }
@@ -155,17 +153,17 @@ namespace HB.Infrastructure.SQLite
         #endregion
 
         #region SP
-        public Task<int> ExecuteSPNonQueryAsync(IDbTransaction trans, string dbName, string spName, IList<IDataParameter> parameters)
+        public Task<int> ExecuteSPNonQueryAsync(IDbTransaction? trans, string dbName, string spName, IList<IDataParameter> parameters)
         {
             throw new NotImplementedException();
         }
 
-        public Task<Tuple<IDbCommand, IDataReader>> ExecuteSPReaderAsync(IDbTransaction trans, string dbName, string spName, IList<IDataParameter> dbParameters, bool useMaster)
+        public Task<Tuple<IDbCommand, IDataReader>> ExecuteSPReaderAsync(IDbTransaction? trans, string dbName, string spName, IList<IDataParameter> dbParameters, bool useMaster)
         {
             throw new NotImplementedException();
         }
 
-        public Task<object> ExecuteSPScalarAsync(IDbTransaction trans, string dbName, string spName, IList<IDataParameter> parameters, bool useMaster)
+        public Task<object> ExecuteSPScalarAsync(IDbTransaction? trans, string dbName, string spName, IList<IDataParameter> parameters, bool useMaster)
         {
             throw new NotImplementedException();
         }
@@ -182,7 +180,7 @@ namespace HB.Infrastructure.SQLite
         /// <param name="dbCommand"></param>
         /// <returns></returns>
         /// <exception cref="DatabaseException"></exception>
-        public Task<int> ExecuteCommandNonQueryAsync(IDbTransaction Transaction, string dbName, IDbCommand dbCommand)
+        public Task<int> ExecuteCommandNonQueryAsync(IDbTransaction? Transaction, string dbName, IDbCommand dbCommand)
         {
             if (Transaction == null)
             {
@@ -203,7 +201,7 @@ namespace HB.Infrastructure.SQLite
         /// <param name="useMaster"></param>
         /// <returns></returns>
         /// <exception cref="DatabaseException"></exception>
-        public Task<IDataReader> ExecuteCommandReaderAsync(IDbTransaction Transaction, string dbName, IDbCommand dbCommand, bool useMaster = false)
+        public Task<IDataReader> ExecuteCommandReaderAsync(IDbTransaction? Transaction, string dbName, IDbCommand dbCommand, bool useMaster = false)
         {
             if (Transaction == null)
             {
@@ -224,7 +222,7 @@ namespace HB.Infrastructure.SQLite
         /// <param name="useMaster"></param>
         /// <returns></returns>
         /// <exception cref="DatabaseException"></exception>
-        public Task<object> ExecuteCommandScalarAsync(IDbTransaction Transaction, string dbName, IDbCommand dbCommand, bool useMaster = false)
+        public Task<object> ExecuteCommandScalarAsync(IDbTransaction? Transaction, string dbName, IDbCommand dbCommand, bool useMaster = false)
         {
             if (Transaction == null)
             {
@@ -252,7 +250,7 @@ namespace HB.Infrastructure.SQLite
 
         public async Task CommitAsync(IDbTransaction transaction)
         {
-            SqliteTransaction sqliteTransaction = transaction as SqliteTransaction;
+            SqliteTransaction sqliteTransaction = (SqliteTransaction)transaction;
 
             SqliteConnection connection = sqliteTransaction.Connection;
 
@@ -268,7 +266,7 @@ namespace HB.Infrastructure.SQLite
 
         public async Task RollbackAsync(IDbTransaction transaction)
         {
-            SqliteTransaction sqliteTransaction = transaction as SqliteTransaction;
+            SqliteTransaction sqliteTransaction = (SqliteTransaction)transaction;
 
             SqliteConnection connection = sqliteTransaction.Connection;
 

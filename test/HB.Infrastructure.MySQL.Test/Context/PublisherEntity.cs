@@ -10,19 +10,19 @@ namespace HB.Framework.DatabaseTests.Data
     public class PublisherEntity : DatabaseEntity
     {
         [UniqueGuidEntityProperty]
-        public string Guid { get; set; }
+        public string Guid { get; set; } = default!;
 
         [EntityProperty]
-        public string Name { get; set; }
+        public string Name { get; set; } = default!;
 
         [EntityProperty]
-        public IList<string> Books { get; set; }
+        public IList<string> Books { get; set; } = default!;
 
         [EntityProperty(Converter = typeof(PublisherBookAuthorsTypeConventer))]
-        public IDictionary<string, Author> BookAuthors { get; set; }
+        public IDictionary<string, Author> BookAuthors { get; set; } = default!;
 
         [EntityProperty(Length = EntityPropertyLength.MediumLength)]
-        public IDictionary<string, string> BookNames { get; set; }
+        public IDictionary<string, string> BookNames { get; set; } = default!;
 
         [EntityProperty]
         public PublisherType Type { get; set; }
@@ -37,16 +37,16 @@ namespace HB.Framework.DatabaseTests.Data
 
     public class Author
     {
-        public string Name { get; set; }
+        public string Name { get; set; } = default!;
 
-        public string Mobile { get; set; }
+        public string Mobile { get; set; } = default!;
     }
 
     public class PublisherBookAuthorsTypeConventer : DatabaseTypeConverter
     {
         public PublisherBookAuthorsTypeConventer() { }
 
-        protected override object StringDbValueToTypeValue(string stringValue)
+        protected override object? StringDbValueToTypeValue(string stringValue)
         {
             return SerializeUtil.FromJson<IDictionary<string, Author>>(stringValue);
         }

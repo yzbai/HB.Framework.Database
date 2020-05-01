@@ -1,7 +1,8 @@
-﻿using System;
+﻿#nullable enable
+
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Globalization;
 using System.Linq.Expressions;
 
 namespace HB.Framework.Database.SQL
@@ -17,8 +18,8 @@ namespace HB.Framework.Database.SQL
         /// <exception cref="Exception"></exception>
         protected virtual Expression Visit(Expression exp)
         {
-            if (exp == null)
-                return exp;
+            //if (exp == null)
+            //    return exp;
             switch (exp.NodeType)
             {
                 case ExpressionType.Negate:
@@ -191,10 +192,12 @@ namespace HB.Framework.Database.SQL
 
         protected virtual ReadOnlyCollection<Expression> VisitExpressionList(ReadOnlyCollection<Expression> original)
         {
-            List<Expression> list = null;
+            List<Expression>? list = null;
+
             for (int i = 0, n = original.Count; i < n; i++)
             {
                 Expression p = Visit(original[i]);
+
                 if (list != null)
                 {
                     list.Add(p);
@@ -202,6 +205,7 @@ namespace HB.Framework.Database.SQL
                 else if (p != original[i])
                 {
                     list = new List<Expression>(n);
+
                     for (int j = 0; j < i; j++)
                     {
                         list.Add(original[j]);
@@ -248,7 +252,8 @@ namespace HB.Framework.Database.SQL
 
         protected virtual IEnumerable<MemberBinding> VisitBindingList(ReadOnlyCollection<MemberBinding> original)
         {
-            List<MemberBinding> list = null;
+            List<MemberBinding>? list = null;
+
             for (int i = 0, n = original.Count; i < n; i++)
             {
                 MemberBinding b = VisitBinding(original[i]);
@@ -273,7 +278,7 @@ namespace HB.Framework.Database.SQL
 
         protected virtual IEnumerable<ElementInit> VisitElementInitializerList(ReadOnlyCollection<ElementInit> original)
         {
-            List<ElementInit> list = null;
+            List<ElementInit>? list = null;
             for (int i = 0, n = original.Count; i < n; i++)
             {
                 ElementInit init = VisitElementInitializer(original[i]);

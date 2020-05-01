@@ -1,6 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿#nullable enable
+
+using System;
 
 namespace HB.Framework.Database.Entity
 {
@@ -9,9 +9,9 @@ namespace HB.Framework.Database.Entity
     {
         public string DatabaseName { get; set; }
 
-        public string TableName { get; set; }
+        public string? TableName { get; set; }
 
-        public string Description { get; set; }
+        public string? Description { get; set; }
 
         public bool ReadOnly { get; set; }
 

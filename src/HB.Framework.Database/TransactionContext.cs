@@ -1,14 +1,19 @@
-﻿using System;
-using System.Collections.Generic;
+﻿#nullable enable
+
 using System.Data;
-using System.Text;
 
 namespace HB.Framework.Database
 {
     public class TransactionContext
     {
-        public IDbTransaction Transaction { get; set; }
+        public IDbTransaction Transaction { get; private set; }
 
         public TransactionStatus Status { get; set; }
+
+        public TransactionContext(IDbTransaction transaction, TransactionStatus status)
+        {
+            Transaction = transaction;
+            Status = status;
+        }
     }
 }

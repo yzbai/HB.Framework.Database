@@ -1,4 +1,6 @@
-﻿using HB.Framework.Database.Engine;
+﻿#nullable enable
+
+using HB.Framework.Database.Engine;
 using HB.Framework.Database.Entity;
 using System;
 using System.Linq.Expressions;
@@ -12,7 +14,7 @@ namespace HB.Framework.Database.SQL
 
         private bool _firstAssign = true;
 
-        private readonly SQLExpressionVisitorContenxt expressionContext = null;
+        private readonly SQLExpressionVisitorContenxt expressionContext;
 
         public bool WithSelectString { get; set; } = true;
 

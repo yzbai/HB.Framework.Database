@@ -1,4 +1,6 @@
-﻿using HB.Framework.Database.Engine;
+﻿#nullable enable
+
+using HB.Framework.Database.Engine;
 using HB.Framework.Database.Entity;
 using HB.Framework.Database.Properties;
 using System;
@@ -26,7 +28,7 @@ namespace HB.Framework.Database.SQL
 
         private readonly IDatabaseEntityDefFactory _entityDefFactory;
 
-        private readonly SQLExpressionVisitorContenxt _expressionContext = null;
+        private readonly SQLExpressionVisitorContenxt _expressionContext;
 
         public bool WithFromString { get; set; } = true;
 
@@ -44,7 +46,7 @@ namespace HB.Framework.Database.SQL
 
         internal FromExpression(IDatabaseEngine databaseEngine, IDatabaseEntityDefFactory entityDefFactory)
         {
-            this._entityDefFactory = entityDefFactory;
+            _entityDefFactory = entityDefFactory;
             _expressionContext = new SQLExpressionVisitorContenxt(databaseEngine, entityDefFactory);
         }
 

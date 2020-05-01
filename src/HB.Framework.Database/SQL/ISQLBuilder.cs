@@ -1,4 +1,6 @@
-﻿using HB.Framework.Database.Entity;
+﻿#nullable enable
+
+using HB.Framework.Database.Entity;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -8,7 +10,7 @@ namespace HB.Framework.Database.SQL
     internal interface ISQLBuilder
     {
         IDbCommand CreateAddCommand<T>(T entity, string lastUser) where T : DatabaseEntity, new();
-        IDbCommand CreateCountCommand<T>(FromExpression<T> fromCondition = null, WhereExpression<T> whereCondition = null) where T : DatabaseEntity, new();
+        IDbCommand CreateCountCommand<T>(FromExpression<T>? fromCondition = null, WhereExpression<T>? whereCondition = null) where T : DatabaseEntity, new();
         
         IDbCommand CreateUpdateCommand<T>(WhereExpression<T> condition, T entity, string lastUser) where T : DatabaseEntity, new();
         //IDbCommand CreateUpdateKeyCommand<T>(WhereExpression<T> condition, string[] keys, object[] values, string lastUser) where T : DatabaseEntity, new();
@@ -37,7 +39,7 @@ namespace HB.Framework.Database.SQL
         IDbCommand CreateTableCommand(Type type, bool addDropStatement);
         IDbCommand CreateDeleteCommand<T>(WhereExpression<T> condition, string lastUser) where T : DatabaseEntity, new();
 
-        IDbCommand CreateRetrieveCommand<T>(SelectExpression<T> selectCondition = null, FromExpression<T> fromCondition = null, WhereExpression<T> whereCondition = null) 
+        IDbCommand CreateRetrieveCommand<T>(SelectExpression<T>? selectCondition = null, FromExpression<T>? fromCondition = null, WhereExpression<T>? whereCondition = null) 
             where T : DatabaseEntity, new();
 
         IDbCommand CreateRetrieveCommand<T1, T2>(FromExpression<T1> fromCondition, WhereExpression<T1> whereCondition)
@@ -49,7 +51,7 @@ namespace HB.Framework.Database.SQL
             where T2 : DatabaseEntity, new()
             where T3 : DatabaseEntity, new();
 
-        IDbCommand CreateRetrieveCommand<TSelect, TFrom, TWhere>(SelectExpression<TSelect> selectCondition, FromExpression<TFrom> fromCondition, WhereExpression<TWhere> whereCondition)
+        IDbCommand CreateRetrieveCommand<TSelect, TFrom, TWhere>(SelectExpression<TSelect>? selectCondition, FromExpression<TFrom>? fromCondition, WhereExpression<TWhere>? whereCondition)
             where TSelect : DatabaseEntity, new()
             where TFrom : DatabaseEntity, new()
             where TWhere : DatabaseEntity, new();

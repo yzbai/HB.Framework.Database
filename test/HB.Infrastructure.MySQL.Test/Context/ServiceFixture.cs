@@ -1,11 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using HB.Framework.Database;
-using HB.Framework.Database.SQL;
-using Microsoft.Extensions.Configuration;
+﻿using HB.Framework.Database;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using System;
 
 namespace HB.Framework.DatabaseTests
 {
@@ -40,12 +36,10 @@ namespace HB.Framework.DatabaseTests
                 {
                     options.DatabaseSettings.Version = 1;
 
-                    options.Connections.Add(new DatabaseConnectionSettings
-                    {
-                        DatabaseName = "test_db",
-                        ConnectionString = "server=127.0.0.1;port=3306;user=admin;password=_admin;database=test_db;SslMode=None;DefaultCommandTimeout=3000;",
-                        IsMaster = true
-                    });
+                    options.Connections.Add(new DatabaseConnectionSettings(
+                        "test_db",
+                        "server=127.0.0.1;port=3306;user=admin;password=_admin;database=test_db;SslMode=None;DefaultCommandTimeout=3000;",
+                        true));
                 });
             }
 
@@ -55,12 +49,10 @@ namespace HB.Framework.DatabaseTests
                 {
                     options.DatabaseSettings.Version = 1;
 
-                    options.Connections.Add(new DatabaseConnectionSettings
-                    {
-                        DatabaseName = "test.db",
-                        ConnectionString = "Data Source=test.db",
-                        IsMaster = true
-                    });
+                    options.Connections.Add(new DatabaseConnectionSettings(
+                        "test.db",
+                        "Data Source=test.db",
+                        true));
                 });
             }
             return services.BuildServiceProvider();

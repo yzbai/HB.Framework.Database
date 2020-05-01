@@ -1,9 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using HB.Framework.Database;
 using MySql.Data.MySqlClient;
+using System;
+using System.Collections.Generic;
 using System.Data;
-using HB.Framework.Database;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace HB.Infrastructure.MySQL
@@ -26,7 +25,9 @@ namespace HB.Infrastructure.MySQL
         public static Task<IDataReader> ExecuteCommandReaderAsync(MySqlTransaction mySqlTransaction, IDbCommand dbCommand)
         {
             dbCommand.Transaction = mySqlTransaction;
-            return ExecuteCommandReaderAsync(mySqlTransaction.Connection, false, (MySqlCommand)dbCommand);
+            
+            return ExecuteCommandReaderAsync(mySqlTransaction.Connection
+                ?? throw new DatabaseException(DatabaseError.TransactionConnectionIsNull, null), false, (MySqlCommand)dbCommand);
         }
 
         /// <summary>
@@ -52,7 +53,7 @@ namespace HB.Infrastructure.MySQL
         /// <exception cref="DatabaseException"></exception>
         private static async Task<IDataReader> ExecuteCommandReaderAsync(MySqlConnection connection, bool isOwnedConnection, MySqlCommand command)
         {
-            IDataReader reader = null;
+            IDataReader? reader = null;
 
             try
             {
@@ -81,10 +82,7 @@ namespace HB.Infrastructure.MySQL
                     connection.Close();
                 }
 
-                if (reader != null)
-                {
-                    reader.Close();
-                }
+                reader?.Close();
 
                 if (ex is MySqlException mySqlException)
                 {
@@ -97,7 +95,7 @@ namespace HB.Infrastructure.MySQL
             }
         }
 
-        #endregion
+        #endregion Command Reader
 
         #region Command Scalar
 
@@ -124,7 +122,7 @@ namespace HB.Infrastructure.MySQL
         public static Task<object> ExecuteCommandScalarAsync(MySqlTransaction mySqlTransaction, IDbCommand dbCommand)
         {
             dbCommand.Transaction = mySqlTransaction;
-            return ExecuteCommandScalarAsync(mySqlTransaction.Connection, false, (MySqlCommand)dbCommand);
+            return ExecuteCommandScalarAsync(mySqlTransaction.Connection ?? throw new DatabaseException(DatabaseError.TransactionConnectionIsNull, null), false, (MySqlCommand)dbCommand);
         }
 
         /// <summary>
@@ -137,7 +135,7 @@ namespace HB.Infrastructure.MySQL
         /// <exception cref="DatabaseException"></exception>
         private static async Task<object> ExecuteCommandScalarAsync(MySqlConnection connection, bool isOwnedConnection, MySqlCommand command)
         {
-            object rtObj = null;
+            object rtObj;
 
             try
             {
@@ -172,7 +170,7 @@ namespace HB.Infrastructure.MySQL
             return rtObj;
         }
 
-        #endregion
+        #endregion Command Scalar
 
         #region Comand NonQuery
 
@@ -200,7 +198,7 @@ namespace HB.Infrastructure.MySQL
         public static Task<int> ExecuteCommandNonQueryAsync(MySqlTransaction mySqlTransaction, IDbCommand dbCommand)
         {
             dbCommand.Transaction = mySqlTransaction;
-            return ExecuteCommandNonQueryAsync(mySqlTransaction.Connection, false, (MySqlCommand)dbCommand);
+            return ExecuteCommandNonQueryAsync(mySqlTransaction.Connection ?? throw new DatabaseException(DatabaseError.TransactionConnectionIsNull, null), false, (MySqlCommand)dbCommand);
         }
 
         /// <summary>
@@ -248,14 +246,14 @@ namespace HB.Infrastructure.MySQL
             return rtInt;
         }
 
-        #endregion
+        #endregion Comand NonQuery
 
         #region SP NonQuery
 
         #region Privates
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>")]
-        private static async Task PrepareCommandAsync(MySqlCommand command, MySqlConnection connection, MySqlTransaction transaction,
+        private static async Task PrepareCommandAsync(MySqlCommand command, MySqlConnection connection, MySqlTransaction? transaction,
             CommandType commandType, string commandText, IEnumerable<IDataParameter> commandParameters)
         {
             //if the provided connection is not open, we will open it
@@ -302,7 +300,7 @@ namespace HB.Infrastructure.MySQL
             }
         }
 
-        #endregion
+        #endregion Privates
 
         /// <summary>
         /// ExecuteSPNonQueryAsync
@@ -328,7 +326,7 @@ namespace HB.Infrastructure.MySQL
         /// <exception cref="DatabaseException"></exception>
         public static Task<int> ExecuteSPNonQueryAsync(MySqlTransaction mySqlTransaction, string spName, IList<IDataParameter> parameters)
         {
-            return ExecuteSPNonQueryAsync(mySqlTransaction.Connection, mySqlTransaction, false, spName, parameters);
+            return ExecuteSPNonQueryAsync(mySqlTransaction.Connection ?? throw new DatabaseException(DatabaseError.TransactionConnectionIsNull, null), mySqlTransaction, false, spName, parameters);
         }
 
         /// <summary>
@@ -341,7 +339,7 @@ namespace HB.Infrastructure.MySQL
         /// <param name="parameters"></param>
         /// <returns></returns>
         /// <exception cref="DatabaseException"></exception>
-        private static async Task<int> ExecuteSPNonQueryAsync(MySqlConnection conn, MySqlTransaction trans, bool isOwnedConnection, string spName, IList<IDataParameter> parameters)
+        private static async Task<int> ExecuteSPNonQueryAsync(MySqlConnection conn, MySqlTransaction? trans, bool isOwnedConnection, string spName, IList<IDataParameter> parameters)
         {
             int rtInt = -1;
             MySqlCommand command = new MySqlCommand();
@@ -377,7 +375,7 @@ namespace HB.Infrastructure.MySQL
             return rtInt;
         }
 
-        #endregion
+        #endregion SP NonQuery
 
         #region SP Scalar
 
@@ -391,7 +389,7 @@ namespace HB.Infrastructure.MySQL
         /// <exception cref="DatabaseException"></exception>
         public static Task<object> ExecuteSPScalarAsync(MySqlTransaction mySqlTransaction, string spName, IList<IDataParameter> parameters)
         {
-            return ExecuteSPScalarAsync(mySqlTransaction.Connection, mySqlTransaction, false, spName, parameters);
+            return ExecuteSPScalarAsync(mySqlTransaction.Connection ?? throw new DatabaseException(DatabaseError.TransactionConnectionIsNull, null), mySqlTransaction, false, spName, parameters);
         }
 
         /// <summary>
@@ -418,9 +416,9 @@ namespace HB.Infrastructure.MySQL
         /// <param name="parameters"></param>
         /// <returns></returns>
         /// <exception cref="DatabaseException"></exception>
-        private static async Task<object> ExecuteSPScalarAsync(MySqlConnection conn, MySqlTransaction trans, bool isOwnedConnection, string spName, IList<IDataParameter> parameters)
+        private static async Task<object> ExecuteSPScalarAsync(MySqlConnection conn, MySqlTransaction? trans, bool isOwnedConnection, string spName, IList<IDataParameter> parameters)
         {
-            object rtObj = null;
+            object rtObj;
             MySqlCommand command = new MySqlCommand();
 
             await PrepareCommandAsync(command, conn, trans, CommandType.StoredProcedure, spName, parameters).ConfigureAwait(false);
@@ -453,7 +451,7 @@ namespace HB.Infrastructure.MySQL
             return rtObj;
         }
 
-        #endregion
+        #endregion SP Scalar
 
         #region SP Reader
 
@@ -483,7 +481,7 @@ namespace HB.Infrastructure.MySQL
         /// <exception cref="DatabaseException"></exception>
         public static Task<Tuple<IDbCommand, IDataReader>> ExecuteSPReaderAsync(MySqlTransaction mySqlTransaction, string spName, IList<IDataParameter> dbParameters)
         {
-            return ExecuteSPReaderAsync(mySqlTransaction.Connection, mySqlTransaction, false, spName, dbParameters);
+            return ExecuteSPReaderAsync(mySqlTransaction.Connection ?? throw new DatabaseException(DatabaseError.TransactionConnectionIsNull, null), mySqlTransaction, false, spName, dbParameters);
         }
 
         /// <summary>
@@ -497,12 +495,12 @@ namespace HB.Infrastructure.MySQL
         /// <returns></returns>
         /// <exception cref="DatabaseException"></exception>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "<Pending>")]
-        private static async Task<Tuple<IDbCommand, IDataReader>> ExecuteSPReaderAsync(MySqlConnection connection, MySqlTransaction mySqlTransaction, bool isOwedConnection, string spName, IList<IDataParameter> dbParameters)
+        private static async Task<Tuple<IDbCommand, IDataReader>> ExecuteSPReaderAsync(MySqlConnection connection, MySqlTransaction? mySqlTransaction, bool isOwedConnection, string spName, IList<IDataParameter> dbParameters)
         {
             MySqlCommand command = new MySqlCommand();
 
             await PrepareCommandAsync(command, connection, mySqlTransaction, CommandType.StoredProcedure, spName, dbParameters).ConfigureAwait(false);
-            IDataReader reader = null;
+            IDataReader? reader = null;
 
             try
             {
@@ -522,10 +520,7 @@ namespace HB.Infrastructure.MySQL
                     connection.Close();
                 }
 
-                if (reader != null)
-                {
-                    reader.Close();
-                }
+                reader?.Close();
 
                 if (ex is MySqlException mySqlException)
                 {
@@ -542,6 +537,6 @@ namespace HB.Infrastructure.MySQL
             return new Tuple<IDbCommand, IDataReader>(command, reader);
         }
 
-        #endregion
+        #endregion SP Reader
     }
 }

@@ -1,4 +1,6 @@
-﻿using System;
+﻿#nullable enable
+
+using System;
 
 namespace HB.Framework.Database.Entity
 {
@@ -16,11 +18,11 @@ namespace HB.Framework.Database.Entity
         /// <summary>
         /// 字段默认值，Null表示没有没有默认值
         /// </summary>
-        public object DefaultValue { get; set; }
+        public object? DefaultValue { get; set; }
         /// <summary>
         /// 字段描述、备注
         /// </summary>
-        public string Description { get; set; }
+        public string? Description { get; set; }
         /// <summary>
         /// 字段是否可空
         /// </summary>
@@ -30,7 +32,7 @@ namespace HB.Framework.Database.Entity
         /// </summary>
         public bool Unique { get; set; }
 
-        public Type Converter { get; set; } = null;
+        public Type? Converter { get; set; } = null;
 
         public EntityPropertyAttribute()
         {

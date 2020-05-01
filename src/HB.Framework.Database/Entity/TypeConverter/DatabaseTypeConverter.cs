@@ -1,7 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+﻿#nullable enable
+
+using System;
 using System.Data;
-using System.Text;
 
 namespace HB.Framework.Database.Entity
 {
@@ -25,7 +25,7 @@ namespace HB.Framework.Database.Entity
             return TypeValueToStringDbValue(value);
         }
 
-        public object DbValueToTypeValue(object value)
+        public object? DbValueToTypeValue(object value)
         {
             if (value == null)
             {
@@ -40,7 +40,7 @@ namespace HB.Framework.Database.Entity
             return StringDbValueToTypeValue(value.ToString());
         }
 
-        protected abstract object StringDbValueToTypeValue(string stringValue);
+        protected abstract object? StringDbValueToTypeValue(string stringValue);
         protected abstract string TypeValueToStringDbValue(object typeValue);
     }
 }

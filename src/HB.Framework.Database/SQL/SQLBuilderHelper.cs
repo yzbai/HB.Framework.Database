@@ -1,7 +1,8 @@
-﻿using HB.Framework.Database.Engine;
+﻿#nullable enable
+
+using HB.Framework.Database.Engine;
 using HB.Framework.Database.Entity;
 using System;
-using System.Collections.Generic;
 using System.Text;
 
 namespace HB.Framework.Database.SQL
@@ -47,9 +48,9 @@ namespace HB.Framework.Database.SQL
                 values.Remove(values.Length - 1, 1);
             }
 
-            DatabaseEntityPropertyDef idProperty = definition.GetProperty("Id");
+            DatabaseEntityPropertyDef idProperty = definition.GetProperty("Id")!;
 
-            return $"insert into {definition.DbTableReservedName}({args.ToString()}) values({values.ToString()});select {selectArgs.ToString()} from {definition.DbTableReservedName} where {idProperty.DbReservedName} = {GetLastInsertIdStatement(engineType)};";
+            return $"insert into {definition.DbTableReservedName}({args}) values({values});select {selectArgs} from {definition.DbTableReservedName} where {idProperty.DbReservedName} = {GetLastInsertIdStatement(engineType)};";
         }
 
         public static string CreateUpdateTemplate(DatabaseEntityDef modelDef)
@@ -81,15 +82,15 @@ namespace HB.Framework.Database.SQL
 
         public static string CreateDeleteTemplate(DatabaseEntityDef modelDef)
         {
-            DatabaseEntityPropertyDef deletedProperty = modelDef.GetProperty("Deleted");
-            DatabaseEntityPropertyDef lastUserProperty = modelDef.GetProperty("LastUser");
+            DatabaseEntityPropertyDef deletedProperty = modelDef.GetProperty("Deleted")!;
+            DatabaseEntityPropertyDef lastUserProperty = modelDef.GetProperty("LastUser")!;
 
             StringBuilder args = new StringBuilder();
 
             args.Append($"{deletedProperty.DbReservedName}=1,");
             args.Append($"{lastUserProperty.DbReservedName}={lastUserProperty.DbParameterizedName}");
 
-            return $"UPDATE {modelDef.DbTableReservedName} SET {args.ToString()} ";
+            return $"UPDATE {modelDef.DbTableReservedName} SET {args} ";
         }
 
         public static string TempTable_Insert(string tempTableName, string value, DatabaseEngineType databaseEngineType)

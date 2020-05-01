@@ -1,6 +1,6 @@
-﻿using System;
+﻿#nullable enable
+
 using System.Collections.Generic;
-using System.Text;
 
 namespace HB.Framework.Database
 {

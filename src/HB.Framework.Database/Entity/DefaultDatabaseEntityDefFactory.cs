@@ -60,13 +60,14 @@ namespace HB.Framework.Database.Entity
 
             IDictionary<string, EntityInfo> resusltEntitySchemaDict = new Dictionary<string, EntityInfo>();
 
-            allEntityTypes.ForEach(type => {
+            allEntityTypes.ForEach(type =>
+            {
 
                 EntitySchemaAttribute attribute = type.GetCustomAttribute<EntitySchemaAttribute>();
 
                 fileConfiguredDict.TryGetValue(type.FullName, out EntityInfo fileConfigured);
 
-                EntityInfo entitySchema = new EntityInfo { EntityTypeFullName = type.FullName };
+                EntityInfo entitySchema = new EntityInfo(type.FullName);
 
                 if (attribute != null)
                 {
@@ -76,7 +77,7 @@ namespace HB.Framework.Database.Entity
                     {
                         entitySchema.TableName = "tb_";
 
-                        if(type.Name.EndsWith(attribute.SuffixToRemove, GlobalSettings.Comparison))
+                        if (type.Name.EndsWith(attribute.SuffixToRemove, GlobalSettings.Comparison))
                         {
                             entitySchema.TableName += type.Name.Substring(0, type.Name.Length - attribute.SuffixToRemove.Length).ToLower(GlobalSettings.Culture);
                         }
@@ -155,15 +156,7 @@ namespace HB.Framework.Database.Entity
 
         private DatabaseEntityDef CreateEntityDef(Type entityType)
         {
-            DatabaseEntityDef entityDef = new DatabaseEntityDef();
-
-            #region 自身
-
-            entityDef.EntityType = entityType;
-            entityDef.EntityFullName = entityType.FullName;
-            //modelDef.PropertyDict = new Dictionary<string, DatabaseEntityPropertyDef>();
-
-            #endregion
+            DatabaseEntityDef entityDef = new DatabaseEntityDef(entityType);
 
             #region 数据库
 
@@ -173,7 +166,7 @@ namespace HB.Framework.Database.Entity
                 entityDef.DatabaseName = dbSchema.DatabaseName;
                 entityDef.TableName = dbSchema.TableName;
                 entityDef.DbTableDescription = dbSchema.Description;
-                entityDef.DbTableReservedName = _databaseEngine.GetReservedStatement(entityDef.TableName);
+                entityDef.DbTableReservedName = _databaseEngine.GetReservedStatement(entityDef.TableName!);
                 entityDef.DatabaseWriteable = !dbSchema.ReadOnly;
             }
             else
@@ -204,43 +197,36 @@ namespace HB.Framework.Database.Entity
             return entityDef;
         }
 
-        private DatabaseEntityPropertyDef CreatePropertyDef(DatabaseEntityDef modelDef, PropertyInfo info)
+        private DatabaseEntityPropertyDef CreatePropertyDef(DatabaseEntityDef entityDef, PropertyInfo info)
         {
-            DatabaseEntityPropertyDef propertyDef = new DatabaseEntityPropertyDef();
-
-            #region 自身
-
-            propertyDef.EntityDef = modelDef;
-            propertyDef.PropertyName = info.Name;
-            propertyDef.PropertyType = info.PropertyType;
-            propertyDef.GetMethod = info.GetGetMethod();
-            propertyDef.SetMethod = info.GetSetMethod();
-
-            #endregion
+            DatabaseEntityPropertyDef propertyDef = new DatabaseEntityPropertyDef(entityDef, info);
 
             #region 数据库
 
             IEnumerable<Attribute> propertyAttrs = info.GetCustomAttributes(typeof(EntityPropertyAttribute), false).Select(o => (Attribute)o);
+
             if (propertyAttrs.IsNotNullOrEmpty())
             {
-                EntityPropertyAttribute propertyAttr = propertyAttrs.ElementAt(0) as EntityPropertyAttribute;
-
-                propertyDef.IsTableProperty = true;
-                propertyDef.IsNullable = !propertyAttr.NotNull;
-                propertyDef.IsUnique = propertyAttr.Unique;
-                propertyDef.DbLength = propertyAttr.Length > 0 ? (int?)propertyAttr.Length : null;
-                propertyDef.IsLengthFixed = propertyAttr.FixedLength;
-                propertyDef.DbDefaultValue = ValueConverterUtil.TypeValueToStringValue(propertyAttr.DefaultValue);
-                propertyDef.DbDescription = propertyAttr.Description;
-
-                if (propertyAttr.Converter != null)
+                if (propertyAttrs.ElementAt(0) is EntityPropertyAttribute propertyAttr)
                 {
-                    propertyDef.TypeConverter = _typeConverterFactory.GetTypeConverter(propertyAttr.Converter);
+                    propertyDef.IsTableProperty = true;
+                    propertyDef.IsNullable = propertyAttr.NotNull;
+                    propertyDef.IsUnique = propertyAttr.Unique;
+                    propertyDef.DbLength = propertyAttr.Length > 0 ? (int?)propertyAttr.Length : null;
+                    propertyDef.IsLengthFixed = propertyAttr.FixedLength;
+                    propertyDef.DbDefaultValue = ValueConverterUtil.TypeValueToStringValue(propertyAttr.DefaultValue);
+                    propertyDef.DbDescription = propertyAttr.Description;
+
+                    if (propertyAttr.Converter != null)
+                    {
+                        propertyDef.TypeConverter = _typeConverterFactory.GetTypeConverter(propertyAttr.Converter);
+                    }
                 }
             }
 
             //判断是否是主键
             IEnumerable<Attribute> atts1 = info.GetCustomAttributes(typeof(AutoIncrementPrimaryKeyAttribute), false).Select(o => (Attribute)o);
+            
             if (atts1.IsNotNullOrEmpty())
             {
                 propertyDef.IsTableProperty = true;
@@ -253,12 +239,13 @@ namespace HB.Framework.Database.Entity
             {
                 //判断是否外键
                 IEnumerable<Attribute> atts2 = info.GetCustomAttributes(typeof(ForeignKeyAttribute), false).Select(o => (Attribute)o);
+                
                 if (atts2.IsNotNullOrEmpty())
                 {
                     propertyDef.IsTableProperty = true;
                     propertyDef.IsAutoIncrementPrimaryKey = false;
                     propertyDef.IsForeignKey = true;
-                    //propertyDef.IsNullable = false;
+                    propertyDef.IsNullable = true;
                     propertyDef.IsUnique = false;
                 }
             }
@@ -290,7 +277,7 @@ namespace HB.Framework.Database.Entity
 
         public IEnumerable<DatabaseEntityDef> GetAllDefsByDatabase(string databaseName)
         {
-            return _defDict.Values.Where(def => def.DatabaseName.Equals(databaseName, GlobalSettings.ComparisonIgnoreCase));
+            return _defDict.Values.Where(def => databaseName.Equals(def.DatabaseName, GlobalSettings.ComparisonIgnoreCase));
         }
     }
 

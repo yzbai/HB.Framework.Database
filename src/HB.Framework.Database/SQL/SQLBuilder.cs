@@ -1,4 +1,6 @@
-﻿using System;
+﻿#nullable enable
+
+using System;
 using System.Linq;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -37,7 +39,7 @@ namespace HB.Framework.Database.SQL
             _sqlStatementDict = new ConcurrentDictionary<string, string>();
         }
 
-        private IDbCommand AssembleCommand<TFrom, TWhere>(bool isRetrieve, string selectClause, FromExpression<TFrom> fromCondition, WhereExpression<TWhere> whereCondition, IList<IDataParameter> parameters)
+        private IDbCommand AssembleCommand<TFrom, TWhere>(bool isRetrieve, string selectClause, FromExpression<TFrom>? fromCondition, WhereExpression<TWhere>? whereCondition, IList<IDataParameter>? parameters)
             where TFrom : DatabaseEntity, new()
             where TWhere : DatabaseEntity, new()
         {
@@ -125,7 +127,7 @@ namespace HB.Framework.Database.SQL
             return selectClause;
         }
 
-        public IDbCommand CreateRetrieveCommand<T>(SelectExpression<T> selectCondition = null, FromExpression<T> fromCondition = null, WhereExpression<T> whereCondition = null)
+        public IDbCommand CreateRetrieveCommand<T>(SelectExpression<T>? selectCondition = null, FromExpression<T>? fromCondition = null, WhereExpression<T>? whereCondition = null)
             where T : DatabaseEntity, new()
         {
             if (selectCondition == null)
@@ -138,7 +140,7 @@ namespace HB.Framework.Database.SQL
             }
         }
 
-        public IDbCommand CreateCountCommand<T>(FromExpression<T> fromCondition = null, WhereExpression<T> whereCondition = null)
+        public IDbCommand CreateCountCommand<T>(FromExpression<T>? fromCondition = null, WhereExpression<T>? whereCondition = null)
             where T : DatabaseEntity, new()
         {
             return AssembleCommand(true, "SELECT COUNT(1) ", fromCondition, whereCondition, null);
@@ -260,7 +262,7 @@ namespace HB.Framework.Database.SQL
             return AssembleCommand(true, GetSelectClauseStatement<T1, T2, T3>(), fromCondition, whereCondition, null);
         }
 
-        public IDbCommand CreateRetrieveCommand<TSelect, TFrom, TWhere>(SelectExpression<TSelect> selectCondition, FromExpression<TFrom> fromCondition, WhereExpression<TWhere> whereCondition)
+        public IDbCommand CreateRetrieveCommand<TSelect, TFrom, TWhere>(SelectExpression<TSelect>? selectCondition, FromExpression<TFrom>? fromCondition, WhereExpression<TWhere>? whereCondition)
             where TSelect : DatabaseEntity, new()
             where TFrom : DatabaseEntity, new()
             where TWhere : DatabaseEntity, new()
@@ -301,21 +303,22 @@ namespace HB.Framework.Database.SQL
                         continue;
                     }
 
+                    //当IsTableProperty为true时，DbParameterizedName一定不为null
                     if (info.PropertyName == "Version")
                     {
-                        parameters.Add(_databaseEngine.CreateParameter(info.DbParameterizedName, entity.Version + 1, info.DbFieldType));
+                        parameters.Add(_databaseEngine.CreateParameter(info.DbParameterizedName!, entity.Version + 1, info.DbFieldType));
                     }
                     else if (info.PropertyName == "Deleted")
                     {
-                        parameters.Add(_databaseEngine.CreateParameter(info.DbParameterizedName, 0, info.DbFieldType));
+                        parameters.Add(_databaseEngine.CreateParameter(info.DbParameterizedName!, 0, info.DbFieldType));
                     }
                     else if (info.PropertyName == "LastUser")
                     {
-                        parameters.Add(_databaseEngine.CreateParameter(info.DbParameterizedName, DbParameterValue_Statement(lastUser, info), info.DbFieldType));
+                        parameters.Add(_databaseEngine.CreateParameter(info.DbParameterizedName!, DbParameterValue_Statement(lastUser, info), info.DbFieldType));
                     }
                     else
                     {
-                        parameters.Add(_databaseEngine.CreateParameter(info.DbParameterizedName, DbParameterValue_Statement(info.GetValue(entity), info), info.DbFieldType));
+                        parameters.Add(_databaseEngine.CreateParameter(info.DbParameterizedName!, DbParameterValue_Statement(info.GetValue(entity), info), info.DbFieldType));
                     }
                 }
             }
@@ -345,17 +348,18 @@ namespace HB.Framework.Database.SQL
                         continue;
                     }
 
+                    //当IsTableProperty为true时，DbParameterizedName一定不为null
                     if (info.PropertyName == "Version")
                     {
-                        parameters.Add(_databaseEngine.CreateParameter(info.DbParameterizedName, entity.Version + 1, info.DbFieldType));
+                        parameters.Add(_databaseEngine.CreateParameter(info.DbParameterizedName!, entity.Version + 1, info.DbFieldType));
                     }
                     else if (info.PropertyName == "LastUser")
                     {
-                        parameters.Add(_databaseEngine.CreateParameter(info.DbParameterizedName, DbParameterValue_Statement(lastUser, info), info.DbFieldType));
+                        parameters.Add(_databaseEngine.CreateParameter(info.DbParameterizedName!, DbParameterValue_Statement(lastUser, info), info.DbFieldType));
                     }
                     else
                     {
-                        parameters.Add(_databaseEngine.CreateParameter(info.DbParameterizedName, DbParameterValue_Statement(info.GetValue(entity), info), info.DbFieldType));
+                        parameters.Add(_databaseEngine.CreateParameter(info.DbParameterizedName!, DbParameterValue_Statement(info.GetValue(entity), info), info.DbFieldType));
                     }
                 }
             }
@@ -375,11 +379,11 @@ namespace HB.Framework.Database.SQL
                 _sqlStatementDict.TryAdd(cacheKey, deleteTemplate);
             }
 
-            DatabaseEntityPropertyDef lastUserProperty = definition.GetProperty("LastUser");
+            DatabaseEntityPropertyDef lastUserProperty = definition.GetProperty("LastUser")!;
 
             List<IDataParameter> parameters = new List<IDataParameter>
             {
-                _databaseEngine.CreateParameter(lastUserProperty.DbParameterizedName, DbParameterValue_Statement(lastUser, lastUserProperty), lastUserProperty.DbFieldType)
+                _databaseEngine.CreateParameter(lastUserProperty.DbParameterizedName!, DbParameterValue_Statement(lastUser, lastUserProperty), lastUserProperty.DbFieldType)
             };
 
             return AssembleCommand<T, T>(false, deleteTemplate, null, condition, parameters);
@@ -456,12 +460,12 @@ namespace HB.Framework.Database.SQL
                     values.Remove(values.Length - 1, 1);
                 }
 
-                innerBuilder.Append($"insert into {definition.DbTableReservedName}({args.ToString()}) values ({values.ToString()});{TempTable_Insert(tempTableName, GetLastInsertIdStatement(_databaseEngine.EngineType), _databaseEngine.EngineType)}");
+                innerBuilder.Append($"insert into {definition.DbTableReservedName}({args}) values ({values});{TempTable_Insert(tempTableName, GetLastInsertIdStatement(_databaseEngine.EngineType), _databaseEngine.EngineType)}");
 
                 number++;
             }
 
-            string sql = $"{TempTable_Drop(tempTableName, _databaseEngine.EngineType)}{TempTable_Create(tempTableName, _databaseEngine.EngineType)}{innerBuilder.ToString()}{TempTable_Select_All(tempTableName, _databaseEngine.EngineType)}{TempTable_Drop(tempTableName, _databaseEngine.EngineType)}";
+            string sql = $"{TempTable_Drop(tempTableName, _databaseEngine.EngineType)}{TempTable_Create(tempTableName, _databaseEngine.EngineType)}{innerBuilder}{TempTable_Select_All(tempTableName, _databaseEngine.EngineType)}{TempTable_Drop(tempTableName, _databaseEngine.EngineType)}";
 
             return AssembleCommand<T, T>(false, sql, null, null, parameters);
         }
@@ -514,12 +518,12 @@ namespace HB.Framework.Database.SQL
                 if (args.Length > 0)
                     args.Remove(args.Length - 1, 1);
 
-                innerBuilder.Append($"update {definition.DbTableReservedName} set {args.ToString()} WHERE `Id`={entity.Id} and `Version`={entity.Version} and `Deleted`=0;{TempTable_Insert(tempTableName, FoundChanges_Statement(_databaseEngine.EngineType), _databaseEngine.EngineType)}");
+                innerBuilder.Append($"update {definition.DbTableReservedName} set {args} WHERE `Id`={entity.Id} and `Version`={entity.Version} and `Deleted`=0;{TempTable_Insert(tempTableName, FoundChanges_Statement(_databaseEngine.EngineType), _databaseEngine.EngineType)}");
 
                 number++;
             }
 
-            string sql = $"{TempTable_Drop(tempTableName, _databaseEngine.EngineType)}{TempTable_Create(tempTableName, _databaseEngine.EngineType)}{innerBuilder.ToString()}{TempTable_Select_All(tempTableName, _databaseEngine.EngineType)}{TempTable_Drop(tempTableName, _databaseEngine.EngineType)}";
+            string sql = $"{TempTable_Drop(tempTableName, _databaseEngine.EngineType)}{TempTable_Create(tempTableName, _databaseEngine.EngineType)}{innerBuilder}{TempTable_Select_All(tempTableName, _databaseEngine.EngineType)}{TempTable_Drop(tempTableName, _databaseEngine.EngineType)}";
 
             return AssembleCommand<T, T>(false, sql, null, null, parameters);
         }
@@ -540,7 +544,7 @@ namespace HB.Framework.Database.SQL
                     $"UPDATE {definition.DbTableReservedName} set {args} WHERE `Id`={entity.Id} AND `Version`={entity.Version} and `Deleted`=0;{TempTable_Insert(tempTableName, FoundChanges_Statement(_databaseEngine.EngineType), _databaseEngine.EngineType)}");
             }
 
-            string sql = $"{TempTable_Drop(tempTableName, _databaseEngine.EngineType)}{TempTable_Create(tempTableName, _databaseEngine.EngineType)}{innerBuilder.ToString()}{TempTable_Select_All(tempTableName, _databaseEngine.EngineType)}{TempTable_Drop(tempTableName, _databaseEngine.EngineType)}";
+            string sql = $"{TempTable_Drop(tempTableName, _databaseEngine.EngineType)}{TempTable_Create(tempTableName, _databaseEngine.EngineType)}{innerBuilder}{TempTable_Select_All(tempTableName, _databaseEngine.EngineType)}{TempTable_Drop(tempTableName, _databaseEngine.EngineType)}";
 
             return AssembleCommand<T, T>(false, sql, null, null, null);
         }
@@ -614,7 +618,7 @@ namespace HB.Framework.Database.SQL
 $@"{dropStatement}
 CREATE TABLE {definition.DbTableReservedName} (
     ""Id""    INTEGER PRIMARY KEY AUTOINCREMENT,
-    {sql.ToString()}
+    {sql}
     ""Deleted""   NUMERIC NOT NULL DEFAULT 0,
     ""LastUser"" TEXT,
 	""LastTime"" NUMERIC,

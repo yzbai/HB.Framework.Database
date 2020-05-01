@@ -1,4 +1,6 @@
-﻿using System;
+﻿#nullable enable
+
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -14,14 +16,15 @@ namespace HB.Framework.Database.SQL
         public static object Visit(Expression exp, SQLExpressionVisitorContenxt context)
         {
             if (exp == null) return string.Empty;
+
             switch (exp.NodeType)
             {
                 case ExpressionType.Lambda:
-                    return VisitLambda(exp as LambdaExpression, context);
+                    return VisitLambda((LambdaExpression)exp, context);
                 case ExpressionType.MemberAccess:
-                    return VisitMemberAccess(exp as MemberExpression, context);
+                    return VisitMemberAccess((MemberExpression)exp, context);
                 case ExpressionType.Constant:
-                    return VisitConstant(exp as ConstantExpression);
+                    return VisitConstant((ConstantExpression)exp);
                 case ExpressionType.Add:
                 case ExpressionType.AddChecked:
                 case ExpressionType.Subtract:
@@ -45,7 +48,7 @@ namespace HB.Framework.Database.SQL
                 case ExpressionType.RightShift:
                 case ExpressionType.LeftShift:
                 case ExpressionType.ExclusiveOr:
-                    return VisitBinary(exp as BinaryExpression, context);
+                    return VisitBinary((BinaryExpression)exp, context);
                 case ExpressionType.Negate:
                 case ExpressionType.NegateChecked:
                 case ExpressionType.Not:
@@ -54,18 +57,18 @@ namespace HB.Framework.Database.SQL
                 case ExpressionType.ArrayLength:
                 case ExpressionType.Quote:
                 case ExpressionType.TypeAs:
-                    return VisitUnary(exp as UnaryExpression, context);
+                    return VisitUnary((UnaryExpression)exp, context);
                 case ExpressionType.Parameter:
-                    return VisitParameter(exp as ParameterExpression);
+                    return VisitParameter((ParameterExpression)exp);
                 case ExpressionType.Call:
-                    return VisitMethodCall(exp as MethodCallExpression, context);
+                    return VisitMethodCall((MethodCallExpression)exp, context);
                 case ExpressionType.New:
-                    return VisitNew(exp as NewExpression, context);
+                    return VisitNew((NewExpression)exp, context);
                 case ExpressionType.NewArrayInit:
                 case ExpressionType.NewArrayBounds:
-                    return VisitNewArray(exp as NewArrayExpression, context);
+                    return VisitNewArray((NewArrayExpression)exp, context);
                 case ExpressionType.MemberInit:
-                    return VisitMemberInit(exp as MemberInitExpression);
+                    return VisitMemberInit((MemberInitExpression)exp);
                 default:
                     return exp.ToString();
             }
@@ -75,7 +78,7 @@ namespace HB.Framework.Database.SQL
         {
             if (lambda.Body.NodeType == ExpressionType.MemberAccess && context.Seperator == " ")
             {
-                MemberExpression m = lambda.Body as MemberExpression;
+                MemberExpression m = (MemberExpression)lambda.Body;
 
                 if (m.Expression != null)
                 {
@@ -100,9 +103,11 @@ namespace HB.Framework.Database.SQL
 
         private static object VisitBinary(BinaryExpression b, SQLExpressionVisitorContenxt context)
         {
-            object left, right;
+            object left;
+            object right;
             bool rightIsNull;
-            string operand = BindOperant(b.NodeType);   //sep= " " ??
+            string operand = BindOperant(b.NodeType);
+
             if (operand == "AND" || operand == "OR")
             {
 
@@ -115,7 +120,7 @@ namespace HB.Framework.Database.SQL
                     left = Visit(b.Left, context);
                 }
 
-                m = b.Right as MemberExpression;
+                m = (MemberExpression)b.Right;
 
                 if (m != null && m.Expression != null && m.Expression.NodeType == ExpressionType.Parameter)
                 {
@@ -159,7 +164,7 @@ namespace HB.Framework.Database.SQL
                 }
                 else if (right as PartialSqlString == null)
                 {
-                    if (!context.IsParameterized || right == null)
+                    if (!context.IsParameterized /*|| right == null*/)
                     {
                         right = context.DatabaesEngine.GetDbValueStatement(right, needQuoted: true);
                     }
@@ -172,19 +177,25 @@ namespace HB.Framework.Database.SQL
                 }
 
             }
+
             //TODO: Test  switch InvariantCultureIgnoreCase to OrdinalIgnoreCase
             rightIsNull = right.ToString().Equals("null", GlobalSettings.ComparisonIgnoreCase);
-            if (operand == "=" && rightIsNull) operand = "is";
-            else if (operand == "<>" && rightIsNull) operand = "is not";
 
-            switch (operand)
+            if (operand == "=" && rightIsNull)
             {
-                case "MOD":
-                case "COALESCE":
-                    return new PartialSqlString(string.Format(GlobalSettings.Culture, "{0}({1},{2})", operand, left, right));
-                default:
-                    return new PartialSqlString("(" + left + context.Seperator + operand + context.Seperator + right + ")");
+                operand = "is";
             }
+            else if (operand == "<>" && rightIsNull)
+            {
+                operand = "is not";
+            }
+
+            return operand switch
+            {
+                "MOD" => new PartialSqlString(string.Format(GlobalSettings.Culture, "{0}({1},{2})", operand, left, right)),
+                "COALESCE" => new PartialSqlString(string.Format(GlobalSettings.Culture, "{0}({1},{2})", operand, left, right)),
+                _ => new PartialSqlString("(" + left + context.Seperator + operand + context.Seperator + right + ")")
+            };
         }
 
         private static object VisitMemberAccess(MemberExpression m, SQLExpressionVisitorContenxt context)
@@ -200,7 +211,7 @@ namespace HB.Framework.Database.SQL
 
                     if (obj is Type)
                     {
-                        modelType = obj as Type;
+                        modelType = (Type)obj;
                     }
                     else
                     {
@@ -211,7 +222,8 @@ namespace HB.Framework.Database.SQL
                 }
 
                 DatabaseEntityDef entityDef = context.EntityDefFactory.GetDef(modelType);
-                DatabaseEntityPropertyDef propertyDef = entityDef.GetProperty(m.Member.Name);
+                DatabaseEntityPropertyDef propertyDef = entityDef.GetProperty(m.Member.Name) 
+                    ?? throw new DatabaseException($"Lack property definition: {m.Member.Name} of Entity:{entityDef.EntityFullName}");
 
                 string prefix = "";
 
@@ -336,14 +348,14 @@ namespace HB.Framework.Database.SQL
 
             for (int i = 0, n = original.Count; i < n; i++)
             {
-                if (original[i].NodeType == ExpressionType.NewArrayInit ||
-                 original[i].NodeType == ExpressionType.NewArrayBounds)
+                if (original[i].NodeType == ExpressionType.NewArrayInit || original[i].NodeType == ExpressionType.NewArrayBounds)
                 {
-
-                    list.AddRange(VisitNewArrayFromExpressionList(original[i] as NewArrayExpression, context));
+                    list.AddRange(VisitNewArrayFromExpressionList((NewArrayExpression)original[i], context));
                 }
                 else
+                {
                     list.Add(Visit(original[i], context));
+                }
 
             }
             return list;
@@ -387,7 +399,7 @@ namespace HB.Framework.Database.SQL
                     Expression<Func<object>> lambda = Expression.Lambda<Func<object>>(member);
                     var getter = lambda.Compile();
 
-                    object[] inArgs = getter() as object[];
+                    object[] inArgs = (object[])getter();
 
                     StringBuilder sIn = new StringBuilder();
                     foreach (object e in inArgs)
@@ -400,7 +412,8 @@ namespace HB.Framework.Database.SQL
                         }
                         else
                         {
-                            IList<object> listArgs = e as IList<object>;
+                            IList<object> listArgs = (IList<object>)e;
+
                             foreach (object el in listArgs)
                             {
                                 sIn.AppendFormat(GlobalSettings.Culture, "{0}{1}",
@@ -435,7 +448,7 @@ namespace HB.Framework.Database.SQL
                     Expression<Func<object>> lambda = Expression.Lambda<Func<object>>(member);
                     Func<object> getter = lambda.Compile();
 
-                    object[] inArgs = getter() as object[];
+                    object[] inArgs = (object[])getter();
 
                     StringBuilder sIn = new StringBuilder();
 
@@ -449,7 +462,7 @@ namespace HB.Framework.Database.SQL
                         }
                         else
                         {
-                            ICollection listArgs = e as ICollection;
+                            ICollection listArgs = (ICollection)e;
                             foreach (object el in listArgs)
                             {
                                 sIn.AppendFormat(GlobalSettings.Culture, "{0}{1}",
@@ -539,15 +552,15 @@ namespace HB.Framework.Database.SQL
                     statement = string.Format(GlobalSettings.Culture, "lower({0})", quotedColName);
                     break;
                 case "StartsWith":
-                    statement = string.Format(GlobalSettings.Culture, "upper({0}) like {1} ", quotedColName, 
+                    statement = string.Format(GlobalSettings.Culture, "upper({0}) like {1} ", quotedColName,
                         context.DatabaesEngine.GetQuotedStatement(args[0].ToString().ToUpper(GlobalSettings.Culture) + "%"));
                     break;
                 case "EndsWith":
-                    statement = string.Format(GlobalSettings.Culture, "upper({0}) like {1}", quotedColName, 
+                    statement = string.Format(GlobalSettings.Culture, "upper({0}) like {1}", quotedColName,
                         context.DatabaesEngine.GetQuotedStatement("%" + args[0].ToString().ToUpper(GlobalSettings.Culture)));
                     break;
                 case "Contains":
-                    statement = string.Format(GlobalSettings.Culture, "upper({0}) like {1}", quotedColName, 
+                    statement = string.Format(GlobalSettings.Culture, "upper({0}) like {1}", quotedColName,
                         context.DatabaesEngine.GetQuotedStatement("%" + args[0].ToString().ToUpper(GlobalSettings.Culture) + "%"));
                     break;
                 case "Substring":
@@ -574,7 +587,7 @@ namespace HB.Framework.Database.SQL
         private static bool IsColumnAccess(MethodCallExpression m)
         {
             if (m.Object != null && m.Object as MethodCallExpression != null)
-                return IsColumnAccess(m.Object as MethodCallExpression);
+                return IsColumnAccess((MethodCallExpression)m.Object);
 
             return m.Object is MemberExpression exp
                 && exp.Expression != null
@@ -620,7 +633,7 @@ namespace HB.Framework.Database.SQL
 
             DatabaseEntityDef entityDef = context.EntityDefFactory.GetDef(type);
 
-            DatabaseEntityPropertyDef property = entityDef.GetProperty(name);
+            DatabaseEntityPropertyDef? property = entityDef.GetProperty(name);
 
             if (property == null)
             {

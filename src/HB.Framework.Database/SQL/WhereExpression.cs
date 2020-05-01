@@ -1,3 +1,5 @@
+#nullable enable
+
 using HB.Framework.Database.Engine;
 using HB.Framework.Database.Entity;
 using System;
@@ -14,13 +16,13 @@ namespace HB.Framework.Database.SQL
     /// <typeparam name="T"></typeparam>
     public class WhereExpression<T>/* : SQLExpression*/
     {
-        private readonly IDatabaseEngine databaseEngine;
-        private readonly SQLExpressionVisitorContenxt expressionContext = null;
-        private Expression<Func<T, bool>> _whereExpression = null;
+        private readonly IDatabaseEngine _databaseEngine;
+        private readonly SQLExpressionVisitorContenxt _expressionContext;
+        private Expression<Func<T, bool>>? _whereExpression;
         private readonly List<string> _orderByProperties = new List<string>();
 
         private string _whereString = string.Empty;
-        private string _orderByString = string.Empty;
+        private string? _orderByString;
         private string _groupByString = string.Empty;
         private string _havingString = string.Empty;
         private string _limitString = string.Empty;
@@ -32,8 +34,9 @@ namespace HB.Framework.Database.SQL
 
         internal WhereExpression(IDatabaseEngine databaseEngine, IDatabaseEntityDefFactory entityDefFactory)
         {
-            this.databaseEngine = databaseEngine;
-            expressionContext = new SQLExpressionVisitorContenxt(databaseEngine, entityDefFactory)
+            _databaseEngine = databaseEngine;
+
+            _expressionContext = new SQLExpressionVisitorContenxt(databaseEngine, entityDefFactory)
             {
                 ParamPlaceHolderPrefix = databaseEngine.ParameterizedChar + "w__"
             };
@@ -41,14 +44,14 @@ namespace HB.Framework.Database.SQL
 
         public IList<KeyValuePair<string, object>> GetParameters()
         {
-            return expressionContext.GetParameters();
+            return _expressionContext.GetParameters();
         }
 
         public override string ToString()
         {
             StringBuilder sql = new StringBuilder();
 
-            string lamdaWhereString = _whereExpression.ToStatement(expressionContext);
+            string? lamdaWhereString = _whereExpression?.ToStatement(_expressionContext);
 
             bool hasLamdaWhere = !string.IsNullOrEmpty(lamdaWhereString);
             bool hasStringWhere = !string.IsNullOrEmpty(_whereString);
@@ -90,10 +93,10 @@ namespace HB.Framework.Database.SQL
                 sql.AppendLine();
                 sql.Append(_orderByString);
             }
-            else if (!expressionContext.OrderByStatementBySQLUtilIn.IsNullOrEmpty())
+            else if (!_expressionContext.OrderByStatementBySQLUtilIn.IsNullOrEmpty())
             {
                 sql.AppendLine();
-                sql.Append(expressionContext.OrderByStatementBySQLUtilIn);
+                sql.Append(_expressionContext.OrderByStatementBySQLUtilIn);
             }
 
             //sql.Append(string.IsNullOrEmpty(_orderByString) ?
@@ -121,7 +124,7 @@ namespace HB.Framework.Database.SQL
 
             return this;
         }
-        
+
         public WhereExpression<T> Where()
         {
             if (_whereExpression != null)
@@ -161,11 +164,11 @@ namespace HB.Framework.Database.SQL
 
                     if (sqlParam is SQLInValues sqlInValues)
                     {
-                        escapedParams.Add(sqlInValues.ToSqlInString(databaseEngine));
+                        escapedParams.Add(sqlInValues.ToSqlInString(_databaseEngine));
                     }
                     else
                     {
-                        escapedParams.Add(databaseEngine.GetDbValueStatement(sqlParam, needQuoted: true));
+                        escapedParams.Add(_databaseEngine.GetDbValueStatement(sqlParam, needQuoted: true));
                     }
                 }
             }
@@ -226,10 +229,10 @@ namespace HB.Framework.Database.SQL
         public WhereExpression<T> GroupBy<TKey>(Expression<Func<T, TKey>> keySelector)
         {
             //TODO: 调查这个
-            string oldSeparator = expressionContext.Seperator;
-            expressionContext.Seperator = string.Empty;
-            _groupByString = keySelector.ToStatement(expressionContext);
-            expressionContext.Seperator = oldSeparator;
+            string oldSeparator = _expressionContext.Seperator;
+            _expressionContext.Seperator = string.Empty;
+            _groupByString = keySelector.ToStatement(_expressionContext);
+            _expressionContext.Seperator = oldSeparator;
 
             if (!string.IsNullOrEmpty(_groupByString))
             {
@@ -252,7 +255,7 @@ namespace HB.Framework.Database.SQL
         {
             _havingString = string.IsNullOrEmpty(sqlFilter) ? string.Empty : SqlFormat(sqlFilter, filterParams);
 
-            if (!string.IsNullOrEmpty(_havingString)) 
+            if (!string.IsNullOrEmpty(_havingString))
             {
                 _havingString = "HAVING " + _havingString;
             }
@@ -264,12 +267,12 @@ namespace HB.Framework.Database.SQL
         {
             if (predicate != null)
             {
-                string oldSeparator = expressionContext.Seperator;
-                expressionContext.Seperator = " ";
-                _havingString = predicate.ToStatement(expressionContext);
-                expressionContext.Seperator = oldSeparator;
+                string oldSeparator = _expressionContext.Seperator;
+                _expressionContext.Seperator = " ";
+                _havingString = predicate.ToStatement(_expressionContext);
+                _expressionContext.Seperator = oldSeparator;
 
-                if (!string.IsNullOrEmpty(_havingString)) 
+                if (!string.IsNullOrEmpty(_havingString))
                 {
                     _havingString = "HAVING " + _havingString;
                 }
@@ -300,14 +303,14 @@ namespace HB.Framework.Database.SQL
 
         public WhereExpression<T> OrderBy<TKey>(Expression<Func<T, TKey>> keySelector)
         {
-            string oldSeparator = expressionContext.Seperator;
-            expressionContext.Seperator = string.Empty;
+            string oldSeparator = _expressionContext.Seperator;
+            _expressionContext.Seperator = string.Empty;
 
             _orderByProperties.Clear();
 
-            string property = keySelector.ToStatement(expressionContext);
+            string property = keySelector.ToStatement(_expressionContext);
 
-            expressionContext.Seperator = oldSeparator;
+            _expressionContext.Seperator = oldSeparator;
 
             _orderByProperties.Add(property + " ASC");
 
@@ -318,14 +321,14 @@ namespace HB.Framework.Database.SQL
 
         public WhereExpression<T> OrderBy<TTarget, TKey>(Expression<Func<TTarget, TKey>> keySelector)
         {
-            string oldSeparator = expressionContext.Seperator;
-            expressionContext.Seperator = string.Empty;
+            string oldSeparator = _expressionContext.Seperator;
+            _expressionContext.Seperator = string.Empty;
 
             _orderByProperties.Clear();
 
-            string property = keySelector.ToStatement(expressionContext);
+            string property = keySelector.ToStatement(_expressionContext);
 
-            expressionContext.Seperator = oldSeparator;
+            _expressionContext.Seperator = oldSeparator;
 
             _orderByProperties.Add(property + " ASC");
 
@@ -337,12 +340,12 @@ namespace HB.Framework.Database.SQL
 
         public WhereExpression<T> ThenBy<TKey>(Expression<Func<T, TKey>> keySelector)
         {
-            string oldSeparator = expressionContext.Seperator;
-            expressionContext.Seperator = string.Empty;
+            string oldSeparator = _expressionContext.Seperator;
+            _expressionContext.Seperator = string.Empty;
 
-            string property = keySelector.ToStatement(expressionContext);
+            string property = keySelector.ToStatement(_expressionContext);
 
-            expressionContext.Seperator = oldSeparator;
+            _expressionContext.Seperator = oldSeparator;
 
             _orderByProperties.Add(property + " ASC");
 
@@ -353,13 +356,13 @@ namespace HB.Framework.Database.SQL
 
         public WhereExpression<T> OrderByDescending<TKey>(Expression<Func<T, TKey>> keySelector)
         {
-            string oldSeparator = expressionContext.Seperator;
-            expressionContext.Seperator = string.Empty;
+            string oldSeparator = _expressionContext.Seperator;
+            _expressionContext.Seperator = string.Empty;
 
             _orderByProperties.Clear();
-            string property = keySelector.ToStatement(expressionContext);
+            string property = keySelector.ToStatement(_expressionContext);
 
-            expressionContext.Seperator = oldSeparator;
+            _expressionContext.Seperator = oldSeparator;
 
             _orderByProperties.Add(property + " DESC");
             UpdateOrderByString();
@@ -368,12 +371,12 @@ namespace HB.Framework.Database.SQL
 
         public WhereExpression<T> ThenByDescending<TKey>(Expression<Func<T, TKey>> keySelector)
         {
-            string oldSeparator = expressionContext.Seperator;
-            expressionContext.Seperator = string.Empty;
+            string oldSeparator = _expressionContext.Seperator;
+            _expressionContext.Seperator = string.Empty;
 
-            string property = keySelector.ToStatement(expressionContext);
+            string property = keySelector.ToStatement(_expressionContext);
 
-            expressionContext.Seperator = oldSeparator;
+            _expressionContext.Seperator = oldSeparator;
 
             _orderByProperties.Add(property + " DESC");
             UpdateOrderByString();
@@ -442,7 +445,7 @@ namespace HB.Framework.Database.SQL
 
             string rows = _limitRows.HasValue ? string.Format(GlobalSettings.Culture, ",{0}", _limitRows.Value) : string.Empty;
 
-            _limitString = string.Format(GlobalSettings.Culture, "LIMIT {0}{1}", _limitSkip.Value, rows);
+            _limitString = string.Format(GlobalSettings.Culture, "LIMIT {0}{1}", _limitSkip!.Value, rows);
         }
 
         #endregion 
@@ -456,10 +459,10 @@ namespace HB.Framework.Database.SQL
                 return;
             }
 
-            string oldSeperator = expressionContext.Seperator;
-            expressionContext.Seperator = " ";
-            string newExpr = predicate.ToStatement(expressionContext);
-            expressionContext.Seperator = oldSeperator;
+            string oldSeperator = _expressionContext.Seperator;
+            _expressionContext.Seperator = " ";
+            string newExpr = predicate.ToStatement(_expressionContext);
+            _expressionContext.Seperator = oldSeperator;
 
             _whereString += string.IsNullOrEmpty(_whereString) ? "" : (" " + appendType + " ");
             _whereString += newExpr;

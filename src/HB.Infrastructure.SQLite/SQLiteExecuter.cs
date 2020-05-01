@@ -52,7 +52,7 @@ namespace HB.Infrastructure.SQLite
         /// <exception cref="DatabaseException"></exception>
         private static async Task<IDataReader> ExecuteCommandReaderAsync(SqliteConnection connection, bool isOwnedConnection, SqliteCommand command)
         {
-            SqliteDataReader reader = null;
+            SqliteDataReader? reader = null;
 
             try
             {
@@ -81,10 +81,7 @@ namespace HB.Infrastructure.SQLite
                     connection.Close();
                 }
 
-                if (reader != null)
-                {
-                    reader.Close();
-                }
+                reader?.Close();
 
                 if (ex is SqliteException sqliteException)
                 {
@@ -141,7 +138,7 @@ namespace HB.Infrastructure.SQLite
         /// <exception cref="DatabaseException"></exception>
         private static async Task<object> ExecuteCommandScalarAsync(SqliteConnection connection, bool isOwnedConnection, SqliteCommand command)
         {
-            object rtObj = null;
+            object rtObj;
 
             try
             {

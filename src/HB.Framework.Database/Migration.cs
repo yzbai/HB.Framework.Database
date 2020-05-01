@@ -1,4 +1,6 @@
-﻿using HB.Framework.Database.Properties;
+﻿#nullable enable
+
+using HB.Framework.Database.Properties;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -12,8 +14,6 @@ namespace HB.Framework.Database
         public string SqlStatement { get; set; }
 
         public string TargetSchema { get; set; }
-
-        public Migration() { }
 
         public Migration(string targetSchema, int oldVersion, int newVersion, string sql)
         {

@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿#nullable enable
+
+using System.Collections.Generic;
 using HB.Framework.Database.Entity;
 using HB.Framework.Database.Engine;
 
@@ -6,7 +8,7 @@ namespace HB.Framework.Database.SQL
 {
     internal class SQLExpressionVisitorContenxt
     {
-        private readonly IList<KeyValuePair<string, object>> parameters = new List<KeyValuePair<string, object>>();
+        private readonly IList<KeyValuePair<string, object>> _parameters = new List<KeyValuePair<string, object>>();
 
         public string Seperator { get; set; } = " ";
 
@@ -18,7 +20,7 @@ namespace HB.Framework.Database.SQL
 
         public bool PrefixFieldWithTableName { get; set; } = true;
 
-        public string OrderByStatementBySQLUtilIn { get; set; }
+        public string? OrderByStatementBySQLUtilIn { get; set; }
 
 
         public IDatabaseEngine DatabaesEngine { get; set; }
@@ -33,12 +35,12 @@ namespace HB.Framework.Database.SQL
 
         public void AddParameter(string key, object value)
         {
-            parameters.Add(new KeyValuePair<string, object>(key, value));
+            _parameters.Add(new KeyValuePair<string, object>(key, value));
         }
 
         public IList<KeyValuePair<string, object>> GetParameters()
         {
-            return parameters;
+            return _parameters;
         }
 
     }
