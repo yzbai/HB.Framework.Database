@@ -24,7 +24,7 @@ namespace HB.Infrastructure.MySQL
 
         private readonly Dictionary<string, string> _connectionStringDict = new Dictionary<string, string>();
 
-        public DatabaseSettings DatabaseSettings => _options.DatabaseSettings;
+        public DatabaseCommonSettings DatabaseSettings => _options.CommonSettings;
 
         public DatabaseEngineType EngineType => DatabaseEngineType.MySQL;
 
@@ -41,25 +41,25 @@ namespace HB.Infrastructure.MySQL
 
         private void SetConnectionStrings()
         {
-            foreach (DatabaseConnectionSettings schemaInfo in _options.Connections)
+            foreach (DatabaseConnectionSettings connection in _options.Connections)
             {
                 if (FirstDefaultDatabaseName.IsNullOrEmpty())
                 {
-                    FirstDefaultDatabaseName = schemaInfo.DatabaseName;
+                    FirstDefaultDatabaseName = connection.DatabaseName;
                 }
 
-                if (schemaInfo.IsMaster)
+                if (connection.IsMaster)
                 {
-                    _connectionStringDict[schemaInfo.DatabaseName + "_1"] = schemaInfo.ConnectionString;
+                    _connectionStringDict[connection.DatabaseName + "_1"] = connection.ConnectionString;
 
-                    if (!_connectionStringDict.ContainsKey(schemaInfo.DatabaseName + "_0"))
+                    if (!_connectionStringDict.ContainsKey(connection.DatabaseName + "_0"))
                     {
-                        _connectionStringDict[schemaInfo.DatabaseName + "_0"] = schemaInfo.ConnectionString;
+                        _connectionStringDict[connection.DatabaseName + "_0"] = connection.ConnectionString;
                     }
                 }
                 else
                 {
-                    _connectionStringDict[schemaInfo.DatabaseName + "_0"] = schemaInfo.ConnectionString;
+                    _connectionStringDict[connection.DatabaseName + "_0"] = connection.ConnectionString;
                 }
             }
         }

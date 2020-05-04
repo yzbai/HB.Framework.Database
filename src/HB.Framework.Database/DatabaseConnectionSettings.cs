@@ -1,18 +1,17 @@
 ﻿#nullable enable
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace HB.Framework.Database
 {
     public class DatabaseConnectionSettings
     {
-        public string DatabaseName { get; private set; }
-        public string ConnectionString { get; private set; }
-        public bool IsMaster { get; private set; } = true;
+        [DisallowNull, NotNull]
+        public string? DatabaseName { get; set; }
 
-        public DatabaseConnectionSettings(string databaseName, string connectionString, bool isMaster)
-        {
-            DatabaseName = databaseName;
-            ConnectionString = connectionString;
-            IsMaster = isMaster;
-        }
+        [DisallowNull, NotNull]
+        public string? ConnectionString { get; set; }
+
+        public bool IsMaster { get; set; } = true;
     }
 }

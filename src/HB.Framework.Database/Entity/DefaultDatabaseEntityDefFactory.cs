@@ -1,10 +1,8 @@
-﻿using System;
-using System.Collections.Concurrent;
+﻿using HB.Framework.Database.Engine;
+using System;
 using System.Collections.Generic;
-using System.Reflection;
-using HB.Framework.Database.Engine;
 using System.Linq;
-using System.IO;
+using System.Reflection;
 
 namespace HB.Framework.Database.Entity
 {
@@ -18,7 +16,7 @@ namespace HB.Framework.Database.Entity
         public const int DEFAULT_VARCHAR_LENGTH = 200;
 
         private readonly object _lockObj = new object();
-        private readonly DatabaseSettings _databaseSettings;
+        private readonly DatabaseCommonSettings _databaseSettings;
         private readonly IDatabaseEngine _databaseEngine;
         private readonly IDatabaseTypeConverterFactory _typeConverterFactory;
 
@@ -67,7 +65,10 @@ namespace HB.Framework.Database.Entity
 
                 fileConfiguredDict.TryGetValue(type.FullName, out EntityInfo fileConfigured);
 
-                EntityInfo entitySchema = new EntityInfo(type.FullName);
+                EntityInfo entitySchema = new EntityInfo
+                {
+                    EntityTypeFullName = type.FullName
+                };
 
                 if (attribute != null)
                 {
@@ -88,7 +89,7 @@ namespace HB.Framework.Database.Entity
                     }
                     else
                     {
-                        entitySchema.TableName = attribute.TableName;
+                        entitySchema.TableName = attribute.TableName!;
                     }
 
                     entitySchema.Description = attribute.Description;
@@ -226,7 +227,7 @@ namespace HB.Framework.Database.Entity
 
             //判断是否是主键
             IEnumerable<Attribute> atts1 = info.GetCustomAttributes(typeof(AutoIncrementPrimaryKeyAttribute), false).Select(o => (Attribute)o);
-            
+
             if (atts1.IsNotNullOrEmpty())
             {
                 propertyDef.IsTableProperty = true;
@@ -239,7 +240,7 @@ namespace HB.Framework.Database.Entity
             {
                 //判断是否外键
                 IEnumerable<Attribute> atts2 = info.GetCustomAttributes(typeof(ForeignKeyAttribute), false).Select(o => (Attribute)o);
-                
+
                 if (atts2.IsNotNullOrEmpty())
                 {
                     propertyDef.IsTableProperty = true;

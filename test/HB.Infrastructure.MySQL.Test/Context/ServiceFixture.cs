@@ -34,12 +34,14 @@ namespace HB.Framework.DatabaseTests
             {
                 services.AddMySQL(options =>
                 {
-                    options.DatabaseSettings.Version = 1;
+                    options.CommonSettings.Version = 1;
 
-                    options.Connections.Add(new DatabaseConnectionSettings(
-                        "test_db",
-                        "server=127.0.0.1;port=3306;user=admin;password=_admin;database=test_db;SslMode=None;DefaultCommandTimeout=3000;",
-                        true));
+                    options.Connections.Add(new DatabaseConnectionSettings
+                    {
+                        DatabaseName = "test_db",
+                        ConnectionString = "server=127.0.0.1;port=3306;user=admin;password=_admin;database=test_db;SslMode=None;DefaultCommandTimeout=3000;",
+                        IsMaster = true
+                    });
                 });
             }
 
@@ -47,12 +49,14 @@ namespace HB.Framework.DatabaseTests
             {
                 services.AddSQLite(options =>
                 {
-                    options.DatabaseSettings.Version = 1;
+                    options.CommonSettings.Version = 1;
 
-                    options.Connections.Add(new DatabaseConnectionSettings(
-                        "test.db",
-                        "Data Source=test.db",
-                        true));
+                    options.Connections.Add(new DatabaseConnectionSettings
+                    {
+                        DatabaseName = "test.db",
+                        ConnectionString = "Data Source=test.db",
+                        IsMaster = true
+                    });
                 });
             }
             return services.BuildServiceProvider();

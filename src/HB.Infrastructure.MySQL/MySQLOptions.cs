@@ -6,7 +6,7 @@ namespace HB.Infrastructure.MySQL
 {
     public class MySQLOptions : IOptions<MySQLOptions>
     {
-        public DatabaseSettings DatabaseSettings { get; set; } = new DatabaseSettings();
+        public DatabaseCommonSettings CommonSettings { get; set; } = new DatabaseCommonSettings();
 
         public IList<DatabaseConnectionSettings> Connections { get; } = new List<DatabaseConnectionSettings>();
 

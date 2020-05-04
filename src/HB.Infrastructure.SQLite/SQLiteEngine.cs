@@ -18,7 +18,7 @@ namespace HB.Infrastructure.SQLite
         private readonly SQLiteOptions _options;
         private readonly Dictionary<string, string> _connectionStringDict = new Dictionary<string, string>();
 
-        public DatabaseSettings DatabaseSettings => _options.DatabaseSettings;
+        public DatabaseCommonSettings DatabaseSettings => _options.CommonSettings;
 
         public DatabaseEngineType EngineType => DatabaseEngineType.SQLite;
 

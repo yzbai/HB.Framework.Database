@@ -24,7 +24,7 @@ namespace HB.Framework.Database
     /// </summary>
     internal class DefaultDatabase : IDatabase
     {
-        private readonly DatabaseSettings _databaseSettings;
+        private readonly DatabaseCommonSettings _databaseSettings;
         private readonly IDatabaseEngine _databaseEngine;
         private readonly IDatabaseEntityDefFactory _entityDefFactory;
         private readonly IDatabaseEntityMapper _modelMapper;

@@ -17,7 +17,7 @@ namespace HB.Framework.Database.Engine
     {
         #region 管理功能
 
-        DatabaseSettings DatabaseSettings { get; }
+        DatabaseCommonSettings DatabaseSettings { get; }
 
         DatabaseEngineType EngineType { get; }
 
