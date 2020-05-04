@@ -11,6 +11,8 @@ namespace HB.Framework.Database
     {
         private IDictionary? _data;
 
+        public override FrameworkExceptionType ExceptionType { get => FrameworkExceptionType.Database; }
+
         public DatabaseError Error { get; private set; }
 
         public string? EntityName { get; private set; }
