@@ -7,35 +7,24 @@ using System.Runtime.CompilerServices;
 
 namespace HB.Framework.Database
 {
-    public class DatabaseException : DbException
+    public class DatabaseException : FrameworkException
     {
         private IDictionary? _data;
 
         public DatabaseError Error { get; private set; }
 
-        public int InnerNumber { get; private set; }
-
-        public string? InnerSqlState { get; private set; }
-
         public string? EntityName { get; private set; }
 
         public string? Operation { get; private set; }
 
+        public int DbExceptionNumber { get; private set; }
+
+        public string? DbExceptionSqlState { get; private set; }
 
         public DatabaseException(Exception innerException, string entityName, string message, [CallerMemberName] string operation = "")
-            : base(message, innerException)
+            : this(message, innerException)
         {
-            if (innerException is DatabaseException databaseException)
-            {
-                Error = databaseException.Error;
-                InnerNumber = databaseException.InnerNumber;
-                InnerSqlState = databaseException.InnerSqlState;
-
-            }
-            else
-            {
-                Error = DatabaseError.InnerError;
-            }
+            
 
             Operation = operation;
             EntityName = entityName;
@@ -43,17 +32,17 @@ namespace HB.Framework.Database
         }
 
         public DatabaseException(DatabaseError error, string? entityName, string? message = null, Exception? innerException = null, [CallerMemberName] string? operation = "")
-            : base(message, innerException)
+            : this(message, innerException)
         {
             Error = error;
             Operation = operation;
             EntityName = entityName;
         }
 
-        public DatabaseException(int number, string? sqlState, string message, Exception? innerException = null) : base(message, innerException)
+        public DatabaseException(int dbExceptionNumber, string? dbExceptionSqlState, string? message, Exception? innerException = null) : this(message, innerException)
         {
-            InnerNumber = number;
-            InnerSqlState = sqlState;
+            DbExceptionNumber = dbExceptionNumber;
+            DbExceptionSqlState = dbExceptionSqlState;
             Error = DatabaseError.InnerError;
         }
 
@@ -67,8 +56,8 @@ namespace HB.Framework.Database
                 }
 
                 _data["DatabaseError"] = Error.ToString();
-                _data["InnerNumber"] = InnerNumber;
-                _data["InnerSqlState"] = InnerSqlState;
+                _data["InnerNumber"] = DbExceptionNumber;
+                _data["InnerSqlState"] = DbExceptionSqlState;
                 _data["EntityName"] = EntityName;
                 _data["Operation"] = Operation;
 
@@ -80,12 +69,23 @@ namespace HB.Framework.Database
         {
         }
 
-        public DatabaseException(string message) : base(message)
+        public DatabaseException(string? message) : base(message)
         {
         }
 
-        public DatabaseException(string message, Exception innerException) : base(message, innerException)
+        public DatabaseException(string? message, Exception? innerException) : base(message, innerException)
         {
+            if (innerException is DatabaseException databaseException)
+            {
+                Error = databaseException.Error;
+                DbExceptionNumber = databaseException.DbExceptionNumber;
+                DbExceptionSqlState = databaseException.DbExceptionSqlState;
+
+            }
+            else
+            {
+                Error = DatabaseError.InnerError;
+            }
         }
     }
 }

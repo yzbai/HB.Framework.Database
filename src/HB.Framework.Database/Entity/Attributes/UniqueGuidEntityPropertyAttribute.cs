@@ -7,6 +7,7 @@ namespace HB.Framework.Database.Entity
         public UniqueGuidEntityPropertyAttribute() : base()
         {
             Unique = true;
+            NotNull = true;
         }
     }
 }
