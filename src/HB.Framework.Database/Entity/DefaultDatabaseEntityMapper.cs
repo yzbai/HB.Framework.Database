@@ -75,6 +75,7 @@ namespace HB.Framework.Database.Entity
                     }
                 }
 
+                lst.Add(item);
                 //if (item != null && !item.Deleted)
                 //{
                 //    lst.Add(item);

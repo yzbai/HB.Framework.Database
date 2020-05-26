@@ -4,6 +4,7 @@ using HB.Framework.Database.Engine;
 using HB.Framework.Database.Entity;
 using HB.Framework.Database.Properties;
 using System;
+using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Text;
 
@@ -34,6 +35,11 @@ namespace HB.Framework.Database.SQL
 
         public SqlJoinType? JoinType { get; set; }
 
+        public IList<KeyValuePair<string, object>> GetParameters()
+        {
+            return _expressionContext.GetParameters();
+        }
+
         public override string ToString()
         {
             StringBuilder resultBuilder = WithFromString ? new StringBuilder(" FROM ") : new StringBuilder(" ");
@@ -47,7 +53,11 @@ namespace HB.Framework.Database.SQL
         internal FromExpression(IDatabaseEngine databaseEngine, IDatabaseEntityDefFactory entityDefFactory)
         {
             _entityDefFactory = entityDefFactory;
-            _expressionContext = new SQLExpressionVisitorContenxt(databaseEngine, entityDefFactory);
+            
+            _expressionContext = new SQLExpressionVisitorContenxt(databaseEngine, entityDefFactory)
+            {
+                ParamPlaceHolderPrefix = databaseEngine.ParameterizedChar + "f__"
+            };
         }
 
         public FromExpression<T> InnerJoin<TTarget>(Expression<Func<T, TTarget, bool>> joinExpr) where TTarget : DatabaseEntity, new()

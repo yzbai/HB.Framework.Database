@@ -190,16 +190,18 @@ namespace HB.Infrastructure.SQLite
         /// <returns></returns>
         public static string SafeDbStatement(string dbValueStatement)
         {
-            if (string.IsNullOrEmpty(dbValueStatement))
-            {
-                return dbValueStatement;
-            }
-            //TODO:增加对值的过滤，预防SQL注入
-            return dbValueStatement.ToString(GlobalSettings.Culture)
-                //.Replace("'", "''")
-                .Replace("--", "", GlobalSettings.Comparison)
-                .Replace("/*", "", GlobalSettings.Comparison)
-                .Replace("*/", "", GlobalSettings.Comparison);
+            //TODO: 安全防止注入
+            return dbValueStatement;
+            //if (string.IsNullOrEmpty(dbValueStatement))
+            //{
+            //    return dbValueStatement;
+            //}
+            ////TODO:增加对值的过滤，预防SQL注入
+            //return dbValueStatement.ToString(GlobalSettings.Culture)
+            //    //.Replace("'", "''")
+            //    .Replace("--", "", GlobalSettings.Comparison)
+            //    .Replace("/*", "", GlobalSettings.Comparison)
+            //    .Replace("*/", "", GlobalSettings.Comparison);
         }
     }
 }

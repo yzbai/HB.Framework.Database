@@ -110,7 +110,6 @@ namespace HB.Framework.Database.SQL
 
             if (operand == "AND" || operand == "OR")
             {
-
                 if (b.Left is MemberExpression m && m.Expression != null && m.Expression.NodeType == ExpressionType.Parameter)
                 {
                     left = new PartialSqlString(string.Format(GlobalSettings.Culture, "{0}={1}", VisitMemberAccess(m, context), context.DatabaesEngine.GetDbValueStatement(true, needQuoted: true)));
@@ -120,11 +119,10 @@ namespace HB.Framework.Database.SQL
                     left = Visit(b.Left, context);
                 }
 
-                m = (MemberExpression)b.Right;
 
-                if (m != null && m.Expression != null && m.Expression.NodeType == ExpressionType.Parameter)
+                if (b.Right is MemberExpression mm && mm.Expression != null && mm.Expression.NodeType == ExpressionType.Parameter)
                 {
-                    right = new PartialSqlString(string.Format(GlobalSettings.Culture, "{0}={1}", VisitMemberAccess(m, context), context.DatabaesEngine.GetDbValueStatement(true, needQuoted: true)));
+                    right = new PartialSqlString(string.Format(GlobalSettings.Culture, "{0}={1}", VisitMemberAccess(mm, context), context.DatabaesEngine.GetDbValueStatement(true, needQuoted: true)));
                 }
                 else
                 {

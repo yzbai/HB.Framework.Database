@@ -7,6 +7,7 @@ using HB.Framework.Database.SQL;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
@@ -65,12 +66,18 @@ namespace HB.Framework.Database
             if (_databaseSettings.AutomaticCreateTable)
             {
                 await AutoCreateTablesIfBrandNewAsync().ConfigureAwait(false);
+
+                Debug.WriteLine("AutoCreateFinished", GlobalSettings.DebugTag);
             }
 
             if (migrations != null && migrations.Any())
             {
                 await MigarateAsync(migrations).ConfigureAwait(false);
+
+                Debug.WriteLine("Migarate Finished", GlobalSettings.DebugTag);
             }
+
+            Debug.WriteLine("Database Initialize Finished", GlobalSettings.DebugTag);
         }
 
         /// <summary>

@@ -40,7 +40,7 @@ namespace XamarinSample
             services.AddSQLite(sqliteOptions => {
                 string dbFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "test.db");
 
-                sqliteOptions.DatabaseSettings.Version = 1;
+                sqliteOptions.CommonSettings.Version = 1;
 
                 sqliteOptions.Connections.Add(new DatabaseConnectionSettings
                 {
