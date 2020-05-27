@@ -35,9 +35,9 @@ namespace HB.Framework.Database
         {
             get
             {
-                if (_sysDict.TryGetValue(SystemInfoNames.Version, out string vlaue))
+                if (_sysDict.TryGetValue(SystemInfoNames.Version, out string value))
                 {
-                    return Convert.ToInt32(vlaue, GlobalSettings.Culture);
+                    return value.ToInt32();
                 }
 
                 throw new KeyNotFoundException(Resources.VersionNotFoundInSystemInfoTable);
