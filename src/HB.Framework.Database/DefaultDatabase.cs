@@ -34,6 +34,14 @@ namespace HB.Framework.Database
 
         //public IDatabaseEngine DatabaseEngine { get { return _databaseEngine; } }
 
+        /// <summary>
+        /// ctor
+        /// </summary>
+        /// <param name="databaseEngine"></param>
+        /// <param name="modelDefFactory"></param>
+        /// <param name="modelMapper"></param>
+        /// <param name="sqlBuilder"></param>
+        /// <exception cref="System.ArgumentException"></exception>
         public DefaultDatabase(
             IDatabaseEngine databaseEngine,
             IDatabaseEntityDefFactory modelDefFactory,
@@ -60,7 +68,7 @@ namespace HB.Framework.Database
         /// </summary>
         /// <param name="migrations"></param>
         /// <returns></returns>
-        /// <exception cref="DatabaseException"></exception>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
         public async Task InitializeAsync(IEnumerable<Migration>? migrations = null)
         {
             if (_databaseSettings.AutomaticCreateTable)
@@ -84,41 +92,43 @@ namespace HB.Framework.Database
         /// AutoCreateTablesIfBrandNewAsync
         /// </summary>
         /// <returns></returns>
-        /// <exception cref="DatabaseException"></exception>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
         private async Task AutoCreateTablesIfBrandNewAsync()
         {
-            await _databaseEngine.GetDatabaseNames().ForEachAsync(async databaseName =>
-            {
-
-                TransactionContext transactionContext = await BeginTransactionAsync(databaseName, IsolationLevel.Serializable).ConfigureAwait(false);
-
-                try
+            await _databaseEngine.GetDatabaseNames().ForEachAsync(
+                async databaseName =>
                 {
-                    SystemInfo sys = await GetSystemInfoAsync(databaseName, transactionContext.Transaction).ConfigureAwait(false);
-                    //表明是新数据库
-                    if (sys.Version == 0)
+                    TransactionContext transactionContext = await BeginTransactionAsync(databaseName, IsolationLevel.Serializable).ConfigureAwait(false);
+
+                    try
                     {
-                        if (_databaseSettings.Version != 1)
+                        SystemInfo sys = await GetSystemInfoAsync(databaseName, transactionContext.Transaction).ConfigureAwait(false);
+                        //表明是新数据库
+                        if (sys.Version == 0)
                         {
-                            await RollbackAsync(transactionContext).ConfigureAwait(false);
-                            throw new DatabaseException(DatabaseError.TableCreateError, "", $"Database:{databaseName} does not exists, database Version must be 1");
+                            if (_databaseSettings.Version != 1)
+                            {
+                                await RollbackAsync(transactionContext).ConfigureAwait(false);
+                                throw new DatabaseException(DatabaseError.TableCreateError,
+                                                            "",
+                                                            $"Database:{databaseName} does not exists, database Version must be 1");
+                            }
+
+                            await CreateTablesByDatabaseAsync(databaseName, transactionContext).ConfigureAwait(false);
+
+                            await UpdateSystemVersionAsync(databaseName, 1, transactionContext.Transaction).ConfigureAwait(false);
                         }
 
-                        await CreateTablesByDatabaseAsync(databaseName, transactionContext).ConfigureAwait(false);
-
-                        await UpdateSystemVersionAsync(databaseName, 1, transactionContext.Transaction).ConfigureAwait(false);
+                        await CommitAsync(transactionContext).ConfigureAwait(false);
+                    }
+                    catch
+                    {
+                        await RollbackAsync(transactionContext).ConfigureAwait(false);
+                        //throw new DatabaseException(DatabaseError.TableCreateError, "", $"Auto Create Table Failed, Database:{databaseName}, Reason:{ex.Message}", ex);
+                        throw;
                     }
 
-                    await CommitAsync(transactionContext).ConfigureAwait(false);
-                }
-                catch
-                {
-                    await RollbackAsync(transactionContext).ConfigureAwait(false);
-                    //throw new DatabaseException(DatabaseError.TableCreateError, "", $"Auto Create Table Failed, Database:{databaseName}, Reason:{ex.Message}", ex);
-                    throw;
-                }
-
-            }).ConfigureAwait(false);
+                }).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -127,7 +137,7 @@ namespace HB.Framework.Database
         /// <param name="def"></param>
         /// <param name="transContext"></param>
         /// <returns></returns>
-        /// <exception cref="DatabaseException"></exception>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
         private Task<int> CreateTableAsync(DatabaseEntityDef def, TransactionContext transContext)
         {
             if (!def.IsTableModel)
@@ -146,6 +156,7 @@ namespace HB.Framework.Database
         /// <param name="databaseName"></param>
         /// <param name="transactionContext"></param>
         /// <returns></returns>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
         private async Task CreateTablesByDatabaseAsync(string databaseName, TransactionContext transactionContext)
         {
             await _entityDefFactory
@@ -158,6 +169,7 @@ namespace HB.Framework.Database
         /// Migarate
         /// </summary>
         /// <param name="migrations"></param>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
         private async Task MigarateAsync(IEnumerable<Migration> migrations)
         {
             if (migrations != null && migrations.Any(m => m.NewVersion <= m.OldVersion))
@@ -339,6 +351,15 @@ namespace HB.Framework.Database
 
         #region 单表查询, Select, From, Where
 
+        /// <summary>
+        /// ScalarAsync
+        /// </summary>
+        /// <param name="selectCondition"></param>
+        /// <param name="fromCondition"></param>
+        /// <param name="whereCondition"></param>
+        /// <param name="transContext"></param>
+        /// <returns></returns>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
         public async Task<T?> ScalarAsync<T>(SelectExpression<T>? selectCondition, FromExpression<T>? fromCondition, WhereExpression<T>? whereCondition, TransactionContext? transContext)
             where T : DatabaseEntity, new()
         {
@@ -361,6 +382,15 @@ namespace HB.Framework.Database
             return lst.ElementAt(0);
         }
 
+        /// <summary>
+        /// RetrieveAsync
+        /// </summary>
+        /// <param name="selectCondition"></param>
+        /// <param name="fromCondition"></param>
+        /// <param name="whereCondition"></param>
+        /// <param name="transContext"></param>
+        /// <returns></returns>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
         public async Task<IEnumerable<TSelect>> RetrieveAsync<TSelect, TFrom, TWhere>(SelectExpression<TSelect>? selectCondition, FromExpression<TFrom>? fromCondition, WhereExpression<TWhere>? whereCondition, TransactionContext? transContext = null)
             where TSelect : DatabaseEntity, new()
             where TFrom : DatabaseEntity, new()
@@ -414,6 +444,15 @@ namespace HB.Framework.Database
         }
 
 
+        /// <summary>
+        /// RetrieveAsync
+        /// </summary>
+        /// <param name="selectCondition"></param>
+        /// <param name="fromCondition"></param>
+        /// <param name="whereCondition"></param>
+        /// <param name="transContext"></param>
+        /// <returns></returns>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
         public async Task<IEnumerable<T>> RetrieveAsync<T>(SelectExpression<T>? selectCondition, FromExpression<T>? fromCondition, WhereExpression<T>? whereCondition, TransactionContext? transContext)
             where T : DatabaseEntity, new()
         {
@@ -484,6 +523,15 @@ namespace HB.Framework.Database
             return RetrieveAsync<T>(selectCondition, fromCondition, whereCondition, transContext);
         }
 
+        /// <summary>
+        /// CountAsync
+        /// </summary>
+        /// <param name="selectCondition"></param>
+        /// <param name="fromCondition"></param>
+        /// <param name="whereCondition"></param>
+        /// <param name="transContext"></param>
+        /// <returns></returns>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
         public async Task<long> CountAsync<T>(SelectExpression<T>? selectCondition, FromExpression<T>? fromCondition, WhereExpression<T>? whereCondition, TransactionContext? transContext)
             where T : DatabaseEntity, new()
         {
@@ -529,12 +577,28 @@ namespace HB.Framework.Database
 
         #region 单表查询, From, Where
 
+        /// <summary>
+        /// ScalarAsync
+        /// </summary>
+        /// <param name="fromCondition"></param>
+        /// <param name="whereCondition"></param>
+        /// <param name="transContext"></param>
+        /// <returns></returns>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
         public Task<T?> ScalarAsync<T>(FromExpression<T>? fromCondition, WhereExpression<T>? whereCondition, TransactionContext? transContext)
             where T : DatabaseEntity, new()
         {
             return ScalarAsync(null, fromCondition, whereCondition, transContext);
         }
 
+        /// <summary>
+        /// RetrieveAsync
+        /// </summary>
+        /// <param name="fromCondition"></param>
+        /// <param name="whereCondition"></param>
+        /// <param name="transContext"></param>
+        /// <returns></returns>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
         public Task<IEnumerable<T>> RetrieveAsync<T>(FromExpression<T>? fromCondition, WhereExpression<T>? whereCondition, TransactionContext? transContext)
             where T : DatabaseEntity, new()
         {
@@ -547,6 +611,14 @@ namespace HB.Framework.Database
             return PageAsync(null, fromCondition, whereCondition, pageNumber, perPageCount, transContext);
         }
 
+        /// <summary>
+        /// CountAsync
+        /// </summary>
+        /// <param name="fromCondition"></param>
+        /// <param name="whereCondition"></param>
+        /// <param name="transContext"></param>
+        /// <returns></returns>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
         public Task<long> CountAsync<T>(FromExpression<T>? fromCondition, WhereExpression<T>? whereCondition, TransactionContext? transContext)
             where T : DatabaseEntity, new()
         {
@@ -563,12 +635,26 @@ namespace HB.Framework.Database
             return RetrieveAsync<T>(null, null, null, transContext);
         }
 
+        /// <summary>
+        /// ScalarAsync
+        /// </summary>
+        /// <param name="whereCondition"></param>
+        /// <param name="transContext"></param>
+        /// <returns></returns>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
         public Task<T?> ScalarAsync<T>(WhereExpression<T>? whereCondition, TransactionContext? transContext)
             where T : DatabaseEntity, new()
         {
             return ScalarAsync(null, null, whereCondition, transContext);
         }
 
+        /// <summary>
+        /// RetrieveAsync
+        /// </summary>
+        /// <param name="whereCondition"></param>
+        /// <param name="transContext"></param>
+        /// <returns></returns>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
         public Task<IEnumerable<T>> RetrieveAsync<T>(WhereExpression<T>? whereCondition, TransactionContext? transContext)
             where T : DatabaseEntity, new()
         {
@@ -587,6 +673,13 @@ namespace HB.Framework.Database
             return PageAsync<T>(null, null, null, pageNumber, perPageCount, transContext);
         }
 
+        /// <summary>
+        /// CountAsync
+        /// </summary>
+        /// <param name="condition"></param>
+        /// <param name="transContext"></param>
+        /// <returns></returns>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
         public Task<long> CountAsync<T>(WhereExpression<T>? condition, TransactionContext? transContext)
             where T : DatabaseEntity, new()
         {
@@ -610,6 +703,13 @@ namespace HB.Framework.Database
         }
 
         //public Task<T> RetrieveScalaAsyncr<T>(Expression<Func<T, bool>> whereExpr, DatabaseTransactionContext transContext = false) where T : DatabaseEntity, new();
+        /// <summary>
+        /// ScalarAsync
+        /// </summary>
+        /// <param name="whereExpr"></param>
+        /// <param name="transContext"></param>
+        /// <returns></returns>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
         public Task<T?> ScalarAsync<T>(Expression<Func<T, bool>> whereExpr, TransactionContext? transContext) where T : DatabaseEntity, new()
         {
             WhereExpression<T> whereCondition = Where<T>();
@@ -618,6 +718,13 @@ namespace HB.Framework.Database
             return ScalarAsync(null, null, whereCondition, transContext);
         }
 
+        /// <summary>
+        /// RetrieveAsync
+        /// </summary>
+        /// <param name="whereExpr"></param>
+        /// <param name="transContext"></param>
+        /// <returns></returns>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
         public Task<IEnumerable<T>> RetrieveAsync<T>(Expression<Func<T, bool>> whereExpr, TransactionContext? transContext)
             where T : DatabaseEntity, new()
         {
@@ -635,6 +742,13 @@ namespace HB.Framework.Database
             return PageAsync(null, null, whereCondition, pageNumber, perPageCount, transContext);
         }
 
+        /// <summary>
+        /// CountAsync
+        /// </summary>
+        /// <param name="whereExpr"></param>
+        /// <param name="transContext"></param>
+        /// <returns></returns>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
         public Task<long> CountAsync<T>(Expression<Func<T, bool>> whereExpr, TransactionContext? transContext)
             where T : DatabaseEntity, new()
         {
@@ -648,6 +762,14 @@ namespace HB.Framework.Database
 
         #region 双表查询
 
+        /// <summary>
+        /// RetrieveAsync
+        /// </summary>
+        /// <param name="fromCondition"></param>
+        /// <param name="whereCondition"></param>
+        /// <param name="transContext"></param>
+        /// <returns></returns>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
         public async Task<IEnumerable<Tuple<TSource, TTarget?>>> RetrieveAsync<TSource, TTarget>(FromExpression<TSource> fromCondition, WhereExpression<TSource>? whereCondition, TransactionContext? transContext)
             where TSource : DatabaseEntity, new()
             where TTarget : DatabaseEntity, new()
@@ -718,6 +840,14 @@ namespace HB.Framework.Database
             return RetrieveAsync<TSource, TTarget>(fromCondition, whereCondition, transContext);
         }
 
+        /// <summary>
+        /// ScalarAsync
+        /// </summary>
+        /// <param name="fromCondition"></param>
+        /// <param name="whereCondition"></param>
+        /// <param name="transContext"></param>
+        /// <returns></returns>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
         public async Task<Tuple<TSource, TTarget?>?> ScalarAsync<TSource, TTarget>(FromExpression<TSource> fromCondition, WhereExpression<TSource>? whereCondition, TransactionContext? transContext)
             where TSource : DatabaseEntity, new()
             where TTarget : DatabaseEntity, new()
@@ -745,6 +875,14 @@ namespace HB.Framework.Database
 
         #region 三表查询
 
+        /// <summary>
+        /// RetrieveAsync
+        /// </summary>
+        /// <param name="fromCondition"></param>
+        /// <param name="whereCondition"></param>
+        /// <param name="transContext"></param>
+        /// <returns></returns>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
         public async Task<IEnumerable<Tuple<TSource, TTarget1?, TTarget2?>>> RetrieveAsync<TSource, TTarget1, TTarget2>(FromExpression<TSource> fromCondition, WhereExpression<TSource>? whereCondition, TransactionContext? transContext)
             where TSource : DatabaseEntity, new()
             where TTarget1 : DatabaseEntity, new()
@@ -815,6 +953,14 @@ namespace HB.Framework.Database
             return RetrieveAsync<TSource, TTarget1, TTarget2>(fromCondition, whereCondition, transContext);
         }
 
+        /// <summary>
+        /// ScalarAsync
+        /// </summary>
+        /// <param name="fromCondition"></param>
+        /// <param name="whereCondition"></param>
+        /// <param name="transContext"></param>
+        /// <returns></returns>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
         public async Task<Tuple<TSource, TTarget1?, TTarget2?>?> ScalarAsync<TSource, TTarget1, TTarget2>(FromExpression<TSource> fromCondition, WhereExpression<TSource>? whereCondition, TransactionContext? transContext)
             where TSource : DatabaseEntity, new()
             where TTarget1 : DatabaseEntity, new()
@@ -846,9 +992,11 @@ namespace HB.Framework.Database
         /// <summary>
         /// 增加,并且item被重新赋值
         /// </summary>
+        /// <exception cref="HB.Framework.Common.ValidateErrorException"></exception>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
         public async Task AddAsync<T>(T item, TransactionContext? transContext) where T : DatabaseEntity, new()
         {
-            ThrowIf.NullOrNotValid(item, nameof(item));
+            ThrowIf.NotValid(item);
 
             DatabaseEntityDef entityDef = _entityDefFactory.GetDef<T>();
 
@@ -884,9 +1032,11 @@ namespace HB.Framework.Database
         /// <summary>
         /// 删除, Version控制
         /// </summary>
+        /// <exception cref="HB.Framework.Common.ValidateErrorException"></exception>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
         public async Task DeleteAsync<T>(T item, TransactionContext? transContext) where T : DatabaseEntity, new()
         {
-            ThrowIf.NullOrNotValid(item, nameof(item));
+            ThrowIf.NotValid(item);
 
             DatabaseEntityDef entityDef = _entityDefFactory.GetDef<T>();
 
@@ -931,9 +1081,11 @@ namespace HB.Framework.Database
         ///  修改，建议每次修改前先select，并放置在一个事务中。
         ///  版本控制，如果item中Version未赋值，会无法更改
         /// </summary>
+        /// <exception cref="HB.Framework.Common.ValidateErrorException"></exception>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
         public async Task UpdateAsync<T>(T item, TransactionContext? transContext) where T : DatabaseEntity, new()
         {
-            ThrowIf.NullOrNotValid(item, nameof(item));
+            ThrowIf.NotValid(item);
 
             DatabaseEntityDef entityDef = _entityDefFactory.GetDef<T>();
 
@@ -984,9 +1136,17 @@ namespace HB.Framework.Database
 
         #region 批量更改(Write)
 
+        /// <summary>
+        /// BatchAddAsync
+        /// </summary>
+        /// <param name="items"></param>
+        /// <param name="transContext"></param>
+        /// <returns></returns>
+        /// <exception cref="HB.Framework.Common.ValidateErrorException"></exception>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
         public async Task<IEnumerable<long>> BatchAddAsync<T>(IEnumerable<T> items, TransactionContext transContext) where T : DatabaseEntity, new()
         {
-            ThrowIf.NullOrNotValid(items, nameof(items));
+            ThrowIf.NotValid(items);
 
             if (!items.Any())
             {
@@ -1054,9 +1214,11 @@ namespace HB.Framework.Database
         /// </summary>
         /// <param name="items"></param>
         /// <returns></returns>
+        /// <exception cref="HB.Framework.Common.ValidateErrorException"></exception>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
         public async Task BatchUpdateAsync<T>(IEnumerable<T> items, TransactionContext transContext) where T : DatabaseEntity, new()
         {
-            ThrowIf.NullOrNotValid(items, nameof(items));
+            ThrowIf.NotValid(items);
 
             if (!items.Any())
             {
@@ -1115,9 +1277,18 @@ namespace HB.Framework.Database
             }
         }
 
+        /// <summary>
+        /// BatchDeleteAsync
+        /// </summary>
+        /// <param name="items"></param>
+        /// <param name="transContext"></param>
+        /// <returns></returns>
+        /// <exception cref="HB.Framework.Common.ValidateErrorException"></exception>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
+        /// <exception cref="IndexOutOfRangeException">Ignore.</exception>
         public async Task BatchDeleteAsync<T>(IEnumerable<T> items, TransactionContext transContext) where T : DatabaseEntity, new()
         {
-            ThrowIf.NullOrNotValid(items, nameof(items));
+            ThrowIf.NotValid(items);
 
             if (!items.Any())
             {
@@ -1189,6 +1360,12 @@ namespace HB.Framework.Database
             return new TransactionContext(dbTransaction, TransactionStatus.InTransaction);
         }
 
+        /// <summary>
+        /// BeginTransactionAsync
+        /// </summary>
+        /// <param name="isolationLevel"></param>
+        /// <returns></returns>
+        /// <exception cref="HB.Framework.Database.DatabaseException">Ignore.</exception>
         public Task<TransactionContext> BeginTransactionAsync<T>(IsolationLevel isolationLevel) where T : DatabaseEntity
         {
             DatabaseEntityDef entityDef = _entityDefFactory.GetDef<T>();
@@ -1204,12 +1381,13 @@ namespace HB.Framework.Database
         /// <summary>
         /// 提交事务
         /// </summary>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
         public async Task CommitAsync(TransactionContext context)
         {
-            if (context == null || context.Transaction == null)
-            {
-                throw new ArgumentNullException(nameof(context));
-            }
+            //if (context == null || context.Transaction == null)
+            //{
+            //    throw new ArgumentNullException(nameof(context));
+            //}
 
             if (context.Status == TransactionStatus.Commited)
             {
@@ -1247,12 +1425,13 @@ namespace HB.Framework.Database
         /// <summary>
         /// 回滚事务
         /// </summary>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
         public async Task RollbackAsync(TransactionContext context)
         {
-            if (context == null || context.Transaction == null)
-            {
-                throw new ArgumentNullException(nameof(context));
-            }
+            //if (context == null || context.Transaction == null)
+            //{
+            //    throw new ArgumentNullException(nameof(context));
+            //}
 
             if (context.Status == TransactionStatus.Rollbacked)
             {

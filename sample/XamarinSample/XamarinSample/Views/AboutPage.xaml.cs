@@ -23,7 +23,7 @@ namespace XamarinSample.Views
         {
             IList<PublisherEntity> publisherEntities = Mocker.GetPublishers();
 
-            TransactionContext transactionContext = await App.Database.BeginTransactionAsync<PublisherEntity>();
+            TransactionContext transactionContext = await App.Database.BeginTransactionAsync<PublisherEntity>( System.Data.IsolationLevel.ReadCommitted);
 
             try
             {

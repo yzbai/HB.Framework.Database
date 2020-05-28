@@ -53,13 +53,14 @@ namespace HB.Framework.Database.SQL
         internal FromExpression(IDatabaseEngine databaseEngine, IDatabaseEntityDefFactory entityDefFactory)
         {
             _entityDefFactory = entityDefFactory;
-            
+
             _expressionContext = new SQLExpressionVisitorContenxt(databaseEngine, entityDefFactory)
             {
                 ParamPlaceHolderPrefix = databaseEngine.ParameterizedChar + "f__"
             };
         }
 
+        /// <exception cref="System.ArgumentException"></exception>
         public FromExpression<T> InnerJoin<TTarget>(Expression<Func<T, TTarget, bool>> joinExpr) where TTarget : DatabaseEntity, new()
         {
             if (JoinType != null && JoinType != SqlJoinType.INNER)
@@ -72,6 +73,7 @@ namespace HB.Framework.Database.SQL
             return InternalJoin<TTarget>("INNER JOIN", joinExpr);
         }
 
+        /// <exception cref="System.ArgumentException"></exception>
         public FromExpression<T> InnerJoin<TLeft, TRight>(Expression<Func<TLeft, TRight, bool>> joinExpr)
             where TLeft : DatabaseEntity, new()
             where TRight : DatabaseEntity, new()
@@ -86,6 +88,7 @@ namespace HB.Framework.Database.SQL
             return InternalJoin<TRight>("INNER JOIN", joinExpr);
         }
 
+        /// <exception cref="System.ArgumentException"></exception>
         public FromExpression<T> LeftJoin<TTarget>(Expression<Func<T, TTarget, bool>> joinExpr) where TTarget : DatabaseEntity, new()
         {
             if (JoinType != null && JoinType != SqlJoinType.LEFT)
@@ -98,6 +101,7 @@ namespace HB.Framework.Database.SQL
             return InternalJoin<TTarget>("LEFT JOIN", joinExpr);
         }
 
+        /// <exception cref="System.ArgumentException"></exception>
         public FromExpression<T> LeftJoin<TLeft, TRight>(Expression<Func<TLeft, TRight, bool>> joinExpr)
             where TLeft : DatabaseEntity, new()
             where TRight : DatabaseEntity, new()
@@ -112,6 +116,7 @@ namespace HB.Framework.Database.SQL
             return InternalJoin<TRight>("LEFT JOIN", joinExpr);
         }
 
+        /// <exception cref="System.ArgumentException"></exception>
         public FromExpression<T> RightJoin<TTarget>(Expression<Func<T, TTarget, bool>> joinExpr) where TTarget : DatabaseEntity, new()
         {
             if (JoinType != null && JoinType != SqlJoinType.RIGHT)
@@ -124,6 +129,7 @@ namespace HB.Framework.Database.SQL
             return InternalJoin<TTarget>("RIGHT JOIN", joinExpr);
         }
 
+        /// <exception cref="System.ArgumentException"></exception>
         public FromExpression<T> RightJoin<TLeft, TRight>(Expression<Func<TLeft, TRight, bool>> joinExpr)
             where TLeft : DatabaseEntity, new()
             where TRight : DatabaseEntity, new()
@@ -138,6 +144,7 @@ namespace HB.Framework.Database.SQL
             return InternalJoin<TRight>("RIGHT JOIN", joinExpr);
         }
 
+        /// <exception cref="System.ArgumentException"></exception>
         public FromExpression<T> FullJoin<TTarget>(Expression<Func<T, TTarget, bool>> joinExpr) where TTarget : DatabaseEntity, new()
         {
             if (JoinType != null && JoinType != SqlJoinType.FULL)
@@ -150,6 +157,7 @@ namespace HB.Framework.Database.SQL
             return InternalJoin<TTarget>("FULL JOIN", joinExpr);
         }
 
+        /// <exception cref="System.ArgumentException"></exception>
         public FromExpression<T> FullJoin<TLeft, TRight>(Expression<Func<TLeft, TRight, bool>> joinExpr)
             where TLeft : DatabaseEntity, new()
             where TRight : DatabaseEntity, new()
@@ -164,6 +172,7 @@ namespace HB.Framework.Database.SQL
             return InternalJoin<TRight>("FULL JOIN", joinExpr);
         }
 
+        /// <exception cref="System.ArgumentException"></exception>
         public FromExpression<T> CrossJoin<TTarget>(Expression<Func<T, TTarget, bool>> joinExpr) where TTarget : DatabaseEntity, new()
         {
             if (JoinType != null && JoinType != SqlJoinType.CROSS)
@@ -176,6 +185,7 @@ namespace HB.Framework.Database.SQL
             return InternalJoin<TTarget>("CROSS JOIN", joinExpr);
         }
 
+        /// <exception cref="System.ArgumentException"></exception>
         public FromExpression<T> CrossJoin<TLeft, TRight>(Expression<Func<TLeft, TRight, bool>> joinExpr)
             where TLeft : DatabaseEntity, new()
             where TRight : DatabaseEntity, new()

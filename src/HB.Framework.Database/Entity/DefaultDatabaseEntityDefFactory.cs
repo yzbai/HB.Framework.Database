@@ -155,6 +155,13 @@ namespace HB.Framework.Database.Entity
             return _defDict[entityType];
         }
 
+        /// <summary>
+        /// CreateEntityDef
+        /// </summary>
+        /// <param name="entityType"></param>
+        /// <returns></returns>
+        /// <exception cref="TypeLoadException">Ignore.</exception>
+        /// <exception cref="InvalidOperationException">Ignore.</exception>
         private DatabaseEntityDef CreateEntityDef(Type entityType)
         {
             DatabaseEntityDef entityDef = new DatabaseEntityDef(entityType);
@@ -181,7 +188,7 @@ namespace HB.Framework.Database.Entity
 
             foreach (PropertyInfo info in entityType.GetTypeInfo().GetProperties())
             {
-                IEnumerable<Attribute> atts2 = info.GetCustomAttributes(typeof(EntityPropertyIgnoreAttribute), false).Select<object, Attribute>(o => (Attribute)o);
+                IEnumerable<Attribute> atts2 = info.GetCustomAttributes(typeof(EntityPropertyIgnoreAttribute), false).Select(o => (Attribute)o);
 
                 if (atts2.IsNullOrEmpty())
                 {
@@ -198,6 +205,14 @@ namespace HB.Framework.Database.Entity
             return entityDef;
         }
 
+        /// <summary>
+        /// CreatePropertyDef
+        /// </summary>
+        /// <param name="entityDef"></param>
+        /// <param name="info"></param>
+        /// <returns></returns>
+        /// <exception cref="TypeLoadException">Ignore.</exception>
+        /// <exception cref="InvalidOperationException">Ignore.</exception>
         private DatabaseEntityPropertyDef CreatePropertyDef(DatabaseEntityDef entityDef, PropertyInfo info)
         {
             DatabaseEntityPropertyDef propertyDef = new DatabaseEntityPropertyDef(entityDef, info);

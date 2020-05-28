@@ -25,6 +25,12 @@ namespace HB.Framework.DatabaseTests
                 _ => null
             };
 
+        /// <summary>
+        /// ctor
+        /// </summary>
+        /// <param name="testOutputHelper"></param>
+        /// <param name="serviceFixture"></param>
+        /// <exception cref="DatabaseException">Ignore.</exception>
         public BasicAsyncTest(ITestOutputHelper testOutputHelper, ServiceFixture serviceFixture)
         {
             _output = testOutputHelper;
@@ -36,6 +42,13 @@ namespace HB.Framework.DatabaseTests
             _sqlite.InitializeAsync();
         }
 
+        /// <summary>
+        /// Test_1_Batch_Add_PublisherEntityAsync
+        /// </summary>
+        /// <param name="databaseType"></param>
+        /// <returns></returns>
+        /// <exception cref="DatabaseException">Ignore.</exception>
+        /// <exception cref="Exception">Ignore.</exception>
         [Theory]
         [InlineData("MySQL")]
         [InlineData("SQLite")]
@@ -61,6 +74,12 @@ namespace HB.Framework.DatabaseTests
             }
         }
 
+        /// <summary>
+        /// Test_2_Batch_Update_PublisherEntityAsync
+        /// </summary>
+        /// <param name="databaseType"></param>
+        /// <returns></returns>
+        /// <exception cref="Exception">Ignore.</exception>
         [Theory]
         [InlineData("MySQL")]
         [InlineData("SQLite")]
@@ -101,6 +120,13 @@ namespace HB.Framework.DatabaseTests
             }
         }
 
+        /// <summary>
+        /// Test_3_Batch_Delete_PublisherEntityAsync
+        /// </summary>
+        /// <param name="databaseType"></param>
+        /// <returns></returns>
+        /// <exception cref="DatabaseException">Ignore.</exception>
+        /// <exception cref="Exception">Ignore.</exception>
         [Theory]
         [InlineData("MySQL")]
         [InlineData("SQLite")]
@@ -129,6 +155,13 @@ namespace HB.Framework.DatabaseTests
             }
         }
 
+        /// <summary>
+        /// Test_4_Add_PublisherEntityAsync
+        /// </summary>
+        /// <param name="databaseType"></param>
+        /// <returns></returns>
+        /// <exception cref="DatabaseException">Ignore.</exception>
+        /// <exception cref="Exception">Ignore.</exception>
         [Theory]
         [InlineData("MySQL")]
         [InlineData("SQLite")]
@@ -162,6 +195,13 @@ namespace HB.Framework.DatabaseTests
             }
         }
 
+        /// <summary>
+        /// Test_5_Update_PublisherEntityAsync
+        /// </summary>
+        /// <param name="databaseType"></param>
+        /// <returns></returns>
+        /// <exception cref="DatabaseException">Ignore.</exception>
+        /// <exception cref="Exception">Ignore.</exception>
         [Theory]
         [InlineData("MySQL")]
         [InlineData("SQLite")]
@@ -202,6 +242,13 @@ namespace HB.Framework.DatabaseTests
             }
         }
 
+        /// <summary>
+        /// Test_6_Delete_PublisherEntityAsync
+        /// </summary>
+        /// <param name="databaseType"></param>
+        /// <returns></returns>
+        /// <exception cref="DatabaseException">Ignore.</exception>
+        /// <exception cref="Exception">Ignore.</exception>
         [Theory]
         [InlineData("MySQL")]
         [InlineData("SQLite")]

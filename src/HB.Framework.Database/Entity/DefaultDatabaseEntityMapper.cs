@@ -26,6 +26,7 @@ namespace HB.Framework.Database.Entity
         /// <param name="reader"></param>
         /// <returns></returns>
         /// <exception cref="IndexOutOfRangeException">Ignore.</exception>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
         public IList<T> ToList<T>(IDataReader reader)
             where T : DatabaseEntity, new()
         {
@@ -91,6 +92,7 @@ namespace HB.Framework.Database.Entity
         /// <param name="reader"></param>
         /// <returns></returns>
         /// <exception cref="IndexOutOfRangeException">Ignore.</exception>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
         public IList<Tuple<TSource, TTarget?>> ToList<TSource, TTarget>(IDataReader reader)
             where TSource : DatabaseEntity, new()
             where TTarget : DatabaseEntity, new()
@@ -131,7 +133,7 @@ namespace HB.Framework.Database.Entity
                 {
                     DatabaseEntityPropertyDef pDef = definition1.GetProperty(propertyNames1[i])
                         ?? throw new DatabaseException($"Lack DatabaseEntityPropertyDef of {propertyNames1[i]}.");
-                    
+
                     object fieldValue = reader[j];
 
                     if (pDef.PropertyName == "Id" && fieldValue == DBNull.Value)
@@ -159,7 +161,7 @@ namespace HB.Framework.Database.Entity
                 {
                     DatabaseEntityPropertyDef pDef = definition2.GetProperty(propertyNames2[i])
                         ?? throw new DatabaseException($"Lack DatabaseEntityPropertyDef of {propertyNames2[i]}."); ;
-                    
+
                     object fieldValue = reader[j];
 
                     if (pDef.PropertyName == "Id" && fieldValue == DBNull.Value)
@@ -209,6 +211,7 @@ namespace HB.Framework.Database.Entity
         /// <param name="reader"></param>
         /// <returns></returns>
         /// <exception cref="IndexOutOfRangeException">Ignore.</exception>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
         public IList<Tuple<TSource, TTarget2?, TTarget3?>> ToList<TSource, TTarget2, TTarget3>(IDataReader reader)
             where TSource : DatabaseEntity, new()
             where TTarget2 : DatabaseEntity, new()
@@ -256,7 +259,7 @@ namespace HB.Framework.Database.Entity
 
                 for (int i = 0; i < definition1.FieldCount; ++i, ++j)
                 {
-                    DatabaseEntityPropertyDef pDef = definition1.GetProperty(propertyNames1[i]) 
+                    DatabaseEntityPropertyDef pDef = definition1.GetProperty(propertyNames1[i])
                         ?? throw new DatabaseException($"Lack DatabaseEntityPropertyDef of {propertyNames1[i]}.");
 
                     object fieldValue = reader[j];
@@ -285,7 +288,7 @@ namespace HB.Framework.Database.Entity
                 {
                     DatabaseEntityPropertyDef pDef = definition2.GetProperty(propertyNames2[i])
                         ?? throw new DatabaseException($"Lack DatabaseEntityPropertyDef of {propertyNames2[i]}.");
-                    
+
                     object fieldValue = reader[j];
 
                     if (pDef.PropertyName == "Id" && fieldValue == DBNull.Value)
@@ -365,6 +368,7 @@ namespace HB.Framework.Database.Entity
         /// <param name="reader"></param>
         /// <param name="item"></param>
         /// <exception cref="IndexOutOfRangeException">Ignore.</exception>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
         public void ToObject<T>(IDataReader reader, T item) where T : DatabaseEntity, new()
         {
             if (reader == null)

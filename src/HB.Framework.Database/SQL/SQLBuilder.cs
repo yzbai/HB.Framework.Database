@@ -1,13 +1,12 @@
 ﻿#nullable enable
 
+using HB.Framework.Database.Engine;
+using HB.Framework.Database.Entity;
 using System;
-using System.Linq;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
 using System.Text;
-using HB.Framework.Database.Entity;
-using HB.Framework.Database.Engine;
 
 namespace HB.Framework.Database.SQL
 {
@@ -401,7 +400,7 @@ namespace HB.Framework.Database.SQL
 
 		public IDbCommand CreateBatchAddCommand<T>(IEnumerable<T> entities, string lastUser) where T : DatabaseEntity, new()
 		{
-			ThrowIf.NullOrEmpty(entities, nameof(entities));
+			ThrowIf.Empty(entities, nameof(entities));
 
 			StringBuilder innerBuilder = new StringBuilder();
 			DatabaseEntityDef definition = _entityDefFactory.GetDef<T>();
@@ -478,7 +477,7 @@ namespace HB.Framework.Database.SQL
 
 		public IDbCommand CreateBatchUpdateCommand<T>(IEnumerable<T> entities, string lastUser) where T : DatabaseEntity, new()
 		{
-			ThrowIf.NullOrEmpty(entities, nameof(entities));
+			ThrowIf.Empty(entities, nameof(entities));
 
 			StringBuilder innerBuilder = new StringBuilder();
 			DatabaseEntityDef definition = _entityDefFactory.GetDef<T>();
@@ -536,7 +535,7 @@ namespace HB.Framework.Database.SQL
 
 		public IDbCommand CreateBatchDeleteCommand<T>(IEnumerable<T> entities, string lastUser) where T : DatabaseEntity, new()
 		{
-			ThrowIf.NullOrEmpty(entities, nameof(entities));
+			ThrowIf.Empty(entities, nameof(entities));
 
 			StringBuilder innerBuilder = new StringBuilder();
 			DatabaseEntityDef definition = _entityDefFactory.GetDef<T>();
@@ -583,6 +582,13 @@ namespace HB.Framework.Database.SQL
 			return command;
 		}
 
+		/// <summary>
+		/// SQLite_Table_Create_Statement
+		/// </summary>
+		/// <param name="type"></param>
+		/// <param name="addDropStatement"></param>
+		/// <returns></returns>
+		/// <exception cref="HB.Framework.Database.DatabaseException"></exception>
 		private string SQLite_Table_Create_Statement(Type type, bool addDropStatement)
 		{
 			StringBuilder sql = new StringBuilder();

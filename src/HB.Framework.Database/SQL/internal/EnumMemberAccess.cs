@@ -1,6 +1,5 @@
 ﻿using HB.Framework.Database.Properties;
 using System;
-using System.Reflection;
 
 namespace HB.Framework.Database.SQL
 {
@@ -12,6 +11,7 @@ namespace HB.Framework.Database.SQL
 
     internal class EnumMemberAccess : PartialSqlString
     {
+        /// <exception cref="System.ArgumentException"></exception>
         public EnumMemberAccess(string text, Type enumType)
             : base(text)
         {

@@ -28,7 +28,7 @@ namespace HB.Framework.Database.SQL
                 return false;
             }
 
-            foreach (object? obj in ThrowIf.Null(list, nameof(list)))
+            foreach (object? obj in list)
             {
                 if (obj == null)
                 {

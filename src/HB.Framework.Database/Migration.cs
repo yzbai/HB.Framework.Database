@@ -2,8 +2,6 @@
 
 using HB.Framework.Database.Properties;
 using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace HB.Framework.Database
 {
@@ -15,12 +13,13 @@ namespace HB.Framework.Database
 
         public string TargetSchema { get; set; }
 
+        /// <exception cref="System.ArgumentException"></exception>
         public Migration(string targetSchema, int oldVersion, int newVersion, string sql)
         {
-            if (targetSchema.IsNullOrEmpty())
-            {
-                throw new ArgumentNullException(nameof(targetSchema));
-            }
+            //if (targetSchema.IsNullOrEmpty())
+            //{
+            //    throw new ArgumentNullException(nameof(targetSchema));
+            //}
 
             if (oldVersion < 1)
             {
@@ -32,10 +31,10 @@ namespace HB.Framework.Database
                 throw new ArgumentException(Resources.MigrateVersionStepErrorMessage);
             }
 
-            if (sql.IsNullOrEmpty())
-            {
-                throw new ArgumentNullException(nameof(sql));
-            }
+            //if (sql.IsNullOrEmpty())
+            //{
+            //    throw new ArgumentNullException(nameof(sql));
+            //}
 
             TargetSchema = targetSchema;
             OldVersion = oldVersion;

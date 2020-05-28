@@ -1,11 +1,8 @@
 ﻿using HB.Framework.Database;
 using HB.Framework.Database.Entity;
-using HB.Infrastructure.MySQL;
-using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
@@ -19,6 +16,7 @@ namespace HB.Framework.DatabaseTests
         private readonly IDatabase _sqlite;
         private readonly ITestOutputHelper _output;
 
+        /// <exception cref="System.ArgumentException"></exception>
         private IDatabase GetDatabase(string databaseType) =>
             databaseType switch
             {
@@ -27,6 +25,14 @@ namespace HB.Framework.DatabaseTests
                 _ => throw new ArgumentException(nameof(databaseType))
             };
 
+        /// <summary>
+        /// ctor
+        /// </summary>
+        /// <param name="testOutputHelper"></param>
+        /// <param name="serviceFixture"></param>
+        /// <exception cref="DatabaseException">Ignore.</exception>
+        /// <exception cref="ObjectDisposedException">Ignore.</exception>
+        /// <exception cref="AggregateException">Ignore.</exception>
         public MutipleTableTest(ITestOutputHelper testOutputHelper, ServiceFixture serviceFixture)
         {
             _output = testOutputHelper;
@@ -41,6 +47,12 @@ namespace HB.Framework.DatabaseTests
 
         }
 
+        /// <summary>
+        /// AddSomeDataAsync
+        /// </summary>
+        /// <returns></returns>
+        /// <exception cref="HB.Framework.Common.ValidateErrorException">Ignore.</exception>
+        /// <exception cref="DatabaseException">Ignore.</exception>
         private async Task AddSomeDataAsync()
         {
             A a1 = new A { Name = "a1" };
@@ -103,6 +115,12 @@ namespace HB.Framework.DatabaseTests
             await _sqlite.AddAsync(c6, null);
         }
 
+        /// <summary>
+        /// Test_1_ThreeTable_JoinTestAsync
+        /// </summary>
+        /// <param name="databaseType"></param>
+        /// <returns></returns>
+        /// <exception cref="Exception">Ignore.</exception>
         [Theory]
         [InlineData("MySQL")]
         [InlineData("SQLite")]
@@ -121,16 +139,22 @@ namespace HB.Framework.DatabaseTests
                 IEnumerable<Tuple<A, AB?, B?>>? result = await database.RetrieveAsync<A, AB, B>(from, database.Where<A>(), null);
                 Assert.True(result.Count() > 0);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _output.WriteLine(ex.Message);
 
                 throw ex;
             }
 
-            
+
         }
 
+        /// <summary>
+        /// Test_2_TwoTable_JoinTestAsync
+        /// </summary>
+        /// <param name="databaseType"></param>
+        /// <returns></returns>
+        /// <exception cref="Exception">Ignore.</exception>
         [Theory]
         [InlineData("MySQL")]
         [InlineData("SQLite")]

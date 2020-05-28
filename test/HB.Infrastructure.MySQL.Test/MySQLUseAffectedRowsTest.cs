@@ -1,14 +1,15 @@
-﻿using HB.Framework.Database;
-using MySql.Data.MySqlClient;
+﻿using MySql.Data.MySqlClient;
 using System;
-using System.Collections.Generic;
-using System.Text;
 using Xunit;
 
 namespace HB.Framework.DatabaseTests
 {
     public class MySQLUseAffectedRowsTest : IClassFixture<ServiceFixture>
     {
+        /// <summary>
+        /// TestUseAffectedRow_When_True_Test
+        /// </summary>
+        /// <exception cref="Xunit.Sdk.NotEqualException">Ignore.</exception>
         [Fact]
         public void TestUseAffectedRow_When_True_Test()
         {
@@ -21,7 +22,7 @@ namespace HB.Framework.DatabaseTests
 
             using MySqlCommand mySqlCommand1 = new MySqlCommand(commandText, mySqlConnection);
 
-            int rt1 =  mySqlCommand1.ExecuteNonQuery();
+            int rt1 = mySqlCommand1.ExecuteNonQuery();
 
             using MySqlCommand mySqlCommand2 = new MySqlCommand(commandText, mySqlConnection);
 
@@ -30,6 +31,10 @@ namespace HB.Framework.DatabaseTests
             Assert.NotEqual(rt1, rt2);
         }
 
+        /// <summary>
+        /// TestUseAffectedRow_When_False_Test
+        /// </summary>
+        /// <exception cref="Xunit.Sdk.EqualException">Ignore.</exception>
         [Fact]
         public void TestUseAffectedRow_When_False_Test()
         {
