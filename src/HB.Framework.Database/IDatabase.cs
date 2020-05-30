@@ -103,6 +103,16 @@ namespace HB.Framework.Database
             where TFrom : DatabaseEntity, new()
             where TWhere : DatabaseEntity, new();
 
+
+        /// <summary>
+        /// RetrieveAsync
+        /// </summary>
+        /// <typeparam name="TSource"></typeparam>
+        /// <typeparam name="TTarget"></typeparam>
+        /// <param name="fromCondition"></param>
+        /// <param name="whereCondition"></param>
+        /// <param name="transContext"></param>
+        /// <returns></returns>
         /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
         Task<IEnumerable<Tuple<TSource, TTarget?>>> RetrieveAsync<TSource, TTarget>(FromExpression<TSource> fromCondition, WhereExpression<TSource>? whereCondition, TransactionContext? transContext)
             where TSource : DatabaseEntity, new()

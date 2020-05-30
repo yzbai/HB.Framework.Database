@@ -4,6 +4,7 @@ using HB.Framework.Database.Engine;
 using HB.Framework.Database.Entity;
 using HB.Framework.Database.Properties;
 using HB.Framework.Database.SQL;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -30,9 +31,7 @@ namespace HB.Framework.Database
         private readonly IDatabaseEntityDefFactory _entityDefFactory;
         private readonly IDatabaseEntityMapper _modelMapper;
         private readonly ISQLBuilder _sqlBuilder;
-        //private readonly ILogger _logger;
-
-        //public IDatabaseEngine DatabaseEngine { get { return _databaseEngine; } }
+        private readonly ILogger _logger;
 
         /// <summary>
         /// ctor
@@ -46,14 +45,15 @@ namespace HB.Framework.Database
             IDatabaseEngine databaseEngine,
             IDatabaseEntityDefFactory modelDefFactory,
             IDatabaseEntityMapper modelMapper,
-            ISQLBuilder sqlBuilder/*, ILogger<DefaultDatabase> logger*/)
+            ISQLBuilder sqlBuilder,
+            ILogger<DefaultDatabase> logger)
         {
             _databaseSettings = databaseEngine.DatabaseSettings;
             _databaseEngine = databaseEngine;
             _entityDefFactory = modelDefFactory;
             _modelMapper = modelMapper;
             _sqlBuilder = sqlBuilder;
-            //_logger = logger;
+            _logger = logger;
 
             if (_databaseSettings.Version < 0)
             {
@@ -75,17 +75,17 @@ namespace HB.Framework.Database
             {
                 await AutoCreateTablesIfBrandNewAsync().ConfigureAwait(false);
 
-                Debug.WriteLine("AutoCreateFinished", GlobalSettings.DebugTag);
+                _logger.LogDebug("Database Auto Create Tables Finished.");
             }
 
             if (migrations != null && migrations.Any())
             {
                 await MigarateAsync(migrations).ConfigureAwait(false);
 
-                Debug.WriteLine("Migarate Finished", GlobalSettings.DebugTag);
+                _logger.LogDebug("Database Migarate Finished.");
             }
 
-            Debug.WriteLine("Database Initialize Finished", GlobalSettings.DebugTag);
+            _logger.LogDebug("Database Initialize Finished. Good To Go!");
         }
 
         /// <summary>
@@ -372,8 +372,8 @@ namespace HB.Framework.Database
 
             if (lst.Count() > 1)
             {
-                string message = $"Scalar retrieve return more than one result. Select:{selectCondition}, From:{fromCondition}, Where:{whereCondition}";
-                DatabaseException exception = new DatabaseException(DatabaseError.FoundTooMuch, typeof(T).FullName, message);
+                string detail = $"Scalar retrieve return more than one result. Select:{selectCondition}, From:{fromCondition}, Where:{whereCondition}";
+                DatabaseException exception = new DatabaseException(DatabaseError.FoundTooMuch, nameof(ScalarAsync), typeof(T).FullName, detail);
                 //_logger.LogException(exception);
 
                 throw exception;
@@ -427,8 +427,8 @@ namespace HB.Framework.Database
             }
             catch (Exception ex)
             {
-                string message = $"select:{selectCondition}, from:{fromCondition}, where:{whereCondition}";
-                DatabaseException exception = new DatabaseException(ex, "RetrieveAsync", selectDef.EntityFullName, message);
+                string detail = $"select:{selectCondition}, from:{fromCondition}, where:{whereCondition}";
+                DatabaseException exception = new DatabaseException(DatabaseError.DefaultDatabaseError, nameof(RetrieveAsync), selectDef.EntityFullName, detail, ex);
 
                 //_logger.LogException(exception);
 
@@ -486,9 +486,9 @@ namespace HB.Framework.Database
             }
             catch (Exception ex)
             {
-                string message = $"select:{selectCondition}, from:{fromCondition}, where:{whereCondition}";
+                string detail = $"select:{selectCondition}, from:{fromCondition}, where:{whereCondition}";
 
-                throw new DatabaseException(ex, "RetrieveAsync", entityDef.EntityFullName, message);
+                throw new DatabaseException(DatabaseError.DefaultDatabaseError, nameof(RetrieveAsync), entityDef.EntityFullName, detail, ex);
             }
             finally
             {
@@ -562,8 +562,8 @@ namespace HB.Framework.Database
             }
             catch (Exception ex)
             {
-                string message = $"select:{selectCondition}, from:{fromCondition}, where:{whereCondition}";
-                DatabaseException exception = new DatabaseException(ex, "CountAsync", entityDef.EntityFullName, message);
+                string detail = $"select:{selectCondition}, from:{fromCondition}, where:{whereCondition}";
+                DatabaseException exception = new DatabaseException(DatabaseError.DefaultDatabaseError, nameof(CountAsync), entityDef.EntityFullName, detail, ex);
 
                 //_logger.LogException(exception);
 
@@ -810,8 +810,8 @@ namespace HB.Framework.Database
             }
             catch (Exception ex)
             {
-                string message = $"from:{fromCondition}, where:{whereCondition}";
-                DatabaseException exception = new DatabaseException(ex, "RetrieveAsync", entityDef.EntityFullName, message);
+                string detail = $"from:{fromCondition}, where:{whereCondition}";
+                DatabaseException exception = new DatabaseException(DatabaseError.DefaultDatabaseError, nameof(RetrieveAsync), entityDef.EntityFullName, detail, ex);
 
                 //_logger.LogException(exception);
 
@@ -925,8 +925,8 @@ namespace HB.Framework.Database
             }
             catch (Exception ex)
             {
-                string message = $"from:{fromCondition}, where:{whereCondition}";
-                throw new DatabaseException(ex, "RetrieveAsync", entityDef.EntityFullName, message);
+                string detail = $"from:{fromCondition}, where:{whereCondition}";
+                throw new DatabaseException(DatabaseError.DefaultDatabaseError, nameof(RetrieveAsync), entityDef.EntityFullName, detail, ex);
             }
             finally
             {
@@ -1018,9 +1018,9 @@ namespace HB.Framework.Database
             }
             catch (Exception ex)
             {
-                string message = $"Item:{SerializeUtil.ToJson(item)}";
+                string detail = $"Item:{SerializeUtil.ToJson(item)}";
 
-                throw new DatabaseException(ex, "AddAsync", entityDef.EntityFullName, message); ;
+                throw new DatabaseException(DatabaseError.DefaultDatabaseError, nameof(AddAsync), entityDef.EntityFullName, detail, ex); ;
             }
             finally
             {
@@ -1068,8 +1068,8 @@ namespace HB.Framework.Database
             }
             catch (Exception ex)
             {
-                string message = $"Item:{SerializeUtil.ToJson(item)}";
-                DatabaseException exception = new DatabaseException(ex, "DeleteAsync", entityDef.EntityFullName, message);
+                string detail = $"Item:{SerializeUtil.ToJson(item)}";
+                DatabaseException exception = new DatabaseException(DatabaseError.DefaultDatabaseError, nameof(DeleteAsync), entityDef.EntityFullName, detail, ex);
 
                 //_logger.LogException(exception);
 
@@ -1123,8 +1123,8 @@ namespace HB.Framework.Database
             }
             catch (Exception ex)
             {
-                string message = $"Item:{SerializeUtil.ToJson(item)}";
-                DatabaseException exception = new DatabaseException(ex, "UpdateAsync", entityDef.EntityFullName, message);
+                string detail = $"Item:{SerializeUtil.ToJson(item)}";
+                DatabaseException exception = new DatabaseException(DatabaseError.DefaultDatabaseError, nameof(UpdateAsync), entityDef.EntityFullName, detail, ex);
 
                 //_logger.LogException(exception);
 
@@ -1195,8 +1195,8 @@ namespace HB.Framework.Database
             }
             catch (Exception ex)
             {
-                string message = $"Items:{SerializeUtil.ToJson(items)}";
-                DatabaseException exception = new DatabaseException(ex, "BatchAddAsync", entityDef.EntityFullName, message);
+                string detail = $"Items:{SerializeUtil.ToJson(items)}";
+                DatabaseException exception = new DatabaseException(DatabaseError.DefaultDatabaseError, nameof(BatchAddAsync), entityDef.EntityFullName, detail, ex);
 
                 //_logger.LogException(exception);
 
@@ -1263,8 +1263,8 @@ namespace HB.Framework.Database
             }
             catch (Exception ex)
             {
-                string message = $"Items:{SerializeUtil.ToJson(items)}";
-                DatabaseException exception = new DatabaseException(ex, "BatchUpdateAsync", entityDef.EntityFullName, message);
+                string detail = $"Items:{SerializeUtil.ToJson(items)}";
+                DatabaseException exception = new DatabaseException(DatabaseError.DefaultDatabaseError, nameof(BatchUpdateAsync), entityDef.EntityFullName, detail, ex);
 
                 //_logger.LogException(exception);
 
@@ -1335,8 +1335,8 @@ namespace HB.Framework.Database
             }
             catch (Exception ex)
             {
-                string message = $"Items:{SerializeUtil.ToJson(items)}";
-                DatabaseException exception = new DatabaseException(ex, "BatchDeleteAsync", entityDef.EntityFullName, message);
+                string detail = $"Items:{SerializeUtil.ToJson(items)}";
+                DatabaseException exception = new DatabaseException(DatabaseError.DefaultDatabaseError, nameof(BatchDeleteAsync), entityDef.EntityFullName, detail, ex);
 
                 //_logger.LogException(exception);
 

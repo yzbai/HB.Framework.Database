@@ -85,15 +85,11 @@ namespace HB.Infrastructure.SQLite
 
                 if (ex is SqliteException sqliteException)
                 {
-                    throw new DatabaseException(
-                        sqliteException.SqliteErrorCode, 
-                        sqliteException.SqliteExtendedErrorCode.ToString(GlobalSettings.Culture), 
-                        $"Message:{sqliteException.Message}, CommandText:{command.CommandText}", 
-                        sqliteException);
+                    throw new DatabaseException(DatabaseError.ExecuterError, nameof(ExecuteCommandReaderAsync), null, $"CommandText:{command.CommandText}", sqliteException);
                 }
                 else
                 {
-                    throw new DatabaseException(DatabaseError.InnerError, connection.Database, $"CommandText:{command.CommandText}");
+                    throw new DatabaseException(DatabaseError.Unkown, nameof(ExecuteCommandReaderAsync), null, $"CommandText:{command.CommandText}", ex);
                 }
             }
         }
@@ -151,20 +147,13 @@ namespace HB.Infrastructure.SQLite
 
                 rtObj = await command.ExecuteScalarAsync().ConfigureAwait(false);
             }
+            catch (SqliteException sqliteException)
+            {
+                throw new DatabaseException(DatabaseError.ExecuterError, nameof(ExecuteCommandScalarAsync), null, $"CommandText:{command.CommandText}", sqliteException);
+            }
             catch (Exception ex)
             {
-                if (ex is SqliteException sqliteException)
-                {
-                    throw new DatabaseException(
-                        sqliteException.SqliteErrorCode, 
-                        sqliteException.SqliteExtendedErrorCode.ToString(GlobalSettings.Culture), 
-                        $"Message:{sqliteException.Message}, CommandText:{command.CommandText}", 
-                        sqliteException);
-                }
-                else
-                {
-                    throw new DatabaseException(DatabaseError.InnerError, connection.Database, $"CommandText:{command.CommandText}");
-                }
+                throw new DatabaseException(DatabaseError.Unkown, nameof(ExecuteCommandScalarAsync), null, $"CommandText:{command.CommandText}", ex);
             }
             finally
             {
@@ -231,20 +220,13 @@ namespace HB.Infrastructure.SQLite
 
                 rtInt = await command.ExecuteNonQueryAsync().ConfigureAwait(false);
             }
+            catch (SqliteException sqliteException)
+            {
+                throw new DatabaseException(DatabaseError.ExecuterError, nameof(ExecuteCommandNonQueryAsync), null, $"CommandText:{command.CommandText}", sqliteException);
+            }
             catch (Exception ex)
             {
-                if (ex is SqliteException sqliteException)
-                {
-                    throw new DatabaseException(
-                        sqliteException.SqliteErrorCode, 
-                        sqliteException.SqliteExtendedErrorCode.ToString(GlobalSettings.Culture), 
-                        $"Message:{sqliteException.Message}, CommandText:{command.CommandText}", 
-                        sqliteException);
-                }
-                else
-                {
-                    throw new DatabaseException(DatabaseError.InnerError, conn.Database, $"CommandText:{command.CommandText}");
-                }
+                throw new DatabaseException(DatabaseError.Unkown, nameof(ExecuteCommandNonQueryAsync), null, $"CommandText:{command.CommandText}", ex);
             }
             finally
             {

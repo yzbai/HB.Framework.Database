@@ -226,7 +226,7 @@ namespace HB.Framework.Database.Entity
                 if (propertyAttrs.ElementAt(0) is EntityPropertyAttribute propertyAttr)
                 {
                     propertyDef.IsTableProperty = true;
-                    propertyDef.IsNullable = propertyAttr.NotNull;
+                    propertyDef.IsNullable = !propertyAttr.NotNull;
                     propertyDef.IsUnique = propertyAttr.Unique;
                     propertyDef.DbLength = propertyAttr.Length > 0 ? (int?)propertyAttr.Length : null;
                     propertyDef.IsLengthFixed = propertyAttr.FixedLength;

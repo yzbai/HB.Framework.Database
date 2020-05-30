@@ -25,9 +25,11 @@ namespace HB.Infrastructure.MySQL
         public static Task<IDataReader> ExecuteCommandReaderAsync(MySqlTransaction mySqlTransaction, IDbCommand dbCommand)
         {
             dbCommand.Transaction = mySqlTransaction;
-            
-            return ExecuteCommandReaderAsync(mySqlTransaction.Connection
-                ?? throw new DatabaseException(DatabaseError.TransactionConnectionIsNull, null), false, (MySqlCommand)dbCommand);
+
+            return ExecuteCommandReaderAsync(
+                mySqlTransaction.Connection ?? throw new DatabaseException(DatabaseError.TransactionConnectionIsNull, nameof(ExecuteCommandReaderAsync)),
+                false,
+                (MySqlCommand)dbCommand);
         }
 
         /// <summary>
@@ -86,11 +88,11 @@ namespace HB.Infrastructure.MySQL
 
                 if (ex is MySqlException mySqlException)
                 {
-                    throw new DatabaseException(mySqlException.Number, mySqlException.SqlState, $"Message:{mySqlException.Message}, CommandText:{command.CommandText}", mySqlException);
+                    throw new DatabaseException(DatabaseError.ExecuterError, nameof(ExecuteCommandReaderAsync), null, $"CommandText:{command.CommandText}", mySqlException);
                 }
                 else
                 {
-                    throw new DatabaseException(DatabaseError.InnerError, connection.Database, $"CommandText:{command.CommandText}");
+                    throw new DatabaseException(DatabaseError.Unkown, nameof(ExecuteCommandReaderAsync), null, $"CommandText:{command.CommandText}", ex);
                 }
             }
         }
@@ -148,16 +150,13 @@ namespace HB.Infrastructure.MySQL
 
                 rtObj = await command.ExecuteScalarAsync().ConfigureAwait(false);
             }
+            catch (MySqlException mysqlException)
+            {
+                throw new DatabaseException(DatabaseError.ExecuterError, nameof(ExecuteCommandScalarAsync), null, $"CommandText:{command.CommandText}", mysqlException);
+            }
             catch (Exception ex)
             {
-                if (ex is MySqlException mySqlException)
-                {
-                    throw new DatabaseException(mySqlException.Number, mySqlException.SqlState, $"Message:{mySqlException.Message}, CommandText:{command.CommandText}", mySqlException);
-                }
-                else
-                {
-                    throw new DatabaseException(DatabaseError.InnerError, connection.Database, $"CommandText:{command.CommandText}");
-                }
+                throw new DatabaseException(DatabaseError.Unkown, nameof(ExecuteCommandScalarAsync), null, $"CommandText:{command.CommandText}", ex);
             }
             finally
             {
@@ -224,16 +223,13 @@ namespace HB.Infrastructure.MySQL
 
                 rtInt = await command.ExecuteNonQueryAsync().ConfigureAwait(false);
             }
+            catch (MySqlException mysqlException)
+            {
+                throw new DatabaseException(DatabaseError.ExecuterError, nameof(ExecuteCommandNonQueryAsync), null, $"CommandText:{command.CommandText}", mysqlException);
+            }
             catch (Exception ex)
             {
-                if (ex is MySqlException mySqlException)
-                {
-                    throw new DatabaseException(mySqlException.Number, mySqlException.SqlState, $"Message:{mySqlException.Message}, CommandText:{command.CommandText}", mySqlException);
-                }
-                else
-                {
-                    throw new DatabaseException(DatabaseError.InnerError, conn.Database, $"CommandText:{command.CommandText}");
-                }
+                throw new DatabaseException(DatabaseError.Unkown, nameof(ExecuteCommandNonQueryAsync), null, $"CommandText:{command.CommandText}", ex);
             }
             finally
             {
@@ -350,16 +346,13 @@ namespace HB.Infrastructure.MySQL
             {
                 rtInt = await command.ExecuteNonQueryAsync().ConfigureAwait(false);
             }
+            catch (MySqlException mysqlException)
+            {
+                throw new DatabaseException(DatabaseError.ExecuterError, nameof(ExecuteCommandNonQueryAsync), null, $"CommandText:{command.CommandText}", mysqlException);
+            }
             catch (Exception ex)
             {
-                if (ex is MySqlException mySqlException)
-                {
-                    throw new DatabaseException(mySqlException.Number, mySqlException.SqlState, $"Message:{mySqlException.Message}, CommandText:{command.CommandText}", mySqlException);
-                }
-                else
-                {
-                    throw new DatabaseException(DatabaseError.InnerError, conn.Database, $"CommandText:{command.CommandText}");
-                }
+                throw new DatabaseException(DatabaseError.Unkown, nameof(ExecuteCommandNonQueryAsync), null, $"CommandText:{command.CommandText}", ex);
             }
             finally
             {
@@ -427,16 +420,13 @@ namespace HB.Infrastructure.MySQL
             {
                 rtObj = await command.ExecuteScalarAsync().ConfigureAwait(false);
             }
+            catch (MySqlException mysqlException)
+            {
+                throw new DatabaseException(DatabaseError.ExecuterError, nameof(ExecuteSPScalarAsync), null, $"CommandText:{command.CommandText}", mysqlException);
+            }
             catch (Exception ex)
             {
-                if (ex is MySqlException mySqlException)
-                {
-                    throw new DatabaseException(mySqlException.Number, mySqlException.SqlState, $"Message:{mySqlException.Message}, CommandText:{command.CommandText}", mySqlException);
-                }
-                else
-                {
-                    throw new DatabaseException(DatabaseError.InnerError, conn.Database, $"CommandText:{command.CommandText}");
-                }
+                throw new DatabaseException(DatabaseError.Unkown, nameof(ExecuteSPScalarAsync), null, $"CommandText:{command.CommandText}", ex);
             }
             finally
             {
@@ -524,11 +514,11 @@ namespace HB.Infrastructure.MySQL
 
                 if (ex is MySqlException mySqlException)
                 {
-                    throw new DatabaseException(mySqlException.Number, mySqlException.SqlState, $"Message:{mySqlException.Message}, CommandText:{command.CommandText}", mySqlException);
+                    throw new DatabaseException(DatabaseError.ExecuterError, nameof(ExecuteSPReaderAsync), null, $"CommandText:{command.CommandText}", mySqlException);
                 }
                 else
                 {
-                    throw new DatabaseException(DatabaseError.InnerError, connection.Database, $"CommandText:{command.CommandText}");
+                    throw new DatabaseException(DatabaseError.Unkown, nameof(ExecuteSPReaderAsync), null, $"CommandText:{command.CommandText}", ex);
                 }
             }
 

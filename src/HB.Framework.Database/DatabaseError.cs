@@ -3,10 +3,7 @@
 
     public enum DatabaseError
     {
-        /// <summary>
-        /// 其他错误
-        /// </summary>
-        InnerError = 0,
+        Unkown = 0,
 
         /// <summary>
         /// 成功
@@ -35,6 +32,10 @@
         TableCreateError = 8,
         MigrateError = 9,
         NotATableModel = 10,
-        TransactionConnectionIsNull = 11
+        TransactionConnectionIsNull = 11,
+
+        //各种数据库的实现Executor出错
+        ExecuterError = 12,
+        DefaultDatabaseError = 13,
     }
 }
