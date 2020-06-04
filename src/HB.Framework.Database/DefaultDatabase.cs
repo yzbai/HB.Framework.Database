@@ -75,17 +75,17 @@ namespace HB.Framework.Database
             {
                 await AutoCreateTablesIfBrandNewAsync().ConfigureAwait(false);
 
-                _logger.LogDebug("Database Auto Create Tables Finished.");
+                _logger.LogInformation("Database Auto Create Tables Finished.");
             }
 
             if (migrations != null && migrations.Any())
             {
                 await MigarateAsync(migrations).ConfigureAwait(false);
 
-                _logger.LogDebug("Database Migarate Finished.");
+                _logger.LogInformation("Database Migarate Finished.");
             }
 
-            _logger.LogDebug("Database Initialize Finished. Good To Go!");
+            _logger.LogInformation("Database Initialize Finished. Good To Go!");
         }
 
         /// <summary>
