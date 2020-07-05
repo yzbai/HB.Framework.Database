@@ -8,6 +8,11 @@ namespace Microsoft.Extensions.DependencyInjection
 {
     public static class ServicesCollectionExtensions
     {
+        /// <summary>
+        /// Called by Database Infrastructure. ex: MySQL, SQLite
+        /// </summary>
+        /// <param name="services"></param>
+        /// <returns></returns>
         public static IServiceCollection AddDatabase(this IServiceCollection services)
         {
             services.AddSingleton<IDatabaseTypeConverterFactory, DatabaseTypeConverterFactory>();
