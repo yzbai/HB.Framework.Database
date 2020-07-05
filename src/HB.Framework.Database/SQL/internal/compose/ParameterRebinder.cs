@@ -15,7 +15,7 @@ namespace HB.Framework.Database.SQL
             this.map = map ?? new Dictionary<ParameterExpression, ParameterExpression>();
         }
 
-        public static Expression ReplaceParameters(Dictionary<ParameterExpression, ParameterExpression> map, Expression exp)
+        public static Expression? ReplaceParameters(Dictionary<ParameterExpression, ParameterExpression> map, Expression exp)
         {
             return new ParameterRebinder(map).Visit(exp);
         }

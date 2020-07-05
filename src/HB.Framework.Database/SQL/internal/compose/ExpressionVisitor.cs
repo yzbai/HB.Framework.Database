@@ -16,10 +16,11 @@ namespace HB.Framework.Database.SQL
         /// <param name="exp"></param>
         /// <returns></returns>
         /// <exception cref="Exception"></exception>
-        protected virtual Expression Visit(Expression exp)
+        protected virtual Expression? Visit(Expression? exp)
         {
-            //if (exp == null)
-            //    return exp;
+            if (exp == null)
+                return exp;
+
             switch (exp.NodeType)
             {
                 case ExpressionType.Negate:
@@ -104,7 +105,7 @@ namespace HB.Framework.Database.SQL
 
         protected virtual ElementInit VisitElementInitializer(ElementInit initializer)
         {
-            ReadOnlyCollection<Expression> arguments = VisitExpressionList(initializer.Arguments);
+            ReadOnlyCollection<Expression?> arguments = VisitExpressionList(initializer.Arguments);
             if (arguments != initializer.Arguments)
             {
                 return Expression.ElementInit(initializer.AddMethod, arguments);
@@ -114,7 +115,7 @@ namespace HB.Framework.Database.SQL
 
         protected virtual Expression VisitUnary(UnaryExpression u)
         {
-            Expression operand = Visit(u.Operand);
+            Expression? operand = Visit(u.Operand);
             if (operand != u.Operand)
             {
                 return Expression.MakeUnary(u.NodeType, operand, u.Type, u.Method);
@@ -124,9 +125,9 @@ namespace HB.Framework.Database.SQL
 
         protected virtual Expression VisitBinary(BinaryExpression b)
         {
-            Expression left = Visit(b.Left);
-            Expression right = Visit(b.Right);
-            Expression conversion = Visit(b.Conversion);
+            Expression? left = Visit(b.Left);
+            Expression? right = Visit(b.Right);
+            Expression? conversion = Visit(b.Conversion);
             if (left != b.Left || right != b.Right || conversion != b.Conversion)
             {
                 if (b.NodeType == ExpressionType.Coalesce && b.Conversion != null)
@@ -139,7 +140,7 @@ namespace HB.Framework.Database.SQL
 
         protected virtual Expression VisitTypeIs(TypeBinaryExpression b)
         {
-            Expression expr = Visit(b.Expression);
+            Expression? expr = Visit(b.Expression);
             if (expr != b.Expression)
             {
                 return Expression.TypeIs(expr, b.TypeOperand);
@@ -154,9 +155,9 @@ namespace HB.Framework.Database.SQL
 
         protected virtual Expression VisitConditional(ConditionalExpression c)
         {
-            Expression test = Visit(c.Test);
-            Expression ifTrue = Visit(c.IfTrue);
-            Expression ifFalse = Visit(c.IfFalse);
+            Expression? test = Visit(c.Test);
+            Expression? ifTrue = Visit(c.IfTrue);
+            Expression? ifFalse = Visit(c.IfFalse);
             if (test != c.Test || ifTrue != c.IfTrue || ifFalse != c.IfFalse)
             {
                 return Expression.Condition(test, ifTrue, ifFalse);
@@ -171,7 +172,7 @@ namespace HB.Framework.Database.SQL
 
         protected virtual Expression VisitMemberAccess(MemberExpression m)
         {
-            Expression exp = Visit(m.Expression);
+            Expression? exp = Visit(m.Expression);
             if (exp != m.Expression)
             {
                 return Expression.MakeMemberAccess(exp, m.Member);
@@ -181,8 +182,8 @@ namespace HB.Framework.Database.SQL
 
         protected virtual Expression VisitMethodCall(MethodCallExpression m)
         {
-            Expression obj = Visit(m.Object);
-            IEnumerable<Expression> args = VisitExpressionList(m.Arguments);
+            Expression? obj = Visit(m.Object);
+            IEnumerable<Expression?> args = VisitExpressionList(m.Arguments);
             if (obj != m.Object || args != m.Arguments)
             {
                 return Expression.Call(obj, m.Method, args);
@@ -190,13 +191,13 @@ namespace HB.Framework.Database.SQL
             return m;
         }
 
-        protected virtual ReadOnlyCollection<Expression> VisitExpressionList(ReadOnlyCollection<Expression> original)
+        protected virtual ReadOnlyCollection<Expression?> VisitExpressionList(ReadOnlyCollection<Expression?> original)
         {
-            List<Expression>? list = null;
+            List<Expression?>? list = null;
 
             for (int i = 0, n = original.Count; i < n; i++)
             {
-                Expression p = Visit(original[i]);
+                Expression? p = Visit(original[i]);
 
                 if (list != null)
                 {
@@ -204,7 +205,7 @@ namespace HB.Framework.Database.SQL
                 }
                 else if (p != original[i])
                 {
-                    list = new List<Expression>(n);
+                    list = new List<Expression?>(n);
 
                     for (int j = 0; j < i; j++)
                     {
@@ -222,7 +223,7 @@ namespace HB.Framework.Database.SQL
 
         protected virtual MemberAssignment VisitMemberAssignment(MemberAssignment assignment)
         {
-            Expression e = Visit(assignment.Expression);
+            Expression? e = Visit(assignment.Expression);
             if (e != assignment.Expression)
             {
                 return Expression.Bind(assignment.Member, e);
@@ -303,7 +304,7 @@ namespace HB.Framework.Database.SQL
 
         protected virtual Expression VisitLambda(LambdaExpression lambda)
         {
-            Expression body = Visit(lambda.Body);
+            Expression? body = Visit(lambda.Body);
             if (body != lambda.Body)
             {
                 return Expression.Lambda(lambda.Type, body, lambda.Parameters);
@@ -313,7 +314,7 @@ namespace HB.Framework.Database.SQL
 
         protected virtual NewExpression VisitNew(NewExpression nex)
         {
-            IEnumerable<Expression> args = VisitExpressionList(nex.Arguments);
+            IEnumerable<Expression?> args = VisitExpressionList(nex.Arguments);
             if (args != nex.Arguments)
             {
                 if (nex.Members != null)
@@ -348,7 +349,7 @@ namespace HB.Framework.Database.SQL
 
         protected virtual Expression VisitNewArray(NewArrayExpression na)
         {
-            IEnumerable<Expression> exprs = VisitExpressionList(na.Expressions);
+            IEnumerable<Expression?> exprs = VisitExpressionList(na.Expressions);
             if (exprs != na.Expressions)
             {
                 if (na.NodeType == ExpressionType.NewArrayInit)
@@ -365,8 +366,8 @@ namespace HB.Framework.Database.SQL
 
         protected virtual Expression VisitInvocation(InvocationExpression iv)
         {
-            IEnumerable<Expression> args = VisitExpressionList(iv.Arguments);
-            Expression expr = Visit(iv.Expression);
+            IEnumerable<Expression?> args = VisitExpressionList(iv.Arguments);
+            Expression? expr = Visit(iv.Expression);
             if (args != iv.Arguments || expr != iv.Expression)
             {
                 return Expression.Invoke(expr, args);
