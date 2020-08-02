@@ -1,5 +1,5 @@
 ﻿using HB.Framework.Database;
-using MySql.Data.MySqlClient;
+using MySqlConnector;
 using System;
 using System.Collections.Generic;
 using System.Data;

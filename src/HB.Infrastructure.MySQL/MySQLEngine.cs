@@ -2,7 +2,7 @@
 using HB.Framework.Database.Engine;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using MySql.Data.MySqlClient;
+using MySqlConnector;
 using MySqlConnector.Logging;
 using System;
 using System.Collections.Generic;
