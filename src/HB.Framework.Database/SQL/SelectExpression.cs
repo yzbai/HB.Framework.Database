@@ -23,7 +23,7 @@ namespace HB.Framework.Database.SQL
             StringBuilder resultBuilder = WithSelectString ? new StringBuilder(" SELECT ") : new StringBuilder(" ");
 
             resultBuilder.Append(_statementBuilder);
-            resultBuilder.Append(" ");
+            resultBuilder.Append(' ');
 
             return resultBuilder.ToString();
         }

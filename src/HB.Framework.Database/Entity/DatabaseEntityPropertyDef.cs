@@ -59,12 +59,12 @@ namespace HB.Framework.Database.Entity
         /// 是否是主键
         /// IsTableProperty为false时无意义
         /// </summary>
-        public bool IsAutoIncrementPrimaryKey { get; set; } = false;
+        public bool IsAutoIncrementPrimaryKey { get; set; }
         /// <summary>
         /// 是否是外键
         /// IsTableProperty为false时无意义
         /// </summary>
-        public bool IsForeignKey { get; set; } = false;
+        public bool IsForeignKey { get; set; }
         /// <summary>
         /// 是否唯一值
         /// IsTableProperty为false时无意义

@@ -41,7 +41,7 @@ namespace HB.Framework.Database.SQL
             foreach (object value in values)
             {
                 sb.Append(dbEngine.GetDbValueStatement(value, needQuoted: true));
-                sb.Append(",");
+                sb.Append(',');
             }
 
             sb.Remove(sb.Length - 1, 1);

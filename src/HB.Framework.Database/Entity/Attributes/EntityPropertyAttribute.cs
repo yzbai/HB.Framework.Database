@@ -10,7 +10,7 @@ namespace HB.Framework.Database.Entity
     [AttributeUsage(AttributeTargets.Property)]
     public class EntityPropertyAttribute : Attribute
     {
-        public bool FixedLength { get; set; } = false;
+        public bool FixedLength { get; set; }
         /// <summary>
         /// 字段长度
         /// </summary>
@@ -32,7 +32,7 @@ namespace HB.Framework.Database.Entity
         /// </summary>
         public bool Unique { get; set; }
 
-        public Type? Converter { get; set; } = null;
+        public Type? Converter { get; set; }
 
         public EntityPropertyAttribute()
         {

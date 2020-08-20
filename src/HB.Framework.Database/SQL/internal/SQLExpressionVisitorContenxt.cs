@@ -12,7 +12,7 @@ namespace HB.Framework.Database.SQL
 
         public string Seperator { get; set; } = " ";
 
-        public int ParamCounter { get; set; } = 0;
+        public int ParamCounter { get; set; }
 
         public string ParamPlaceHolderPrefix { get; set; } = "_";
 

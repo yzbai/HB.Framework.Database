@@ -204,13 +204,13 @@ namespace HB.Framework.Database.SQL
         {
             DatabaseEntityDef targetDef = _entityDefFactory.GetDef(typeof(Target));
 
-            _statementBuilder.Append(" ");
+            _statementBuilder.Append(' ');
             _statementBuilder.Append(joinType);
-            _statementBuilder.Append(" ");
+            _statementBuilder.Append(' ');
             _statementBuilder.Append(targetDef.DbTableReservedName);
             _statementBuilder.Append(" ON ");
             _statementBuilder.Append(joinExpr.ToStatement(_expressionContext));
-            _statementBuilder.Append(" ");
+            _statementBuilder.Append(' ');
 
             return this;
         }

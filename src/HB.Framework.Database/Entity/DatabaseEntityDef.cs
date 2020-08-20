@@ -55,7 +55,7 @@ namespace HB.Framework.Database.Entity
         /// </summary>
         public string? DbTableDescription { get; set; }
 
-        public int FieldCount { get; set; } = 0;
+        public int FieldCount { get; set; }
 
         #endregion
 
