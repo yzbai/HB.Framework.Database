@@ -260,7 +260,7 @@ namespace HB.Infrastructure.SQLite
             }
             finally
             {
-                connection.Close();
+                await connection.CloseAsync().ConfigureAwait(false);
             }
         }
 
@@ -276,7 +276,7 @@ namespace HB.Infrastructure.SQLite
             }
             finally
             {
-                connection.Close();
+                await connection.CloseAsync().ConfigureAwait(false);
             }
         }
 

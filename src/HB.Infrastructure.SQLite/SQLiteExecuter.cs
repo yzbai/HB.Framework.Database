@@ -78,10 +78,13 @@ namespace HB.Infrastructure.SQLite
             {
                 if (isOwnedConnection)
                 {
-                    connection.Close();
+                    await connection.CloseAsync().ConfigureAwait(false);
                 }
 
-                reader?.Close();
+                if (reader != null)
+                {
+                    await reader.CloseAsync().ConfigureAwait(false);
+                }
 
                 if (ex is SqliteException sqliteException)
                 {
@@ -159,7 +162,7 @@ namespace HB.Infrastructure.SQLite
             {
                 if (isOwnedConnection)
                 {
-                    connection.Close();
+                    await connection.CloseAsync().ConfigureAwait(false);
                 }
             }
 
@@ -232,7 +235,7 @@ namespace HB.Infrastructure.SQLite
             {
                 if (isOwnedConnection)
                 {
-                    conn.Close();
+                    await conn.CloseAsync().ConfigureAwait(false);
                 }
             }
 

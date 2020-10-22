@@ -81,7 +81,7 @@ namespace HB.Infrastructure.MySQL
             {
                 if (isOwnedConnection)
                 {
-                    connection.Close();
+                    await connection.CloseAsync().ConfigureAwait(false);
                 }
 
                 reader?.Close();
@@ -358,7 +358,7 @@ namespace HB.Infrastructure.MySQL
             {
                 if (isOwnedConnection)
                 {
-                    conn.Close();
+                    await conn.CloseAsync().ConfigureAwait(false);
                 }
             }
 
@@ -432,7 +432,7 @@ namespace HB.Infrastructure.MySQL
             {
                 if (isOwnedConnection)
                 {
-                    conn.Close();
+                    await conn.CloseAsync().ConfigureAwait(false);
                 }
             }
             command.Parameters.Clear();
@@ -507,7 +507,7 @@ namespace HB.Infrastructure.MySQL
             {
                 if (isOwedConnection)
                 {
-                    connection.Close();
+                    await connection.CloseAsync().ConfigureAwait(false);
                 }
 
                 reader?.Close();

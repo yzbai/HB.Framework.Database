@@ -317,7 +317,10 @@ namespace HB.Infrastructure.MySQL
             }
             finally
             {
-                connection?.Close();
+                if (connection != null)
+                {
+                    await connection.CloseAsync().ConfigureAwait(false);
+                }
             }
         }
 
@@ -333,7 +336,10 @@ namespace HB.Infrastructure.MySQL
             }
             finally
             {
-                connection?.Close();
+                if (connection != null)
+                {
+                    await connection.CloseAsync().ConfigureAwait(false);
+                }
             }
         }
 
