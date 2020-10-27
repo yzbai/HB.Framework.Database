@@ -14,7 +14,7 @@ namespace HB.Framework.Database.SQL
 
         private bool _firstAssign = true;
 
-        private readonly SQLExpressionVisitorContenxt expressionContext;
+        private readonly SQLExpressionVisitorContenxt _expressionContext;
 
         public bool WithSelectString { get; set; } = true;
 
@@ -30,7 +30,7 @@ namespace HB.Framework.Database.SQL
 
         internal SelectExpression(IDatabaseEngine databaseEngine, IDatabaseEntityDefFactory entityDefFactory)
         {
-            expressionContext = new SQLExpressionVisitorContenxt(databaseEngine, entityDefFactory);
+            _expressionContext = new SQLExpressionVisitorContenxt(databaseEngine, entityDefFactory);
         }
 
         public SelectExpression<T> Select<TTarget>(Expression<Func<T, TTarget>> expr)
@@ -44,7 +44,7 @@ namespace HB.Framework.Database.SQL
                 _firstAssign = false;
             }
 
-            _statementBuilder.Append(expr.ToStatement(expressionContext));
+            _statementBuilder.Append(expr.ToStatement(_expressionContext));
 
             return this;
         }

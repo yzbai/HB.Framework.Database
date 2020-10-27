@@ -3,6 +3,7 @@ using HB.Framework.Database.SQL;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 
@@ -153,7 +154,7 @@ namespace HB.Framework.Database
             where TTarget1 : DatabaseEntity, new()
             where TTarget2 : DatabaseEntity, new();
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Naming", "CA1716:Identifiers should not match keywords", Justification = "<Pending>")]
+        [SuppressMessage("Naming", "CA1716:Identifiers should not match keywords", Justification = "<Pending>")]
         SelectExpression<T> Select<T>() where T : DatabaseEntity, new();
 
         /// <exception cref="HB.Framework.Common.ValidateErrorException"></exception>

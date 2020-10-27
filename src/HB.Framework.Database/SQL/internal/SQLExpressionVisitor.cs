@@ -207,9 +207,9 @@ namespace HB.Framework.Database.SQL
                 {
                     object obj = Visit(m.Expression, context);
 
-                    if (obj is Type)
+                    if (obj is Type type)
                     {
-                        modelType = (Type)obj;
+                        modelType = type;
                     }
                     else
                     {
@@ -220,7 +220,7 @@ namespace HB.Framework.Database.SQL
                 }
 
                 DatabaseEntityDef entityDef = context.EntityDefFactory.GetDef(modelType);
-                DatabaseEntityPropertyDef propertyDef = entityDef.GetProperty(m.Member.Name) 
+                DatabaseEntityPropertyDef propertyDef = entityDef.GetProperty(m.Member.Name)
                     ?? throw new DatabaseException($"Lack property definition: {m.Member.Name} of Entity:{entityDef.EntityFullName}");
 
                 string prefix = "";
