@@ -38,8 +38,8 @@ namespace HB.Framework.DatabaseTests
             _mysql = serviceFixture.MySQL;
             _sqlite = serviceFixture.SQLite;
 
-            _mysql.InitializeAsync();
-            _sqlite.InitializeAsync();
+            _ = _mysql.InitializeAsync();
+            _ = _sqlite.InitializeAsync();
         }
 
         /// <summary>

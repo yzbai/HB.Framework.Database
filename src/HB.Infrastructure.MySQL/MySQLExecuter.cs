@@ -27,7 +27,7 @@ namespace HB.Infrastructure.MySQL
             dbCommand.Transaction = mySqlTransaction;
 
             return ExecuteCommandReaderAsync(
-                mySqlTransaction.Connection ?? throw new DatabaseException(DatabaseError.TransactionConnectionIsNull, nameof(ExecuteCommandReaderAsync)),
+                mySqlTransaction.Connection ?? throw new DatabaseException(ServerErrorCode.DatabaseTransactionConnectionIsNull, null, $"CommandText:{dbCommand.CommandText}"),
                 false,
                 (MySqlCommand)dbCommand);
         }
@@ -88,11 +88,11 @@ namespace HB.Infrastructure.MySQL
 
                 if (ex is MySqlException mySqlException)
                 {
-                    throw new DatabaseException(DatabaseError.ExecuterError, nameof(ExecuteCommandReaderAsync), null, $"CommandText:{command.CommandText}", mySqlException);
+                    throw new DatabaseException(ServerErrorCode.DatabaseExecuterError, null, $"CommandText:{command.CommandText}", mySqlException);
                 }
                 else
                 {
-                    throw new DatabaseException(DatabaseError.Unkown, nameof(ExecuteCommandReaderAsync), null, $"CommandText:{command.CommandText}", ex);
+                    throw new DatabaseException(ServerErrorCode.DatabaseError, null, $"CommandText:{command.CommandText}", ex);
                 }
             }
         }
@@ -124,7 +124,10 @@ namespace HB.Infrastructure.MySQL
         public static Task<object> ExecuteCommandScalarAsync(MySqlTransaction mySqlTransaction, IDbCommand dbCommand)
         {
             dbCommand.Transaction = mySqlTransaction;
-            return ExecuteCommandScalarAsync(mySqlTransaction.Connection ?? throw new DatabaseException(DatabaseError.TransactionConnectionIsNull, null), false, (MySqlCommand)dbCommand);
+            return ExecuteCommandScalarAsync(
+                mySqlTransaction.Connection ?? throw new DatabaseException(ServerErrorCode.DatabaseTransactionConnectionIsNull, null, $"CommandText:{dbCommand.CommandText}"),
+                false,
+                (MySqlCommand)dbCommand);
         }
 
         /// <summary>
@@ -152,11 +155,11 @@ namespace HB.Infrastructure.MySQL
             }
             catch (MySqlException mysqlException)
             {
-                throw new DatabaseException(DatabaseError.ExecuterError, nameof(ExecuteCommandScalarAsync), null, $"CommandText:{command.CommandText}", mysqlException);
+                throw new DatabaseException(ServerErrorCode.DatabaseExecuterError, null, $"CommandText:{command.CommandText}", mysqlException);
             }
             catch (Exception ex)
             {
-                throw new DatabaseException(DatabaseError.Unkown, nameof(ExecuteCommandScalarAsync), null, $"CommandText:{command.CommandText}", ex);
+                throw new DatabaseException(ServerErrorCode.DatabaseError, null, $"CommandText:{command.CommandText}", ex);
             }
             finally
             {
@@ -197,7 +200,10 @@ namespace HB.Infrastructure.MySQL
         public static Task<int> ExecuteCommandNonQueryAsync(MySqlTransaction mySqlTransaction, IDbCommand dbCommand)
         {
             dbCommand.Transaction = mySqlTransaction;
-            return ExecuteCommandNonQueryAsync(mySqlTransaction.Connection ?? throw new DatabaseException(DatabaseError.TransactionConnectionIsNull, null), false, (MySqlCommand)dbCommand);
+            return ExecuteCommandNonQueryAsync(
+                mySqlTransaction.Connection ?? throw new DatabaseException(ServerErrorCode.DatabaseTransactionConnectionIsNull, null, $"CommandText:{dbCommand.CommandText}"),
+                false,
+                (MySqlCommand)dbCommand);
         }
 
         /// <summary>
@@ -225,11 +231,11 @@ namespace HB.Infrastructure.MySQL
             }
             catch (MySqlException mysqlException)
             {
-                throw new DatabaseException(DatabaseError.ExecuterError, nameof(ExecuteCommandNonQueryAsync), null, $"CommandText:{command.CommandText}", mysqlException);
+                throw new DatabaseException(ServerErrorCode.DatabaseExecuterError, null, $"CommandText:{command.CommandText}", mysqlException);
             }
             catch (Exception ex)
             {
-                throw new DatabaseException(DatabaseError.Unkown, nameof(ExecuteCommandNonQueryAsync), null, $"CommandText:{command.CommandText}", ex);
+                throw new DatabaseException(ServerErrorCode.DatabaseError, null, $"CommandText:{command.CommandText}", ex);
             }
             finally
             {
@@ -322,7 +328,7 @@ namespace HB.Infrastructure.MySQL
         /// <exception cref="DatabaseException"></exception>
         public static Task<int> ExecuteSPNonQueryAsync(MySqlTransaction mySqlTransaction, string spName, IList<IDataParameter> parameters)
         {
-            return ExecuteSPNonQueryAsync(mySqlTransaction.Connection ?? throw new DatabaseException(DatabaseError.TransactionConnectionIsNull, null), mySqlTransaction, false, spName, parameters);
+            return ExecuteSPNonQueryAsync(mySqlTransaction.Connection ?? throw new DatabaseException(ServerErrorCode.DatabaseTransactionConnectionIsNull, null, $"SpName:{spName}"), mySqlTransaction, false, spName, parameters);
         }
 
         /// <summary>
@@ -348,11 +354,11 @@ namespace HB.Infrastructure.MySQL
             }
             catch (MySqlException mysqlException)
             {
-                throw new DatabaseException(DatabaseError.ExecuterError, nameof(ExecuteCommandNonQueryAsync), null, $"CommandText:{command.CommandText}", mysqlException);
+                throw new DatabaseException(ServerErrorCode.DatabaseExecuterError, null, $"CommandText:{command.CommandText}", mysqlException);
             }
             catch (Exception ex)
             {
-                throw new DatabaseException(DatabaseError.Unkown, nameof(ExecuteCommandNonQueryAsync), null, $"CommandText:{command.CommandText}", ex);
+                throw new DatabaseException(ServerErrorCode.DatabaseError, null, $"CommandText:{command.CommandText}", ex);
             }
             finally
             {
@@ -382,7 +388,7 @@ namespace HB.Infrastructure.MySQL
         /// <exception cref="DatabaseException"></exception>
         public static Task<object> ExecuteSPScalarAsync(MySqlTransaction mySqlTransaction, string spName, IList<IDataParameter> parameters)
         {
-            return ExecuteSPScalarAsync(mySqlTransaction.Connection ?? throw new DatabaseException(DatabaseError.TransactionConnectionIsNull, null), mySqlTransaction, false, spName, parameters);
+            return ExecuteSPScalarAsync(mySqlTransaction.Connection ?? throw new DatabaseException(ServerErrorCode.DatabaseTransactionConnectionIsNull, null, $"SpName:{spName}"), mySqlTransaction, false, spName, parameters);
         }
 
         /// <summary>
@@ -422,11 +428,11 @@ namespace HB.Infrastructure.MySQL
             }
             catch (MySqlException mysqlException)
             {
-                throw new DatabaseException(DatabaseError.ExecuterError, nameof(ExecuteSPScalarAsync), null, $"CommandText:{command.CommandText}", mysqlException);
+                throw new DatabaseException(ServerErrorCode.DatabaseExecuterError, null, $"CommandText:{command.CommandText}", mysqlException);
             }
             catch (Exception ex)
             {
-                throw new DatabaseException(DatabaseError.Unkown, nameof(ExecuteSPScalarAsync), null, $"CommandText:{command.CommandText}", ex);
+                throw new DatabaseException(ServerErrorCode.DatabaseError, null, $"CommandText:{command.CommandText}", ex);
             }
             finally
             {
@@ -471,7 +477,7 @@ namespace HB.Infrastructure.MySQL
         /// <exception cref="DatabaseException"></exception>
         public static Task<Tuple<IDbCommand, IDataReader>> ExecuteSPReaderAsync(MySqlTransaction mySqlTransaction, string spName, IList<IDataParameter> dbParameters)
         {
-            return ExecuteSPReaderAsync(mySqlTransaction.Connection ?? throw new DatabaseException(DatabaseError.TransactionConnectionIsNull, null), mySqlTransaction, false, spName, dbParameters);
+            return ExecuteSPReaderAsync(mySqlTransaction.Connection ?? throw new DatabaseException(ServerErrorCode.DatabaseTransactionConnectionIsNull, null, $"SpName:{spName}"), mySqlTransaction, false, spName, dbParameters);
         }
 
         /// <summary>
@@ -514,11 +520,11 @@ namespace HB.Infrastructure.MySQL
 
                 if (ex is MySqlException mySqlException)
                 {
-                    throw new DatabaseException(DatabaseError.ExecuterError, nameof(ExecuteSPReaderAsync), null, $"CommandText:{command.CommandText}", mySqlException);
+                    throw new DatabaseException(ServerErrorCode.DatabaseExecuterError, null, $"CommandText:{command.CommandText}", mySqlException);
                 }
                 else
                 {
-                    throw new DatabaseException(DatabaseError.Unkown, nameof(ExecuteSPReaderAsync), null, $"CommandText:{command.CommandText}", ex);
+                    throw new DatabaseException(ServerErrorCode.DatabaseError, null, $"CommandText:{command.CommandText}", ex);
                 }
             }
 
