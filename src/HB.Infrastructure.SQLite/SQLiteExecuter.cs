@@ -88,11 +88,11 @@ namespace HB.Infrastructure.SQLite
 
                 if (ex is SqliteException sqliteException)
                 {
-                    throw new DatabaseException(ServerErrorCode.DatabaseExecuterError, null, $"CommandText:{command.CommandText}", sqliteException);
+                    throw new DatabaseException(ErrorCode.DatabaseExecuterError, null, $"CommandText:{command.CommandText}", sqliteException);
                 }
                 else
                 {
-                    throw new DatabaseException(ServerErrorCode.DatabaseError, null, $"CommandText:{command.CommandText}", ex);
+                    throw new DatabaseException(ErrorCode.DatabaseError, null, $"CommandText:{command.CommandText}", ex);
                 }
             }
         }
@@ -152,11 +152,11 @@ namespace HB.Infrastructure.SQLite
             }
             catch (SqliteException sqliteException)
             {
-                throw new DatabaseException(ServerErrorCode.DatabaseExecuterError, null, $"CommandText:{command.CommandText}", sqliteException);
+                throw new DatabaseException(ErrorCode.DatabaseExecuterError, null, $"CommandText:{command.CommandText}", sqliteException);
             }
             catch (Exception ex)
             {
-                throw new DatabaseException(ServerErrorCode.DatabaseError, null, $"CommandText:{command.CommandText}", ex);
+                throw new DatabaseException(ErrorCode.DatabaseError, null, $"CommandText:{command.CommandText}", ex);
             }
             finally
             {
@@ -225,11 +225,11 @@ namespace HB.Infrastructure.SQLite
             }
             catch (SqliteException sqliteException)
             {
-                throw new DatabaseException(ServerErrorCode.DatabaseExecuterError, null, $"CommandText:{command.CommandText}", sqliteException);
+                throw new DatabaseException(ErrorCode.DatabaseExecuterError, null, $"CommandText:{command.CommandText}", sqliteException);
             }
             catch (Exception ex)
             {
-                throw new DatabaseException(ServerErrorCode.DatabaseError, null, $"CommandText:{command.CommandText}", ex);
+                throw new DatabaseException(ErrorCode.DatabaseError, null, $"CommandText:{command.CommandText}", ex);
             }
             finally
             {

@@ -109,7 +109,7 @@ namespace HB.Framework.Database
                             if (_databaseSettings.Version != 1)
                             {
                                 await RollbackAsync(transactionContext).ConfigureAwait(false);
-                                throw new DatabaseException(ServerErrorCode.DatabaseTableCreateError,
+                                throw new DatabaseException(ErrorCode.DatabaseTableCreateError,
                                                             "",
                                                             $"Database:{databaseName} does not exists, database Version must be 1");
                             }
@@ -130,7 +130,7 @@ namespace HB.Framework.Database
                             throw;
                         }
 
-                        throw new DatabaseException(ServerErrorCode.DatabaseTableCreateError, null, $"Database:{databaseName}", ex);
+                        throw new DatabaseException(ErrorCode.DatabaseTableCreateError, null, $"Database:{databaseName}", ex);
                     }
 
                 }).ConfigureAwait(false);
@@ -147,7 +147,7 @@ namespace HB.Framework.Database
         {
             if (!def.IsTableModel)
             {
-                throw new DatabaseException(ServerErrorCode.DatabaseNotATableModel, def.EntityFullName);
+                throw new DatabaseException(ErrorCode.DatabaseNotATableModel, def.EntityFullName);
             }
 
             IDbCommand command = _sqlBuilder.CreateTableCommand(def.EntityType, false);
@@ -179,7 +179,7 @@ namespace HB.Framework.Database
         {
             if (migrations != null && migrations.Any(m => m.NewVersion <= m.OldVersion))
             {
-                throw new DatabaseException(ServerErrorCode.DatabaseMigrateError, "", Resources.MigrationVersionErrorMessage);
+                throw new DatabaseException(ErrorCode.DatabaseMigrateError, "", Resources.MigrationVersionErrorMessage);
             }
 
             await _databaseEngine.GetDatabaseNames().ForEachAsync(async databaseName =>
@@ -195,7 +195,7 @@ namespace HB.Framework.Database
                      {
                          if (migrations == null)
                          {
-                             throw new DatabaseException(ServerErrorCode.DatabaseMigrateError, "", $"Lack Migrations for {sys.DatabaseName}");
+                             throw new DatabaseException(ErrorCode.DatabaseMigrateError, "", $"Lack Migrations for {sys.DatabaseName}");
                          }
 
                          IOrderedEnumerable<Migration> curOrderedMigrations = migrations
@@ -204,12 +204,12 @@ namespace HB.Framework.Database
 
                          if (curOrderedMigrations == null)
                          {
-                             throw new DatabaseException(ServerErrorCode.DatabaseMigrateError, "", $"Lack Migrations for {sys.DatabaseName}");
+                             throw new DatabaseException(ErrorCode.DatabaseMigrateError, "", $"Lack Migrations for {sys.DatabaseName}");
                          }
 
                          if (!CheckMigration(sys.Version, _databaseSettings.Version, curOrderedMigrations))
                          {
-                             throw new DatabaseException(ServerErrorCode.DatabaseMigrateError, "", $"Can not perform Migration on ${sys.DatabaseName}, because the migrations provided is not sufficient.");
+                             throw new DatabaseException(ErrorCode.DatabaseMigrateError, "", $"Can not perform Migration on ${sys.DatabaseName}, because the migrations provided is not sufficient.");
                          }
 
                          await curOrderedMigrations.ForEachAsync(async migration =>
@@ -235,7 +235,7 @@ namespace HB.Framework.Database
                          throw;
                      }
 
-                     throw new DatabaseException(ServerErrorCode.DatabaseMigrateError, null, $"Database:{databaseName}", ex);
+                     throw new DatabaseException(ErrorCode.DatabaseMigrateError, null, $"Database:{databaseName}", ex);
                  }
              }).ConfigureAwait(false);
         }
@@ -384,7 +384,7 @@ namespace HB.Framework.Database
             if (lst.Count() > 1)
             {
                 string detail = $"Scalar retrieve return more than one result. Select:{selectCondition}, From:{fromCondition}, Where:{whereCondition}";
-                DatabaseException exception = new DatabaseException(ServerErrorCode.DatabaseFoundTooMuch, typeof(T).FullName, detail);
+                DatabaseException exception = new DatabaseException(ErrorCode.DatabaseFoundTooMuch, typeof(T).FullName, detail);
                 //_logger.LogException(exception);
 
                 throw exception;
@@ -444,7 +444,7 @@ namespace HB.Framework.Database
                 //}
 
                 string detail = $"select:{selectCondition}, from:{fromCondition}, where:{whereCondition}";
-                throw new DatabaseException(ServerErrorCode.DatabaseError, selectDef.EntityFullName, detail, ex);
+                throw new DatabaseException(ErrorCode.DatabaseError, selectDef.EntityFullName, detail, ex);
             }
             finally
             {
@@ -505,7 +505,7 @@ namespace HB.Framework.Database
 
                 string detail = $"select:{selectCondition}, from:{fromCondition}, where:{whereCondition}";
 
-                throw new DatabaseException(ServerErrorCode.DatabaseError, entityDef.EntityFullName, detail, ex);
+                throw new DatabaseException(ErrorCode.DatabaseError, entityDef.EntityFullName, detail, ex);
             }
             finally
             {
@@ -580,7 +580,7 @@ namespace HB.Framework.Database
             catch (Exception ex) when (!(ex is DatabaseException))
             {
                 string detail = $"select:{selectCondition}, from:{fromCondition}, where:{whereCondition}";
-                throw new DatabaseException(ServerErrorCode.DatabaseError, entityDef.EntityFullName, detail, ex);
+                throw new DatabaseException(ErrorCode.DatabaseError, entityDef.EntityFullName, detail, ex);
             }
 
             return count;
@@ -824,7 +824,7 @@ namespace HB.Framework.Database
             catch (Exception ex) when (!(ex is DatabaseException))
             {
                 string detail = $"from:{fromCondition}, where:{whereCondition}";
-                DatabaseException exception = new DatabaseException(ServerErrorCode.DatabaseError, entityDef.EntityFullName, detail, ex);
+                DatabaseException exception = new DatabaseException(ErrorCode.DatabaseError, entityDef.EntityFullName, detail, ex);
 
                 //_logger.LogException(exception);
 
@@ -875,7 +875,7 @@ namespace HB.Framework.Database
             if (lst.Count() > 1)
             {
                 string message = $"Scalar retrieve return more than one result. From:{fromCondition}, Where:{whereCondition}";
-                DatabaseException exception = new DatabaseException(ServerErrorCode.DatabaseFoundTooMuch, typeof(TSource).FullName, message);
+                DatabaseException exception = new DatabaseException(ErrorCode.DatabaseFoundTooMuch, typeof(TSource).FullName, message);
                 //_logger.LogException(exception);
 
                 throw exception;
@@ -939,7 +939,7 @@ namespace HB.Framework.Database
             catch (Exception ex) when (!(ex is DatabaseException))
             {
                 string detail = $"from:{fromCondition}, where:{whereCondition}";
-                throw new DatabaseException(ServerErrorCode.DatabaseError, entityDef.EntityFullName, detail, ex);
+                throw new DatabaseException(ErrorCode.DatabaseError, entityDef.EntityFullName, detail, ex);
             }
             finally
             {
@@ -989,7 +989,7 @@ namespace HB.Framework.Database
             if (lst.Count() > 1)
             {
                 string message = $"Scalar retrieve return more than one result. From:{fromCondition}, Where:{whereCondition}";
-                DatabaseException exception = new DatabaseException(ServerErrorCode.DatabaseFoundTooMuch, typeof(TSource).FullName, message);
+                DatabaseException exception = new DatabaseException(ErrorCode.DatabaseFoundTooMuch, typeof(TSource).FullName, message);
                 //_logger.LogException(exception);
 
                 throw exception;
@@ -1015,7 +1015,7 @@ namespace HB.Framework.Database
 
             if (!entityDef.DatabaseWriteable)
             {
-                throw new DatabaseException(ServerErrorCode.DatabaseNotWriteable, entityDef.EntityFullName, $"Entity:{SerializeUtil.ToJson(item)}");
+                throw new DatabaseException(ErrorCode.DatabaseNotWriteable, entityDef.EntityFullName, $"Entity:{SerializeUtil.ToJson(item)}");
             }
 
             IDbCommand? dbCommand = null;
@@ -1033,7 +1033,7 @@ namespace HB.Framework.Database
             {
                 string detail = $"Item:{SerializeUtil.ToJson(item)}";
 
-                throw new DatabaseException(ServerErrorCode.DatabaseError, entityDef.EntityFullName, detail, ex); ;
+                throw new DatabaseException(ErrorCode.DatabaseError, entityDef.EntityFullName, detail, ex); ;
             }
             finally
             {
@@ -1055,7 +1055,7 @@ namespace HB.Framework.Database
 
             if (!entityDef.DatabaseWriteable)
             {
-                throw new DatabaseException(ServerErrorCode.DatabaseNotWriteable, entityDef.EntityFullName, $"Entity:{SerializeUtil.ToJson(item)}");
+                throw new DatabaseException(ErrorCode.DatabaseNotWriteable, entityDef.EntityFullName, $"Entity:{SerializeUtil.ToJson(item)}");
             }
 
             long id = item.Id;
@@ -1074,15 +1074,15 @@ namespace HB.Framework.Database
                 }
                 else if (rows == 0)
                 {
-                    throw new DatabaseException(ServerErrorCode.DatabaseNotFound, entityDef.EntityFullName, $"Entity:{SerializeUtil.ToJson(item)}");
+                    throw new DatabaseException(ErrorCode.DatabaseNotFound, entityDef.EntityFullName, $"Entity:{SerializeUtil.ToJson(item)}");
                 }
 
-                throw new DatabaseException(ServerErrorCode.DatabaseFoundTooMuch, entityDef.EntityFullName, $"Multiple Rows Affected instead of one. Something go wrong. Entity:{SerializeUtil.ToJson(item)}");
+                throw new DatabaseException(ErrorCode.DatabaseFoundTooMuch, entityDef.EntityFullName, $"Multiple Rows Affected instead of one. Something go wrong. Entity:{SerializeUtil.ToJson(item)}");
             }
             catch (Exception ex) when (!(ex is DatabaseException))
             {
                 string detail = $"Item:{SerializeUtil.ToJson(item)}";
-                throw new DatabaseException(ServerErrorCode.DatabaseError, entityDef.EntityFullName, detail, ex);
+                throw new DatabaseException(ErrorCode.DatabaseError, entityDef.EntityFullName, detail, ex);
             }
         }
 
@@ -1100,7 +1100,7 @@ namespace HB.Framework.Database
 
             if (!entityDef.DatabaseWriteable)
             {
-                throw new DatabaseException(ServerErrorCode.DatabaseNotWriteable, entityDef.EntityFullName, $"Entity:{SerializeUtil.ToJson(item)}");
+                throw new DatabaseException(ErrorCode.DatabaseNotWriteable, entityDef.EntityFullName, $"Entity:{SerializeUtil.ToJson(item)}");
             }
 
             WhereExpression<T> condition = Where<T>();
@@ -1125,15 +1125,15 @@ namespace HB.Framework.Database
                 }
                 else if (rows == 0)
                 {
-                    throw new DatabaseException(ServerErrorCode.DatabaseNotFound, entityDef.EntityFullName, $"Entity:{SerializeUtil.ToJson(item)}");
+                    throw new DatabaseException(ErrorCode.DatabaseNotFound, entityDef.EntityFullName, $"Entity:{SerializeUtil.ToJson(item)}");
                 }
 
-                throw new DatabaseException(ServerErrorCode.DatabaseFoundTooMuch, entityDef.EntityFullName, $"Multiple Rows Affected instead of one. Something go wrong. Entity:{SerializeUtil.ToJson(item)}");
+                throw new DatabaseException(ErrorCode.DatabaseFoundTooMuch, entityDef.EntityFullName, $"Multiple Rows Affected instead of one. Something go wrong. Entity:{SerializeUtil.ToJson(item)}");
             }
             catch (Exception ex) when (!(ex is DatabaseException))
             {
                 string detail = $"Item:{SerializeUtil.ToJson(item)}";
-                throw new DatabaseException(ServerErrorCode.DatabaseError, entityDef.EntityFullName, detail, ex);
+                throw new DatabaseException(ErrorCode.DatabaseError, entityDef.EntityFullName, detail, ex);
             }
         }
 
@@ -1162,7 +1162,7 @@ namespace HB.Framework.Database
 
             if (!entityDef.DatabaseWriteable)
             {
-                throw new DatabaseException(ServerErrorCode.DatabaseNotWriteable, entityDef.EntityFullName, $"Items:{SerializeUtil.ToJson(items)}");
+                throw new DatabaseException(ErrorCode.DatabaseNotWriteable, entityDef.EntityFullName, $"Items:{SerializeUtil.ToJson(items)}");
             }
 
             IDbCommand? dbCommand = null;
@@ -1193,7 +1193,7 @@ namespace HB.Framework.Database
 
                 if (newIds.Count != items.Count())
                 {
-                    throw new DatabaseException(ServerErrorCode.DatabaseNotMatch, entityDef.EntityFullName, $"Items:{SerializeUtil.ToJson(items)}");
+                    throw new DatabaseException(ErrorCode.DatabaseNotMatch, entityDef.EntityFullName, $"Items:{SerializeUtil.ToJson(items)}");
                 }
 
                 return newIds;
@@ -1201,7 +1201,7 @@ namespace HB.Framework.Database
             catch (Exception ex) when (!(ex is DatabaseException))
             {
                 string detail = $"Items:{SerializeUtil.ToJson(items)}";
-                throw new DatabaseException(ServerErrorCode.DatabaseError, entityDef.EntityFullName, detail, ex);
+                throw new DatabaseException(ErrorCode.DatabaseError, entityDef.EntityFullName, detail, ex);
             }
             finally
             {
@@ -1230,7 +1230,7 @@ namespace HB.Framework.Database
 
             if (!entityDef.DatabaseWriteable)
             {
-                throw new DatabaseException(ServerErrorCode.DatabaseNotWriteable, entityDef.EntityFullName, $"Items:{SerializeUtil.ToJson(items)}");
+                throw new DatabaseException(ErrorCode.DatabaseNotWriteable, entityDef.EntityFullName, $"Items:{SerializeUtil.ToJson(items)}");
             }
 
             IDbCommand? dbCommand = null;
@@ -1253,19 +1253,19 @@ namespace HB.Framework.Database
 
                     if (matched != 1)
                     {
-                        throw new DatabaseException(ServerErrorCode.DatabaseNotFound, entityDef.EntityFullName, $"BatchUpdate wrong, not found the {" + count + "}th data item. Items:{SerializeUtil.ToJson(items)}");
+                        throw new DatabaseException(ErrorCode.DatabaseNotFound, entityDef.EntityFullName, $"BatchUpdate wrong, not found the {" + count + "}th data item. Items:{SerializeUtil.ToJson(items)}");
                     }
 
                     count++;
                 }
 
                 if (count != items.Count())
-                    throw new DatabaseException(ServerErrorCode.DatabaseNotFound, entityDef.EntityFullName, $"BatchUpdate wrong number return. Some data item not found. Items:{SerializeUtil.ToJson(items)}");
+                    throw new DatabaseException(ErrorCode.DatabaseNotFound, entityDef.EntityFullName, $"BatchUpdate wrong number return. Some data item not found. Items:{SerializeUtil.ToJson(items)}");
             }
             catch (Exception ex) when (!(ex is DatabaseException))
             {
                 string detail = $"Items:{SerializeUtil.ToJson(items)}";
-                throw new DatabaseException(ServerErrorCode.DatabaseError, entityDef.EntityFullName, detail, ex);
+                throw new DatabaseException(ErrorCode.DatabaseError, entityDef.EntityFullName, detail, ex);
             }
             finally
             {
@@ -1296,7 +1296,7 @@ namespace HB.Framework.Database
 
             if (!entityDef.DatabaseWriteable)
             {
-                throw new DatabaseException(ServerErrorCode.DatabaseNotWriteable, entityDef.EntityFullName, $"Items:{SerializeUtil.ToJson(items)}");
+                throw new DatabaseException(ErrorCode.DatabaseNotWriteable, entityDef.EntityFullName, $"Items:{SerializeUtil.ToJson(items)}");
             }
 
             IDbCommand? dbCommand = null;
@@ -1319,7 +1319,7 @@ namespace HB.Framework.Database
 
                     if (affected != 1)
                     {
-                        throw new DatabaseException(ServerErrorCode.DatabaseNotFound, entityDef.EntityFullName, $"BatchDelete wrong, not found the {" + count + "}th data item. Items:{SerializeUtil.ToJson(items)}");
+                        throw new DatabaseException(ErrorCode.DatabaseNotFound, entityDef.EntityFullName, $"BatchDelete wrong, not found the {" + count + "}th data item. Items:{SerializeUtil.ToJson(items)}");
                     }
 
                     count++;
@@ -1327,13 +1327,13 @@ namespace HB.Framework.Database
 
                 if (count != items.Count())
                 {
-                    throw new DatabaseException(ServerErrorCode.DatabaseNotFound, entityDef.EntityFullName, $"BatchDelete wrong number return. Some data item not found. Items:{SerializeUtil.ToJson(items)}");
+                    throw new DatabaseException(ErrorCode.DatabaseNotFound, entityDef.EntityFullName, $"BatchDelete wrong number return. Some data item not found. Items:{SerializeUtil.ToJson(items)}");
                 }
             }
             catch (Exception ex) when (!(ex is DatabaseException))
             {
                 string detail = $"Items:{SerializeUtil.ToJson(items)}";
-                throw new DatabaseException(ServerErrorCode.DatabaseError, entityDef.EntityFullName, detail, ex);
+                throw new DatabaseException(ErrorCode.DatabaseError, entityDef.EntityFullName, detail, ex);
             }
             finally
             {
@@ -1365,7 +1365,7 @@ namespace HB.Framework.Database
 
             if (!entityDef.IsTableModel)
             {
-                throw new DatabaseException(ServerErrorCode.DatabaseNotATableModel, entityDef.EntityFullName);
+                throw new DatabaseException(ErrorCode.DatabaseNotATableModel, entityDef.EntityFullName);
             }
 
             return BeginTransactionAsync(entityDef.DatabaseName!, isolationLevel);
@@ -1389,7 +1389,7 @@ namespace HB.Framework.Database
 
             if (context.Status != TransactionStatus.InTransaction)
             {
-                throw new DatabaseException(ServerErrorCode.DatabaseTransactionError, Resources.TransactionAlreadyFinishedMessage);
+                throw new DatabaseException(ErrorCode.DatabaseTransactionError, Resources.TransactionAlreadyFinishedMessage);
             }
 
             try
@@ -1433,7 +1433,7 @@ namespace HB.Framework.Database
 
             if (context.Status != TransactionStatus.InTransaction)
             {
-                throw new DatabaseException(ServerErrorCode.DatabaseTransactionError, Resources.TransactionAlreadyFinishedMessage);
+                throw new DatabaseException(ErrorCode.DatabaseTransactionError, Resources.TransactionAlreadyFinishedMessage);
             }
 
             try

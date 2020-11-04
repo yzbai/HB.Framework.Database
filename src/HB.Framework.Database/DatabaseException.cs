@@ -7,9 +7,9 @@ using System.Runtime.CompilerServices;
 
 namespace HB.Framework.Database
 {
-    public class DatabaseException : ServerException
+    public class DatabaseException : FrameworkException
     {
-        public DatabaseException(ServerErrorCode errorCode, string? whoEntityName = null, string? detail = null, Exception? innerException = null)
+        public DatabaseException(ErrorCode errorCode, string? whoEntityName = null, string? detail = null, Exception? innerException = null)
             : base(errorCode, $"EntityName:{whoEntityName}, Detail:{detail}", innerException)
         {
 
