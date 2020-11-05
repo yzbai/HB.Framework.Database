@@ -1,33 +1,34 @@
-﻿using System;
+﻿#nullable enable
+
+using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace HB.Framework.Database.Entity
 {
     internal class DatabaseTypeConverterFactory : IDatabaseTypeConverterFactory
     {
-        private readonly IDictionary<Type, DatabaseTypeConverter> converterDict = new Dictionary<Type, DatabaseTypeConverter>();
+        private readonly IDictionary<Type, DatabaseTypeConverter> _converterDict = new Dictionary<Type, DatabaseTypeConverter>();
 
-        public DatabaseTypeConverterFactory()
-        {
+        public DatabaseTypeConverterFactory() { }
 
-        }
-
-        public DatabaseTypeConverter GetTypeConverter(Type type)
+        public DatabaseTypeConverter? GetTypeConverter(Type type)
         {
             if (!type.IsSubclassOf(typeof(DatabaseTypeConverter)))
             {
                 return null;
             }
 
-            if (converterDict.ContainsKey(type))
+            if (_converterDict.ContainsKey(type))
             {
-                return converterDict[type];
+                return _converterDict[type];
             }
 
-            DatabaseTypeConverter typeConverter = Activator.CreateInstance(type) as DatabaseTypeConverter;
+            DatabaseTypeConverter? typeConverter = Activator.CreateInstance(type) as DatabaseTypeConverter;
 
-            converterDict.Add(type, typeConverter);
+            if (typeConverter != null)
+            {
+                _converterDict.Add(type, typeConverter);
+            }
 
             return typeConverter;
         }

@@ -1,6 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿#nullable enable
+
+using HB.Framework.Database.Properties;
+using System;
 
 namespace HB.Framework.Database
 {
@@ -12,29 +13,28 @@ namespace HB.Framework.Database
 
         public string TargetSchema { get; set; }
 
-        public Migration() { }
-
+        /// <exception cref="System.ArgumentException"></exception>
         public Migration(string targetSchema, int oldVersion, int newVersion, string sql)
         {
-            if (targetSchema.IsNullOrEmpty())
-            {
-                throw new ArgumentNullException(nameof(targetSchema));
-            }
+            //if (targetSchema.IsNullOrEmpty())
+            //{
+            //    throw new ArgumentNullException(nameof(targetSchema));
+            //}
 
             if (oldVersion < 1)
             {
-                throw new ArgumentException("version should greater than 1.");
+                throw new ArgumentException(Resources.MigrateOldVersionErrorMessage);
             }
 
             if (newVersion != oldVersion + 1)
             {
-                throw new ArgumentException("Now days, you can only take 1 step further each time.");
+                throw new ArgumentException(Resources.MigrateVersionStepErrorMessage);
             }
 
-            if (sql.IsNullOrEmpty())
-            {
-                throw new ArgumentNullException(nameof(sql));
-            }
+            //if (sql.IsNullOrEmpty())
+            //{
+            //    throw new ArgumentNullException(nameof(sql));
+            //}
 
             TargetSchema = targetSchema;
             OldVersion = oldVersion;

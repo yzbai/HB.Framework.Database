@@ -1,30 +1,61 @@
-﻿using HB.Framework.Database.Entity;
-using HB.Infrastructure.MySQL;
+﻿using HB.Framework.Database;
+using HB.Framework.Database.Entity;
 using System;
 using System.Collections.Generic;
-using System.Text;
+using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace HB.Framework.Database.Test
+namespace HB.Framework.DatabaseTests
 {
-    [TestCaseOrderer("HB.Framework.Database.Test.TestCaseOrdererByTestName", "HB.Framework.Database.Test")]
-    public class MutipleTableTest
+    //[TestCaseOrderer("HB.Framework.Database.Test.TestCaseOrdererByTestName", "HB.Framework.Database.Test")]
+    public class MutipleTableTest : IClassFixture<ServiceFixture>
     {
-        private IDatabase db;
-        private ITestOutputHelper output; 
+        private readonly IDatabase _mysql;
+        private readonly IDatabase _sqlite;
+        private readonly ITestOutputHelper _output;
 
-        public MutipleTableTest(ITestOutputHelper testOutputHelper)
+        /// <exception cref="System.ArgumentException"></exception>
+        private IDatabase GetDatabase(string databaseType) =>
+            databaseType switch
+            {
+                "MySQL" => _mysql,
+                "SQLite" => _sqlite,
+                _ => throw new ArgumentException(nameof(databaseType))
+            };
+
+        /// <summary>
+        /// ctor
+        /// </summary>
+        /// <param name="testOutputHelper"></param>
+        /// <param name="serviceFixture"></param>
+        /// <exception cref="DatabaseException">Ignore.</exception>
+        /// <exception cref="ObjectDisposedException">Ignore.</exception>
+        /// <exception cref="AggregateException">Ignore.</exception>
+        public MutipleTableTest(ITestOutputHelper testOutputHelper, ServiceFixture serviceFixture)
         {
-            output = testOutputHelper;
+            _output = testOutputHelper;
 
-            db = GetDatabase();
+            _mysql = serviceFixture.MySQL;
+            _sqlite = serviceFixture.SQLite;
 
-            AddSomeData();
+            _ = _mysql.InitializeAsync();
+            _ = _sqlite.InitializeAsync();
+
+#pragma warning disable VSTHRD002 // Avoid problematic synchronous waits
+            AddSomeDataAsync().Wait();
+#pragma warning restore VSTHRD002 // Avoid problematic synchronous waits
 
         }
 
-        private void AddSomeData()
+        /// <summary>
+        /// AddSomeDataAsync
+        /// </summary>
+        /// <returns></returns>
+        /// <exception cref="HB.Framework.Common.ValidateErrorException">Ignore.</exception>
+        /// <exception cref="DatabaseException">Ignore.</exception>
+        private async Task AddSomeDataAsync()
         {
             A a1 = new A { Name = "a1" };
             A a2 = new A { Name = "a2" };
@@ -46,48 +77,60 @@ namespace HB.Framework.Database.Test
             C c5 = new C { AId = a2.Guid };
             C c6 = new C { AId = a3.Guid };
 
-            db.Add(a1, null);
-            db.Add(a2, null);
-            db.Add(a3, null);
+            await _mysql.AddAsync(a2, null);
+            await _mysql.AddAsync(a1, null);
+            await _mysql.AddAsync(a3, null);
 
-            db.Add(b1, null);
-            db.Add(b2, null);
+            await _mysql.AddAsync(b1, null);
+            await _mysql.AddAsync(b2, null);
 
-            db.Add(a1b1, null);
-            db.Add(a1b2, null);
-            db.Add(a2b1, null);
-            db.Add(a3b2, null);
+            await _mysql.AddAsync(a1b1, null);
+            await _mysql.AddAsync(a1b2, null);
+            await _mysql.AddAsync(a2b1, null);
+            await _mysql.AddAsync(a3b2, null);
 
-            db.Add(c1, null);
-            db.Add(c2, null);
-            db.Add(c3, null);
-            db.Add(c4, null);
-            db.Add(c5, null);
-            db.Add(c6, null);
+            await _mysql.AddAsync(c1, null);
+            await _mysql.AddAsync(c2, null);
+            await _mysql.AddAsync(c3, null);
+            await _mysql.AddAsync(c4, null);
+            await _mysql.AddAsync(c5, null);
+            await _mysql.AddAsync(c6, null);
+
+
+            await _sqlite.AddAsync(a2, null);
+            await _sqlite.AddAsync(a1, null);
+            await _sqlite.AddAsync(a3, null);
+
+            await _sqlite.AddAsync(b1, null);
+            await _sqlite.AddAsync(b2, null);
+
+            await _sqlite.AddAsync(a1b1, null);
+            await _sqlite.AddAsync(a1b2, null);
+            await _sqlite.AddAsync(a2b1, null);
+            await _sqlite.AddAsync(a3b2, null);
+
+            await _sqlite.AddAsync(c1, null);
+            await _sqlite.AddAsync(c2, null);
+            await _sqlite.AddAsync(c3, null);
+            await _sqlite.AddAsync(c4, null);
+            await _sqlite.AddAsync(c5, null);
+            await _sqlite.AddAsync(c6, null);
         }
 
-        private IDatabase GetDatabase()
+        /// <summary>
+        /// Test_1_ThreeTable_JoinTestAsync
+        /// </summary>
+        /// <param name="databaseType"></param>
+        /// <returns></returns>
+        /// <exception cref="Exception">Ignore.</exception>
+        [Theory]
+        [InlineData("MySQL")]
+        [InlineData("SQLite")]
+        public async Task Test_1_ThreeTable_JoinTestAsync(string databaseType)
         {
-            MySQLOptions mySQLOptions = new MySQLOptions();
+            IDatabase database = GetDatabase(databaseType);
 
-            mySQLOptions.DatabaseSettings.Version = 1;
-            mySQLOptions.Schemas.Add(new SchemaInfo {
-                SchemaName = "test_db",
-                IsMaster = true,
-                ConnectionString = "server=127.0.0.1;port=3306;user=admin;password=_admin;database=test_db;SslMode=None"
-            });
-
-            IDatabase database = new DatabaseBuilder(new MySQLBuilder(mySQLOptions).Build()).Build();
-
-            database.Initialize();
-
-            return database;
-        }
-
-        [Fact]
-        public void Test_1_ThreeTable_JoinTest()
-        {
-            var from = db
+            var from = database
                 .From<A>()
                 .LeftJoin<AB>((a, ab) => ab.AId == a.Guid)
                 .LeftJoin<AB, B>((ab, b) => ab.BId == b.Guid);
@@ -95,35 +138,44 @@ namespace HB.Framework.Database.Test
 
             try
             {
-                var result = db.Retrieve<A, AB, B>(from, db.Where<A>(), null);
-                Assert.True(result.Count > 0);
+                IEnumerable<Tuple<A, AB?, B?>>? result = await database.RetrieveAsync<A, AB, B>(from, database.Where<A>(), null);
+                Assert.True(result.Count() > 0);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
-                output.WriteLine(ex.Message);
+                _output.WriteLine(ex.Message);
 
                 throw ex;
             }
 
-            
+
         }
 
-        [Fact]
-        public void Test_2_TwoTable_JoinTest()
+        /// <summary>
+        /// Test_2_TwoTable_JoinTestAsync
+        /// </summary>
+        /// <param name="databaseType"></param>
+        /// <returns></returns>
+        /// <exception cref="Exception">Ignore.</exception>
+        [Theory]
+        [InlineData("MySQL")]
+        [InlineData("SQLite")]
+        public async Task Test_2_TwoTable_JoinTestAsync(string databaseType)
         {
-            var from = db
+            IDatabase database = GetDatabase(databaseType);
+            var from = database
                 .From<C>()
                 .LeftJoin<A>((c, a) => c.AId == a.Guid);
 
 
             try
             {
-                var result = db.Retrieve<C, A>(from, db.Where<C>(), null);
-                Assert.True(result.Count > 0);
+                IEnumerable<Tuple<C, A?>>? result = await database.RetrieveAsync<C, A>(from, database.Where<C>(), null).ConfigureAwait(false);
+                Assert.True(result.Count() > 0);
             }
             catch (Exception ex)
             {
-                output.WriteLine(ex.Message);
+                _output.WriteLine(ex.Message);
 
                 throw ex;
             }
@@ -136,7 +188,7 @@ namespace HB.Framework.Database.Test
         public string Guid { get; set; } = SecurityUtil.CreateUniqueToken();
 
         [EntityProperty]
-        public string Name { get; set; }
+        public string Name { get; set; } = default!;
     }
 
     public class B : DatabaseEntity
@@ -145,7 +197,7 @@ namespace HB.Framework.Database.Test
         public string Guid { get; set; } = SecurityUtil.CreateUniqueToken();
 
         [EntityProperty]
-        public string Name { get; set; }
+        public string Name { get; set; } = default!;
     }
 
     public class AB : DatabaseEntity
@@ -154,10 +206,10 @@ namespace HB.Framework.Database.Test
         public string Guid { get; set; } = SecurityUtil.CreateUniqueToken();
 
         [EntityProperty]
-        public string AId { get; set; }
+        public string AId { get; set; } = default!;
 
         [EntityProperty]
-        public string BId { get; set; }
+        public string BId { get; set; } = default!;
     }
 
     public class C : DatabaseEntity
@@ -166,10 +218,10 @@ namespace HB.Framework.Database.Test
         public string Guid { get; set; } = SecurityUtil.CreateUniqueToken();
 
         [EntityProperty]
-        public string Name { get; set; }
+        public string Name { get; set; } = default!;
 
         [EntityProperty]
-        public string AId { get; set; }
+        public string AId { get; set; } = default!;
     }
 
 }

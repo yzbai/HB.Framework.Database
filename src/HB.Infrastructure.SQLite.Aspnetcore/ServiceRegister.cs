@@ -20,7 +20,7 @@ namespace Microsoft.Extensions.DependencyInjection
         public static IServiceCollection AddSQLite(this IServiceCollection services, Action<SQLiteOptions> databaseEngineOptionsSetup)
         {
             SQLiteOptions options = new SQLiteOptions();
-            databaseEngineOptionsSetup(options);
+            ThrowIf.Null(databaseEngineOptionsSetup, nameof(databaseEngineOptionsSetup))(options);
 
             AddSQLiteInternal(services, options);
 

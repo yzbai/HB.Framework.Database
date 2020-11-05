@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Concurrent;
+﻿using HB.Framework.Database.Engine;
+using System;
 using System.Collections.Generic;
-using System.Reflection;
-using HB.Framework.Database.Engine;
 using System.Linq;
-using HB.Framework.Common.Entity;
-using System.IO;
-using HB.Framework.Common.Utility;
+using System.Reflection;
 
 namespace HB.Framework.Database.Entity
 {
@@ -17,47 +13,62 @@ namespace HB.Framework.Database.Entity
     /// </summary>
     internal class DefaultDatabaseEntityDefFactory : IDatabaseEntityDefFactory
     {
-        private readonly int DEFAULT_STRING_LENGTH = 200;
+        public const int DEFAULT_VARCHAR_LENGTH = 200;
 
         private readonly object _lockObj = new object();
-        private readonly IDatabaseSettings _databaseSettings;
+        private readonly DatabaseCommonSettings _databaseSettings;
         private readonly IDatabaseEngine _databaseEngine;
         private readonly IDatabaseTypeConverterFactory _typeConverterFactory;
 
-        private readonly IEnumerable<Type> _allEntityTypes;
-        private readonly IDictionary<string, EntitySchema> _entitySchemaDict;
+        private readonly IDictionary<string, EntityInfo> _entitySchemaDict;
         private readonly IDictionary<Type, DatabaseEntityDef> _defDict = new Dictionary<Type, DatabaseEntityDef>();
 
-        public DefaultDatabaseEntityDefFactory(IDatabaseSettings databaseSettings, IDatabaseEngine databaseEngine, IDatabaseTypeConverterFactory typeConverterFactory)
+        public DefaultDatabaseEntityDefFactory(IDatabaseEngine databaseEngine, IDatabaseTypeConverterFactory typeConverterFactory)
         {
-            _databaseSettings = databaseSettings;
+            _databaseSettings = databaseEngine.DatabaseSettings;
             _databaseEngine = databaseEngine;
             _typeConverterFactory = typeConverterFactory;
 
-            _allEntityTypes = ReflectUtil.GetAllTypeByCondition(t => t.IsSubclassOf(typeof(DatabaseEntity)));
-            _entitySchemaDict = ConstructeSchemaDict();
+            IEnumerable<Type> allEntityTypes;
 
-            WarmUp();
+            static bool entityTypeCondition(Type t) => t.IsSubclassOf(typeof(DatabaseEntity)) && !t.IsAbstract;
+
+            if (_databaseSettings.AssembliesIncludeEntity.IsNullOrEmpty())
+            {
+                allEntityTypes = ReflectUtil.GetAllTypeByCondition(entityTypeCondition);
+            }
+            else
+            {
+                allEntityTypes = ReflectUtil.GetAllTypeByCondition(_databaseSettings.AssembliesIncludeEntity, entityTypeCondition);
+            }
+
+            _entitySchemaDict = ConstructeSchemaDict(allEntityTypes);
+
+            WarmUp(allEntityTypes);
         }
 
-        private void WarmUp()
+        private void WarmUp(IEnumerable<Type> allEntityTypes)
         {
-            _allEntityTypes.ForEach(t => _defDict[t] = CreateModelDef(t));
+            allEntityTypes.ForEach(t => _defDict[t] = CreateEntityDef(t));
         }
 
-        private IDictionary<string, EntitySchema> ConstructeSchemaDict()
+        private IDictionary<string, EntityInfo> ConstructeSchemaDict(IEnumerable<Type> allEntityTypes)
         {
-            IDictionary<string, EntitySchema> fileConfiguredDict = _databaseSettings.Entities.ToDictionary(t => t.EntityTypeFullName);
+            IDictionary<string, EntityInfo> fileConfiguredDict = _databaseSettings.Entities.ToDictionary(t => t.EntityTypeFullName);
 
-            IDictionary<string, EntitySchema> resusltEntitySchemaDict = new Dictionary<string, EntitySchema>();
+            IDictionary<string, EntityInfo> resusltEntitySchemaDict = new Dictionary<string, EntityInfo>();
 
-            _allEntityTypes.ForEach(type => {
+            allEntityTypes.ForEach(type =>
+            {
 
                 EntitySchemaAttribute attribute = type.GetCustomAttribute<EntitySchemaAttribute>();
 
-                fileConfiguredDict.TryGetValue(type.FullName, out EntitySchema fileConfigured);
+                fileConfiguredDict.TryGetValue(type.FullName, out EntityInfo fileConfigured);
 
-                EntitySchema entitySchema = new EntitySchema { EntityTypeFullName = type.FullName };
+                EntityInfo entitySchema = new EntityInfo
+                {
+                    EntityTypeFullName = type.FullName
+                };
 
                 if (attribute != null)
                 {
@@ -67,18 +78,18 @@ namespace HB.Framework.Database.Entity
                     {
                         entitySchema.TableName = "tb_";
 
-                        if(type.Name.EndsWith(attribute.SuffixToRemove))
+                        if (type.Name.EndsWith(attribute.SuffixToRemove, GlobalSettings.Comparison))
                         {
-                            entitySchema.TableName += type.Name.Substring(0, type.Name.Length - attribute.SuffixToRemove.Length).ToLower();
+                            entitySchema.TableName += type.Name.Substring(0, type.Name.Length - attribute.SuffixToRemove.Length).ToLower(GlobalSettings.Culture);
                         }
                         else
                         {
-                            entitySchema.TableName += type.Name.ToLower();
+                            entitySchema.TableName += type.Name.ToLower(GlobalSettings.Culture);
                         }
                     }
                     else
                     {
-                        entitySchema.TableName = attribute.TableName;
+                        entitySchema.TableName = attribute.TableName!;
                     }
 
                     entitySchema.Description = attribute.Description;
@@ -114,7 +125,7 @@ namespace HB.Framework.Database.Entity
 
                 if (entitySchema.TableName.IsNullOrEmpty())
                 {
-                    entitySchema.TableName = "tb_" + type.Name.ToLower();
+                    entitySchema.TableName = "tb_" + type.Name.ToLower(GlobalSettings.Culture);
                 }
 
                 resusltEntitySchemaDict.Add(type.FullName, entitySchema);
@@ -136,7 +147,7 @@ namespace HB.Framework.Database.Entity
                 {
                     if (!_defDict.ContainsKey(entityType))
                     {
-                        _defDict[entityType] = CreateModelDef(entityType);
+                        _defDict[entityType] = CreateEntityDef(entityType);
                     }
                 }
             }
@@ -144,95 +155,95 @@ namespace HB.Framework.Database.Entity
             return _defDict[entityType];
         }
 
-        private DatabaseEntityDef CreateModelDef(Type modelType)
+        /// <summary>
+        /// CreateEntityDef
+        /// </summary>
+        /// <param name="entityType"></param>
+        /// <returns></returns>
+        /// <exception cref="TypeLoadException">Ignore.</exception>
+        /// <exception cref="InvalidOperationException">Ignore.</exception>
+        private DatabaseEntityDef CreateEntityDef(Type entityType)
         {
-            DatabaseEntityDef modelDef = new DatabaseEntityDef();
-
-            #region 自身
-
-            modelDef.EntityType = modelType;
-            modelDef.EntityFullName = modelType.FullName;
-            //modelDef.PropertyDict = new Dictionary<string, DatabaseEntityPropertyDef>();
-
-            #endregion
+            DatabaseEntityDef entityDef = new DatabaseEntityDef(entityType);
 
             #region 数据库
 
-            if (_entitySchemaDict.TryGetValue(modelType.FullName, out EntitySchema dbSchema))
+            if (_entitySchemaDict.TryGetValue(entityType.FullName, out EntityInfo dbSchema))
             {
-                modelDef.IsTableModel = true;
-                modelDef.DatabaseName = dbSchema.DatabaseName;
-                modelDef.TableName = dbSchema.TableName;
-                modelDef.DbTableDescription = dbSchema.Description;
-                modelDef.DbTableReservedName = _databaseEngine.GetReservedStatement(modelDef.TableName);
-                modelDef.DatabaseWriteable = !dbSchema.ReadOnly;
+                entityDef.IsTableModel = true;
+                entityDef.DatabaseName = dbSchema.DatabaseName;
+                entityDef.TableName = dbSchema.TableName;
+                entityDef.DbTableDescription = dbSchema.Description;
+                entityDef.DbTableReservedName = _databaseEngine.GetReservedStatement(entityDef.TableName!);
+                entityDef.DatabaseWriteable = !dbSchema.ReadOnly;
             }
             else
             {
-                modelDef.IsTableModel = false;
+                entityDef.IsTableModel = false;
             }
 
             #endregion
 
             #region 属性
 
-            foreach (PropertyInfo info in modelType.GetTypeInfo().GetProperties())
+            foreach (PropertyInfo info in entityType.GetTypeInfo().GetProperties())
             {
-                IEnumerable<Attribute> atts2 = info.GetCustomAttributes(typeof(EntityPropertyIgnoreAttribute), false).Select<object, Attribute>(o => (Attribute)o);
+                IEnumerable<Attribute> atts2 = info.GetCustomAttributes(typeof(EntityPropertyIgnoreAttribute), false).Select(o => (Attribute)o);
 
-                if (atts2 == null || atts2.Count() == 0)
+                if (atts2.IsNullOrEmpty())
                 {
-                    DatabaseEntityPropertyDef propertyDef = CreatePropertyDef(modelDef, info);
+                    DatabaseEntityPropertyDef propertyDef = CreatePropertyDef(entityDef, info);
 
-                    modelDef.PropertyDict.Add(propertyDef.PropertyName, propertyDef);
+                    entityDef.PropertyDict.Add(propertyDef.PropertyName, propertyDef);
 
-                    modelDef.FieldCount++;
+                    entityDef.FieldCount++;
                 }
             }
 
             #endregion
 
-            return modelDef;
+            return entityDef;
         }
 
-        private DatabaseEntityPropertyDef CreatePropertyDef(DatabaseEntityDef modelDef, PropertyInfo info)
+        /// <summary>
+        /// CreatePropertyDef
+        /// </summary>
+        /// <param name="entityDef"></param>
+        /// <param name="info"></param>
+        /// <returns></returns>
+        /// <exception cref="TypeLoadException">Ignore.</exception>
+        /// <exception cref="InvalidOperationException">Ignore.</exception>
+        private DatabaseEntityPropertyDef CreatePropertyDef(DatabaseEntityDef entityDef, PropertyInfo info)
         {
-            DatabaseEntityPropertyDef propertyDef = new DatabaseEntityPropertyDef();
-
-            #region 自身
-
-            propertyDef.EntityDef = modelDef;
-            propertyDef.PropertyName = info.Name;
-            propertyDef.PropertyType = info.PropertyType;
-            propertyDef.GetMethod = info.GetGetMethod();
-            propertyDef.SetMethod = info.GetSetMethod();
-
-            #endregion
+            DatabaseEntityPropertyDef propertyDef = new DatabaseEntityPropertyDef(entityDef, info);
 
             #region 数据库
 
             IEnumerable<Attribute> propertyAttrs = info.GetCustomAttributes(typeof(EntityPropertyAttribute), false).Select(o => (Attribute)o);
-            if (propertyAttrs != null && propertyAttrs.Count() > 0)
+
+            if (propertyAttrs.IsNotNullOrEmpty())
             {
-                EntityPropertyAttribute propertyAttr = propertyAttrs.ElementAt(0) as EntityPropertyAttribute;
-
-                propertyDef.IsTableProperty = true;
-                propertyDef.IsNullable = !propertyAttr.NotNull;
-                propertyDef.IsUnique = propertyAttr.Unique;
-                propertyDef.DbLength = propertyAttr.Length > 0 ? (int?)propertyAttr.Length : null;
-                propertyDef.IsLengthFixed = propertyAttr.FixedLength;
-                propertyDef.DbDefaultValue = ValueConverter.TypeValueToDbValue(propertyAttr.DefaultValue);
-                propertyDef.DbDescription = propertyAttr.Description;
-
-                if (propertyAttr.ConverterType != null)
+                if (propertyAttrs.ElementAt(0) is EntityPropertyAttribute propertyAttr)
                 {
-                    propertyDef.TypeConverter = _typeConverterFactory.GetTypeConverter(propertyAttr.ConverterType);
+                    propertyDef.IsTableProperty = true;
+                    propertyDef.IsNullable = !propertyAttr.NotNull;
+                    propertyDef.IsUnique = propertyAttr.Unique;
+                    propertyDef.DbLength = propertyAttr.Length > 0 ? (int?)propertyAttr.Length : null;
+                    propertyDef.IsLengthFixed = propertyAttr.FixedLength;
+                    propertyDef.DbDefaultValue = ValueConverterUtil.TypeValueToStringValue(propertyAttr.DefaultValue);
+                    propertyDef.DbDescription = propertyAttr.Description;
+
+                    if (propertyAttr.Converter != null)
+                    {
+                        propertyDef.TypeConverter = _typeConverterFactory.GetTypeConverter(propertyAttr.Converter);
+                    }
                 }
             }
 
             //判断是否是主键
-            IEnumerable<Attribute> atts1 = info.GetCustomAttributes(typeof(AutoIncrementPrimaryKeyAttribute), false).Select<object, Attribute>(o => (Attribute)o);
-            if (atts1 != null && atts1.Count() > 0)
+            IEnumerable<Attribute> atts1 = info.GetCustomAttributes(typeof(AutoIncrementPrimaryKeyAttribute), false).Select(o => (Attribute)o);
+
+            if (atts1.IsNotNullOrEmpty())
             {
                 propertyDef.IsTableProperty = true;
                 propertyDef.IsAutoIncrementPrimaryKey = true;
@@ -243,13 +254,14 @@ namespace HB.Framework.Database.Entity
             else
             {
                 //判断是否外键
-                IEnumerable<Attribute> atts2 = info.GetCustomAttributes(typeof(ForeignKeyAttribute), false).Select<object, Attribute>(o => (Attribute)o);
-                if (atts2 != null && atts2.Count() > 0)
+                IEnumerable<Attribute> atts2 = info.GetCustomAttributes(typeof(ForeignKeyAttribute), false).Select(o => (Attribute)o);
+
+                if (atts2.IsNotNullOrEmpty())
                 {
                     propertyDef.IsTableProperty = true;
                     propertyDef.IsAutoIncrementPrimaryKey = false;
                     propertyDef.IsForeignKey = true;
-                    //propertyDef.IsNullable = false;
+                    propertyDef.IsNullable = true;
                     propertyDef.IsUnique = false;
                 }
             }
@@ -276,12 +288,12 @@ namespace HB.Framework.Database.Entity
 
         public int GetVarcharDefaultLength()
         {
-            return _databaseSettings.DefaultVarcharLength == 0 ? DEFAULT_STRING_LENGTH : _databaseSettings.DefaultVarcharLength;
+            return _databaseSettings.DefaultVarcharLength == 0 ? DEFAULT_VARCHAR_LENGTH : _databaseSettings.DefaultVarcharLength;
         }
 
         public IEnumerable<DatabaseEntityDef> GetAllDefsByDatabase(string databaseName)
         {
-            return _defDict.Values.Where(def => def.DatabaseName.Equals(databaseName, GlobalSettings.ComparisonIgnoreCase));
+            return _defDict.Values.Where(def => databaseName.Equals(def.DatabaseName, GlobalSettings.ComparisonIgnoreCase));
         }
     }
 

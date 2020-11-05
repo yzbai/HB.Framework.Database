@@ -1,42 +1,60 @@
-﻿using System;
+﻿#nullable enable
+using HB.Framework.Database.Properties;
+using System;
 using System.Collections.Generic;
-using System.Text;
+using System.Diagnostics.CodeAnalysis;
 
 namespace HB.Framework.Database
 {
-    public static class SystemInfoNames
+    /// <summary>
+    /// 内部表tb_sys_info中的键值对
+    /// </summary>
+    class SystemInfo
     {
-        public static string Version = "Version";
-        public static string DatabaseName = "DatabaseName";
-    }
-    public class SystemInfo
-    {
-        public string DatabaseName {
-            get {
-                return _sysDict[SystemInfoNames.DatabaseName];
+        private readonly IDictionary<string, string> _sysDict = new Dictionary<string, string>();
+
+        [NotNull, DisallowNull]
+        public string DatabaseName
+        {
+            get
+            {
+                if (_sysDict.TryGetValue(SystemInfoNames.DatabaseName, out string value))
+                {
+                    return value;
+                }
+
+                throw new KeyNotFoundException(Resources.DatabaseNameNotFoundInSystemInfoTable);
             }
-            set {
+            private set
+            {
                 _sysDict[SystemInfoNames.DatabaseName] = value;
             }
         }
 
-        public int Version {
-            get {
-                return Convert.ToInt32(_sysDict[SystemInfoNames.Version]);
-            }
-            set {
-                _sysDict[SystemInfoNames.Version] = value.ToString();
-            }
-        }
-
-        private IDictionary<string, string> _sysDict = new Dictionary<string, string>();
-
-        public SystemInfo()
+        public int Version
         {
+            get
+            {
+                if (_sysDict.TryGetValue(SystemInfoNames.Version, out string value))
+                {
+                    return value.ToInt32();
+                }
 
+                throw new KeyNotFoundException(Resources.VersionNotFoundInSystemInfoTable);
+            }
+            set
+            {
+                _sysDict[SystemInfoNames.Version] = value.ToString(GlobalSettings.Culture);
+            }
         }
 
-        public void Add(string name, string value)
+
+        public SystemInfo(string databaseName)
+        {
+            DatabaseName = databaseName;
+        }
+
+        public void Set(string name, string value)
         {
             _sysDict[name] = value;
         }

@@ -1,5 +1,5 @@
-﻿using System;
-using System.Reflection;
+﻿using HB.Framework.Database.Properties;
+using System;
 
 namespace HB.Framework.Database.SQL
 {
@@ -11,12 +11,13 @@ namespace HB.Framework.Database.SQL
 
     internal class EnumMemberAccess : PartialSqlString
     {
+        /// <exception cref="System.ArgumentException"></exception>
         public EnumMemberAccess(string text, Type enumType)
             : base(text)
         {
             if (!enumType.IsEnum)
             {
-                throw new ArgumentException("Type not valid", nameof(enumType));
+                throw new ArgumentException(Resources.TypeNotValidErrorMessage, nameof(enumType));
             }
 
             EnumType = enumType;

@@ -1,3 +1,5 @@
+#nullable enable
+
 using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
@@ -54,7 +56,7 @@ namespace HB.Framework.Database.SQL
         }
 
         private static Expression<T> Compose<T>(this Expression<T> first, Expression<T> second,
-                                                Func<Expression, Expression, Expression> merge)
+                                                Func<Expression?, Expression?, Expression> merge)
         {
             // zip parameters (map from parameters of second to parameters of first)
             Dictionary<ParameterExpression, ParameterExpression> map = first.Parameters
@@ -62,7 +64,7 @@ namespace HB.Framework.Database.SQL
                 .ToDictionary(p => p.s, p => p.f);
 
             // replace parameters in the second lambda expression with the parameters in the first
-            Expression secondBody = ParameterRebinder.ReplaceParameters(map, second.Body);
+            Expression? secondBody = ParameterRebinder.ReplaceParameters(map, second.Body);
 
             // create a merged lambda expression with parameters from the first expression
             return Expression.Lambda<T>(merge(first.Body, secondBody), first.Parameters);

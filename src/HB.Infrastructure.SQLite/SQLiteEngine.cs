@@ -5,56 +5,55 @@ using System.Collections.Generic;
 using System.Data;
 using Microsoft.Data.Sqlite;
 using System.Linq;
+using Microsoft.Extensions.Options;
+using System.Threading.Tasks;
+using System.Diagnostics.CodeAnalysis;
 
 namespace HB.Infrastructure.SQLite
 {
-    internal partial class SQLiteEngine : IDatabaseEngine
+    internal class SQLiteEngine : IDatabaseEngine
     {
         #region 自身 & 构建
 
         private readonly SQLiteOptions _options;
-        private Dictionary<string, string> _connectionStringDict;
+        private readonly Dictionary<string, string> _connectionStringDict = new Dictionary<string, string>();
 
-        public IDatabaseSettings DatabaseSettings => _options.DatabaseSettings;
+        public DatabaseCommonSettings DatabaseSettings => _options.CommonSettings;
 
         public DatabaseEngineType EngineType => DatabaseEngineType.SQLite;
 
-        public string FirstDefaultDatabaseName { get; private set; }
+        [NotNull, DisallowNull] public string? FirstDefaultDatabaseName { get; private set; }
 
-        private SQLiteEngine() { }
-
-        public SQLiteEngine(SQLiteOptions options) : this()
+        public SQLiteEngine(IOptions<SQLiteOptions> options)
         {
             //MySqlConnectorLogManager.Provider = new MicrosoftExtensionsLoggingLoggerProvider(loggerFactory);
 
-            _options = options;
+            _options = options.Value;
 
             SetConnectionStrings();
         }
 
         private void SetConnectionStrings()
         {
-            _connectionStringDict = new Dictionary<string, string>();
-
-            foreach (SchemaInfo schemaInfo in _options.Schemas)
+            foreach (DatabaseConnectionSettings schemaInfo in _options.Connections)
             {
                 if (FirstDefaultDatabaseName.IsNullOrEmpty())
                 {
-                    FirstDefaultDatabaseName = schemaInfo.SchemaName;
+                    FirstDefaultDatabaseName = schemaInfo.DatabaseName;
                 }
 
                 if (schemaInfo.IsMaster)
                 {
-                    _connectionStringDict[schemaInfo.SchemaName + "_1"] = schemaInfo.ConnectionString;
+                    _connectionStringDict[schemaInfo.DatabaseName + "_1"] = schemaInfo.ConnectionString;
 
-                    if (!_connectionStringDict.ContainsKey(schemaInfo.SchemaName + "_0"))
+                    if (!_connectionStringDict.ContainsKey(schemaInfo.DatabaseName + "_0"))
                     {
-                        _connectionStringDict[schemaInfo.SchemaName + "_0"] = schemaInfo.ConnectionString;
+                        _connectionStringDict[schemaInfo.DatabaseName + "_0"] = schemaInfo.ConnectionString;
                     }
                 }
                 else
                 {
-                    _connectionStringDict[schemaInfo.SchemaName + "_0"] = schemaInfo.ConnectionString;
+                    _connectionStringDict[schemaInfo.DatabaseName + "_0"] = schemaInfo.ConnectionString;
                 }
             }
         }
@@ -69,13 +68,19 @@ namespace HB.Infrastructure.SQLite
             return _connectionStringDict[dbName + "_0"];
         }
 
+        public IEnumerable<string> GetDatabaseNames()
+        {
+            return _options.Connections.Select(s => s.DatabaseName);
+        }
+
         #endregion
 
         #region 创建功能
 
         public IDataParameter CreateParameter(string name, object value, DbType dbType)
         {
-            SqliteParameter parameter = new SqliteParameter {
+            SqliteParameter parameter = new SqliteParameter
+            {
                 ParameterName = name,
                 Value = value,
                 DbType = dbType
@@ -85,7 +90,8 @@ namespace HB.Infrastructure.SQLite
 
         public IDataParameter CreateParameter(string name, object value)
         {
-            SqliteParameter parameter = new SqliteParameter {
+            SqliteParameter parameter = new SqliteParameter
+            {
                 ParameterName = name,
                 Value = value
             };
@@ -102,255 +108,177 @@ namespace HB.Infrastructure.SQLite
 
         #region 方言
 
-        public string ParameterizedChar { get { return SQLiteUtility.ParameterizedChar; } }
+        public string ParameterizedChar { get { return SQLiteLocalism.ParameterizedChar; } }
 
-        public string QuotedChar { get { return SQLiteUtility.QuotedChar; } }
+        public string QuotedChar { get { return SQLiteLocalism.QuotedChar; } }
 
-        public string ReservedChar { get { return SQLiteUtility.ReservedChar; } }
+        public string ReservedChar { get { return SQLiteLocalism.ReservedChar; } }
 
         public string GetQuotedStatement(string name)
         {
-            return SQLiteUtility.GetQuoted(name);
+            return SQLiteLocalism.GetQuoted(name);
         }
 
         public string GetParameterizedStatement(string name)
         {
-            return SQLiteUtility.GetParameterized(name);
+            return SQLiteLocalism.GetParameterized(name);
         }
 
         public string GetReservedStatement(string name)
         {
-            return SQLiteUtility.GetReserved(name);
+            return SQLiteLocalism.GetReserved(name);
         }
 
         public DbType GetDbType(Type type)
         {
-            return SQLiteUtility.GetDbType(type);
+            return SQLiteLocalism.GetDbType(type);
         }
 
         public string GetDbTypeStatement(Type type)
         {
-            return SQLiteUtility.GetDbTypeStatement(type);
+            return SQLiteLocalism.GetDbTypeStatement(type);
         }
 
-        public string GetDbValueStatement(object value, bool needQuoted)
+        [return: NotNullIfNotNull("value")]
+        public string? GetDbValueStatement(object? value, bool needQuoted)
         {
-            return SQLiteUtility.GetDbValueStatement(value, needQuoted);
+            return SQLiteLocalism.GetDbValueStatement(value, needQuoted);
         }
 
         public bool IsValueNeedQuoted(Type type)
         {
-            return SQLiteUtility.IsValueNeedQuoted(type);
+            return SQLiteLocalism.IsValueNeedQuoted(type);
+        }
+
+        #endregion
+
+        #region SP
+        public Task<int> ExecuteSPNonQueryAsync(IDbTransaction? trans, string dbName, string spName, IList<IDataParameter> parameters)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<Tuple<IDbCommand, IDataReader>> ExecuteSPReaderAsync(IDbTransaction? trans, string dbName, string spName, IList<IDataParameter> dbParameters, bool useMaster)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<object> ExecuteSPScalarAsync(IDbTransaction? trans, string dbName, string spName, IList<IDataParameter> parameters, bool useMaster)
+        {
+            throw new NotImplementedException();
+        }
+
+        #endregion
+
+        #region Command 能力
+
+        /// <summary>
+        /// ExecuteCommandNonQueryAsync
+        /// </summary>
+        /// <param name="Transaction"></param>
+        /// <param name="dbName"></param>
+        /// <param name="dbCommand"></param>
+        /// <returns></returns>
+        /// <exception cref="DatabaseException"></exception>
+        public Task<int> ExecuteCommandNonQueryAsync(IDbTransaction? Transaction, string dbName, IDbCommand dbCommand)
+        {
+            if (Transaction == null)
+            {
+                return SQLiteExecuter.ExecuteCommandNonQueryAsync(GetConnectionString(dbName, true), dbCommand);
+            }
+            else
+            {
+                return SQLiteExecuter.ExecuteCommandNonQueryAsync((SqliteTransaction)Transaction, dbCommand);
+            }
+        }
+
+        /// <summary>
+        /// ExecuteCommandReaderAsync
+        /// </summary>
+        /// <param name="Transaction"></param>
+        /// <param name="dbName"></param>
+        /// <param name="dbCommand"></param>
+        /// <param name="useMaster"></param>
+        /// <returns></returns>
+        /// <exception cref="DatabaseException"></exception>
+        public Task<IDataReader> ExecuteCommandReaderAsync(IDbTransaction? Transaction, string dbName, IDbCommand dbCommand, bool useMaster = false)
+        {
+            if (Transaction == null)
+            {
+                return SQLiteExecuter.ExecuteCommandReaderAsync(GetConnectionString(dbName, useMaster), dbCommand);
+            }
+            else
+            {
+                return SQLiteExecuter.ExecuteCommandReaderAsync((SqliteTransaction)Transaction, dbCommand);
+            }
+        }
+
+        /// <summary>
+        /// ExecuteCommandScalarAsync
+        /// </summary>
+        /// <param name="Transaction"></param>
+        /// <param name="dbName"></param>
+        /// <param name="dbCommand"></param>
+        /// <param name="useMaster"></param>
+        /// <returns></returns>
+        /// <exception cref="DatabaseException"></exception>
+        public Task<object> ExecuteCommandScalarAsync(IDbTransaction? Transaction, string dbName, IDbCommand dbCommand, bool useMaster = false)
+        {
+            if (Transaction == null)
+            {
+                return SQLiteExecuter.ExecuteCommandScalarAsync(GetConnectionString(dbName, useMaster), dbCommand);
+            }
+            else
+            {
+                return SQLiteExecuter.ExecuteCommandScalarAsync((SqliteTransaction)Transaction, dbCommand);
+            }
         }
 
         #endregion
 
         #region 事务
 
-        public IDbTransaction BeginTransaction(string dbName, IsolationLevel isolationLevel)
+        [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "<Pending>")]
+        [SuppressMessage("Code Quality", "IDE0067:Dispose objects before losing scope", Justification = "<Pending>")]
+        public async Task<IDbTransaction> BeginTransactionAsync(string dbName, IsolationLevel isolationLevel = IsolationLevel.ReadCommitted)
         {
             SqliteConnection conn = new SqliteConnection(GetConnectionString(dbName, true));
-            conn.Open();
+            await conn.OpenAsync().ConfigureAwait(false);
 
             return conn.BeginTransaction(isolationLevel);
         }
 
-        public void Commit(IDbTransaction transaction)
+        public async Task CommitAsync(IDbTransaction transaction)
         {
-            transaction.Commit();
-        }
+            SqliteTransaction sqliteTransaction = (SqliteTransaction)transaction;
 
-        public void Rollback(IDbTransaction transaction)
-        {
-            transaction.Rollback();
-        }
-
-
-
-        #endregion
-
-        #region SystemInfo
-
-        private static string tbSysInfoCreate =
-@"CREATE TABLE ""tb_sys_info"" (
-    ""Id"" INTEGER PRIMARY KEY AUTOINCREMENT,
-	""Name"" TEXT UNIQUE, 
-	""Value"" TEXT
-);
-INSERT INTO ""tb_sys_info""(""Name"", ""Value"") VALUES('Version', '1');
-INSERT INTO ""tb_sys_info""(""Name"", ""Value"") VALUES('DatabaseName', '{0}');";
-
-        private static string tbSysInfoRetrieve = @"SELECT * FROM ""tb_sys_info"";";
-
-        private static string tbSysInfoUpdateVersion = @"UPDATE ""tb_sys_info"" SET ""Value"" = '{0}' WHERE ""Name"" = 'Version';";
-
-        public IEnumerable<string> GetDatabaseNames()
-        {
-            return _options.Schemas.Select(s => s.SchemaName);
-        }
-
-        public SystemInfo GetSystemInfo(string databaseName, IDbTransaction transaction)
-        {
-            IDataReader reader = null;
+            SqliteConnection connection = sqliteTransaction.Connection;
 
             try
             {
-                reader = ExecuteSqlReader(transaction, databaseName, tbSysInfoRetrieve, false);
-
-                SystemInfo systemInfo = new SystemInfo { DatabaseName = databaseName };
-
-                while (reader.Read())
-                {
-                    systemInfo.Add(reader["Name"].ToString(), reader["Value"].ToString());
-                }
-
-                return systemInfo;
-            }
-            catch (Exception)
-            {
-                return new SystemInfo {
-                    DatabaseName = databaseName,
-                    Version = 0
-                };
+                await sqliteTransaction.CommitAsync().ConfigureAwait(false);
             }
             finally
             {
-                if (reader != null)
-                {
-                    reader.Close();
-                }
+                await connection.CloseAsync().ConfigureAwait(false);
             }
         }
 
-        public void UpdateSystemVersion(string databaseName, int version, IDbTransaction transaction)
+        public async Task RollbackAsync(IDbTransaction transaction)
         {
-            if (version == 1)
+            SqliteTransaction sqliteTransaction = (SqliteTransaction)transaction;
+
+            SqliteConnection connection = sqliteTransaction.Connection;
+
+            try
             {
-                //创建SystemInfo
-                ExecuteSqlNonQuery(transaction, databaseName, string.Format(tbSysInfoCreate, databaseName));
+                await sqliteTransaction.RollbackAsync().ConfigureAwait(false);
             }
-            else
+            finally
             {
-                ExecuteSqlNonQuery(transaction, databaseName, string.Format(tbSysInfoUpdateVersion, version));
-            }
-        }
-
-        #endregion
-
-        #region SP执行功能
-
-        /// <summary>
-        /// 使用完毕后必须Dispose
-        /// </summary>
-        /// <param name="Transaction"></param>
-        /// <param name="spName"></param>
-        /// <param name="dbParameters"></param>
-        /// <returns></returns>
-        public IDataReader ExecuteSPReader(IDbTransaction Transaction, string dbName, string spName, IList<IDataParameter> dbParameters, bool useMaster)
-        {
-            throw new NotImplementedException("SQLite Not Support Stored Procedure");
-        }
-
-        public object ExecuteSPScalar(IDbTransaction Transaction, string dbName, string spName, IList<IDataParameter> parameters, bool useMaster)
-        {
-            throw new NotImplementedException("SQLite Not Support Stored Procedure");
-        }
-
-        public int ExecuteSPNonQuery(IDbTransaction Transaction, string dbName, string spName, IList<IDataParameter> parameters)
-        {
-            throw new NotImplementedException("SQLite Not Support Stored Procedure");
-        }
-
-        #endregion
-
-        #region Command执行功能
-
-        public int ExecuteCommandNonQuery(IDbTransaction Transaction, string dbName, IDbCommand dbCommand)
-        {
-            if (Transaction == null)
-            {
-                return SQLiteExecuter.ExecuteCommandNonQuery(GetConnectionString(dbName, true), dbCommand);
-            }
-            else
-            {
-                return SQLiteExecuter.ExecuteCommandNonQuery((SqliteTransaction)Transaction, dbCommand);
+                await connection.CloseAsync().ConfigureAwait(false);
             }
         }
-
-        /// <summary>
-        /// 使用完毕后必须Dispose，必须使用using
-        /// </summary>
-        /// <param name="Transaction"></param>
-        /// <param name="dbCommand"></param>
-        /// <returns></returns>
-        public IDataReader ExecuteCommandReader(IDbTransaction Transaction, string dbName, IDbCommand dbCommand, bool useMaster)
-        {
-            if (Transaction == null)
-            {
-                return SQLiteExecuter.ExecuteCommandReader(GetConnectionString(dbName, useMaster), dbCommand);
-            }
-            else
-            {
-                return SQLiteExecuter.ExecuteCommandReader((SqliteTransaction)Transaction, dbCommand);
-            }
-        }
-
-        public object ExecuteCommandScalar(IDbTransaction Transaction, string dbName, IDbCommand dbCommand, bool useMaster)
-        {
-            if (Transaction == null)
-            {
-                return SQLiteExecuter.ExecuteCommandScalar(GetConnectionString(dbName, useMaster), dbCommand);
-            }
-            else
-            {
-                return SQLiteExecuter.ExecuteCommandScalar((SqliteTransaction)Transaction, dbCommand);
-            }
-        }
-
-        #endregion
-
-        #region SQL 执行能力
-
-        public int ExecuteSqlNonQuery(IDbTransaction Transaction, string dbName, string SQL)
-        {
-            if (Transaction == null)
-            {
-                return SQLiteExecuter.ExecuteSqlNonQuery(GetConnectionString(dbName, true), SQL);
-            }
-            else
-            {
-                return SQLiteExecuter.ExecuteSqlNonQuery((SqliteTransaction)Transaction, SQL);
-            }
-        }
-
-        /// <summary>
-        /// 使用后必须Dispose，必须使用using.
-        /// </summary>
-        public IDataReader ExecuteSqlReader(IDbTransaction Transaction, string dbName, string SQL, bool useMaster)
-        {
-            if (Transaction == null)
-            {
-                return SQLiteExecuter.ExecuteSqlReader(GetConnectionString(dbName, useMaster), SQL);
-            }
-            else
-            {
-                return SQLiteExecuter.ExecuteSqlReader((SqliteTransaction)Transaction, SQL);
-            }
-        }
-
-        public object ExecuteSqlScalar(IDbTransaction Transaction, string dbName, string SQL, bool useMaster)
-        {
-            if (Transaction == null)
-            {
-                return SQLiteExecuter.ExecuteSqlScalar(GetConnectionString(dbName, useMaster), SQL);
-            }
-            else
-            {
-                return SQLiteExecuter.ExecuteSqlScalar((SqliteTransaction)Transaction, SQL);
-            }
-        }
-
-        
 
         #endregion
     }

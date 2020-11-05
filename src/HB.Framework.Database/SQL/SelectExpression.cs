@@ -1,4 +1,6 @@
-﻿using HB.Framework.Database.Engine;
+﻿#nullable enable
+
+using HB.Framework.Database.Engine;
 using HB.Framework.Database.Entity;
 using System;
 using System.Linq.Expressions;
@@ -8,12 +10,11 @@ namespace HB.Framework.Database.SQL
 {
     public class SelectExpression<T> where T : DatabaseEntity, new()
     {
-        private StringBuilder _statementBuilder = new StringBuilder();
+        private readonly StringBuilder _statementBuilder = new StringBuilder();
 
         private bool _firstAssign = true;
 
-        private readonly IDatabaseEngine _databaseEngine;
-        private SQLExpressionVisitorContenxt expressionContext = null;
+        private readonly SQLExpressionVisitorContenxt _expressionContext;
 
         public bool WithSelectString { get; set; } = true;
 
@@ -22,15 +23,14 @@ namespace HB.Framework.Database.SQL
             StringBuilder resultBuilder = WithSelectString ? new StringBuilder(" SELECT ") : new StringBuilder(" ");
 
             resultBuilder.Append(_statementBuilder);
-            resultBuilder.Append(" ");
+            resultBuilder.Append(' ');
 
             return resultBuilder.ToString();
         }
 
         internal SelectExpression(IDatabaseEngine databaseEngine, IDatabaseEntityDefFactory entityDefFactory)
         {
-            _databaseEngine = databaseEngine;
-            expressionContext = new SQLExpressionVisitorContenxt(databaseEngine, entityDefFactory);
+            _expressionContext = new SQLExpressionVisitorContenxt(databaseEngine, entityDefFactory);
         }
 
         public SelectExpression<T> Select<TTarget>(Expression<Func<T, TTarget>> expr)
@@ -44,7 +44,7 @@ namespace HB.Framework.Database.SQL
                 _firstAssign = false;
             }
 
-            _statementBuilder.Append(expr.ToStatement(expressionContext));
+            _statementBuilder.Append(expr.ToStatement(_expressionContext));
 
             return this;
         }

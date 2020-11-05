@@ -1,5 +1,6 @@
 ﻿using HB.Framework.Database;
 using HB.Infrastructure.SQLite;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.IO;
 using Xamarin.Forms;
@@ -9,7 +10,7 @@ namespace DatabaseXamarinSample
 {
     public partial class App : Application
     {
-        public static IDatabase Database;
+        public static IDatabase Database { get; private set; }
 
         public App()
         {
@@ -22,21 +23,24 @@ namespace DatabaseXamarinSample
 
         private IDatabase GetDatabase()
         {
-            string dbFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "test.db");
+            IServiceCollection services = new ServiceCollection();
 
-            SQLiteOptions sqliteOptions = new SQLiteOptions();
+            services.AddSQLite(sqliteOptions => {
+                string dbFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "test.db");
 
-            sqliteOptions.DatabaseSettings.Version = 1;
+                sqliteOptions.DatabaseSettings.Version = 1;
 
-            sqliteOptions.Schemas.Add(new SchemaInfo {
-                SchemaName = "test.db",
-                IsMaster = true,
-                ConnectionString = $"Data Source={dbFile}"
+                sqliteOptions.Schemas.Add(new SchemaInfo
+                {
+                    SchemaName = "test.db",
+                    IsMaster = true,
+                    ConnectionString = $"Data Source={dbFile}"
+                });
             });
 
-            IDatabase database = new DatabaseBuilder(new SQLiteBuilder(sqliteOptions).Build()).Build();
+            IServiceProvider serviceProvider = services.BuildServiceProvider();
 
-            SQLitePCL.Batteries_V2.Init();
+            IDatabase database = serviceProvider.GetRequiredService<IDatabase>();
 
             database.Initialize();
 

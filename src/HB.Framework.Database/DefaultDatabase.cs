@@ -1,12 +1,17 @@
-﻿using HB.Framework.Database.SQL;
+﻿#nullable enable
+
+using HB.Framework.Database.Engine;
+using HB.Framework.Database.Entity;
+using HB.Framework.Database.Properties;
+using HB.Framework.Database.SQL;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
-using HB.Framework.Database.Entity;
-using HB.Framework.Database.Engine;
-using System.Data.Common;
+using System.Threading.Tasks;
 
 namespace HB.Framework.Database
 {
@@ -19,161 +24,223 @@ namespace HB.Framework.Database
     /// 乐观锁用在写操作上，交由各个数据库执行者实施，Version方式。
     /// 批量操作，采用事务方式，也交由各个数据库执行者实施。
     /// </summary>
-    internal partial class DefaultDatabase : IDatabase
+    internal class DefaultDatabase : IDatabase
     {
-        private static object _lockerObj = new object();
-
-        private bool _initialized = false;
-
-        private readonly IDatabaseSettings _databaseSettings;
+        private readonly DatabaseCommonSettings _databaseSettings;
         private readonly IDatabaseEngine _databaseEngine;
         private readonly IDatabaseEntityDefFactory _entityDefFactory;
-        private IDatabaseEntityMapper _modelMapper;
-        private ISQLBuilder _sqlBuilder;
-        //private ILogger<DefaultDatabase> _logger;
+        private readonly IDatabaseEntityMapper _modelMapper;
+        private readonly ISQLBuilder _sqlBuilder;
+        private readonly ILogger _logger;
 
-        //public IDatabaseEngine DatabaseEngine { get { return _databaseEngine; } }
-
-        public DefaultDatabase(IDatabaseSettings databaseSettings, IDatabaseEngine databaseEngine, IDatabaseEntityDefFactory modelDefFactory, IDatabaseEntityMapper modelMapper, ISQLBuilder sqlBuilder/*, ILogger<DefaultDatabase> logger*/)
+        /// <summary>
+        /// ctor
+        /// </summary>
+        /// <param name="databaseEngine"></param>
+        /// <param name="modelDefFactory"></param>
+        /// <param name="modelMapper"></param>
+        /// <param name="sqlBuilder"></param>
+        /// <exception cref="System.ArgumentException"></exception>
+        public DefaultDatabase(
+            IDatabaseEngine databaseEngine,
+            IDatabaseEntityDefFactory modelDefFactory,
+            IDatabaseEntityMapper modelMapper,
+            ISQLBuilder sqlBuilder,
+            ILogger<DefaultDatabase> logger)
         {
-            if (databaseSettings.Version < 0)
-            {
-                throw new ArgumentException("Database Version should greater than 0");
-            }
-
-            _databaseSettings = databaseSettings;
+            _databaseSettings = databaseEngine.DatabaseSettings;
             _databaseEngine = databaseEngine;
             _entityDefFactory = modelDefFactory;
             _modelMapper = modelMapper;
             _sqlBuilder = sqlBuilder;
-            //_logger = logger;
+            _logger = logger;
+
+            if (_databaseSettings.Version < 0)
+            {
+                throw new ArgumentException(Resources.VersionShouldBePositiveMessage);
+            }
         }
 
         #region Initialize
 
-        public void Initialize(IList<Migration> migrations = null)
+        /// <summary>
+        /// InitializeAsync
+        /// </summary>
+        /// <param name="migrations"></param>
+        /// <returns></returns>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
+        public async Task InitializeAsync(IEnumerable<Migration>? migrations = null)
         {
-            if (!_initialized)
+            if (_databaseSettings.AutomaticCreateTable)
             {
-                lock (_lockerObj)
-                {
-                    if (!_initialized)
-                    {
-                        _initialized = true;
+                await AutoCreateTablesIfBrandNewAsync().ConfigureAwait(false);
 
-                        AutoCreateTablesIfBrandNew();
-
-                        Migarate(migrations);
-                    }
-                }
+                _logger.LogInformation("Database Auto Create Tables Finished.");
             }
+
+            if (migrations != null && migrations.Any())
+            {
+                await MigarateAsync(migrations).ConfigureAwait(false);
+
+                _logger.LogInformation("Database Migarate Finished.");
+            }
+
+            _logger.LogInformation("Database Initialize Finished. Good To Go!");
         }
 
-        private void AutoCreateTablesIfBrandNew()
+        /// <summary>
+        /// AutoCreateTablesIfBrandNewAsync
+        /// </summary>
+        /// <returns></returns>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
+        private async Task AutoCreateTablesIfBrandNewAsync()
         {
-            if (!_databaseSettings.AutomaticCreateTable)
-            {
-                return;
-            }
-
-            _databaseEngine.GetDatabaseNames().ForEach(databaseName => {
-
-                TransactionContext transactionContext = BeginTransaction(databaseName, IsolationLevel.Serializable);
-
-                try
+            await _databaseEngine.GetDatabaseNames().ForEachAsync(
+                async databaseName =>
                 {
-                    SystemInfo sys = _databaseEngine.GetSystemInfo(databaseName, transactionContext.Transaction);
-                    //表明是新数据库
-                    if (sys.Version == 0)
+                    TransactionContext transactionContext = await BeginTransactionAsync(databaseName, IsolationLevel.Serializable).ConfigureAwait(false);
+
+                    try
                     {
-                        if (_databaseSettings.Version != 1)
+                        SystemInfo sys = await GetSystemInfoAsync(databaseName, transactionContext.Transaction).ConfigureAwait(false);
+                        //表明是新数据库
+                        if (sys.Version == 0)
                         {
-                            Rollback(transactionContext);
-                            throw new DatabaseException($"Database:{databaseName} does not exists, database Version must be 1");
+                            if (_databaseSettings.Version != 1)
+                            {
+                                await RollbackAsync(transactionContext).ConfigureAwait(false);
+                                throw new DatabaseException(ErrorCode.DatabaseTableCreateError,
+                                                            "",
+                                                            $"Database:{databaseName} does not exists, database Version must be 1");
+                            }
+
+                            await CreateTablesByDatabaseAsync(databaseName, transactionContext).ConfigureAwait(false);
+
+                            await UpdateSystemVersionAsync(databaseName, 1, transactionContext.Transaction).ConfigureAwait(false);
                         }
 
-                        CreateTablesByDatabase(databaseName, transactionContext);
+                        await CommitAsync(transactionContext).ConfigureAwait(false);
+                    }
+                    catch (Exception ex)
+                    {
+                        await RollbackAsync(transactionContext).ConfigureAwait(false);
 
-                        _databaseEngine.UpdateSystemVersion(databaseName, 1, transactionContext.Transaction);
+                        if (ex is DatabaseException)
+                        {
+                            throw;
+                        }
+
+                        throw new DatabaseException(ErrorCode.DatabaseTableCreateError, null, $"Database:{databaseName}", ex);
                     }
 
-                    Commit(transactionContext);
-                }
-                catch (Exception ex)
-                {
-                    Rollback(transactionContext);
-                    throw new DatabaseException($"Auto Create Table Failed, Database:{databaseName}, Reason:{ex.Message}", ex);
-                }
-
-            });
+                }).ConfigureAwait(false);
         }
 
-        private int CreateTable(DatabaseEntityDef def, TransactionContext transContext)
+        /// <summary>
+        /// CreateTableAsync
+        /// </summary>
+        /// <param name="def"></param>
+        /// <param name="transContext"></param>
+        /// <returns></returns>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
+        private Task<int> CreateTableAsync(DatabaseEntityDef def, TransactionContext transContext)
         {
-            string sql = GetTableCreateStatement(def.EntityType, false);
+            if (!def.IsTableModel)
+            {
+                throw new DatabaseException(ErrorCode.DatabaseNotATableModel, def.EntityFullName);
+            }
 
-            return _databaseEngine.ExecuteSqlNonQuery(transContext.Transaction, def.DatabaseName, sql);
+            IDbCommand command = _sqlBuilder.CreateTableCommand(def.EntityType, false);
+
+            return _databaseEngine.ExecuteCommandNonQueryAsync(transContext.Transaction, def.DatabaseName!, command);
         }
 
-        private void CreateTablesByDatabase(string databaseName, TransactionContext transactionContext)
+        /// <summary>
+        /// CreateTablesByDatabaseAsync
+        /// </summary>
+        /// <param name="databaseName"></param>
+        /// <param name="transactionContext"></param>
+        /// <returns></returns>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
+        private async Task CreateTablesByDatabaseAsync(string databaseName, TransactionContext transactionContext)
         {
-            _entityDefFactory
+            await _entityDefFactory
                 .GetAllDefsByDatabase(databaseName)
-                .ForEach(def => CreateTable(def, transactionContext));
+                .ForEachAsync(async def => await CreateTableAsync(def, transactionContext).ConfigureAwait(false))
+                .ConfigureAwait(false);
         }
 
-        private void Migarate(IList<Migration> migrations)
+        /// <summary>
+        /// Migarate
+        /// </summary>
+        /// <param name="migrations"></param>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
+        private async Task MigarateAsync(IEnumerable<Migration> migrations)
         {
             if (migrations != null && migrations.Any(m => m.NewVersion <= m.OldVersion))
             {
-                throw new DatabaseException($"oldVersion should always lower than newVersions in Database Migrations");
+                throw new DatabaseException(ErrorCode.DatabaseMigrateError, "", Resources.MigrationVersionErrorMessage);
             }
 
-            _databaseEngine.GetDatabaseNames().ForEach(databaseName => {
+            await _databaseEngine.GetDatabaseNames().ForEachAsync(async databaseName =>
+             {
 
-                TransactionContext transactionContext = BeginTransaction(databaseName, IsolationLevel.Serializable);
+                 TransactionContext transactionContext = await BeginTransactionAsync(databaseName, IsolationLevel.Serializable).ConfigureAwait(false);
 
-                try
-                {
-                    SystemInfo sys = _databaseEngine.GetSystemInfo(databaseName, transactionContext.Transaction);
+                 try
+                 {
+                     SystemInfo sys = await GetSystemInfoAsync(databaseName, transactionContext.Transaction).ConfigureAwait(false);
 
-                    if (sys.Version < _databaseSettings.Version)
-                    {
-                        if (migrations == null)
-                        {
-                            throw new DatabaseException($"Lack Migrations for {sys.DatabaseName}");
-                        }
+                     if (sys.Version < _databaseSettings.Version)
+                     {
+                         if (migrations == null)
+                         {
+                             throw new DatabaseException(ErrorCode.DatabaseMigrateError, "", $"Lack Migrations for {sys.DatabaseName}");
+                         }
 
-                        IOrderedEnumerable<Migration> curOrderedMigrations = migrations
-                            .Where(m => m.TargetSchema.Equals(sys.DatabaseName, GlobalSettings.ComparisonIgnoreCase))
-                            .OrderBy(m => m.OldVersion);
+                         IOrderedEnumerable<Migration> curOrderedMigrations = migrations
+                             .Where(m => m.TargetSchema.Equals(sys.DatabaseName, GlobalSettings.ComparisonIgnoreCase))
+                             .OrderBy(m => m.OldVersion);
 
-                        if (curOrderedMigrations == null)
-                        {
-                            throw new DatabaseException($"Lack Migrations for {sys.DatabaseName}");
-                        }
+                         if (curOrderedMigrations == null)
+                         {
+                             throw new DatabaseException(ErrorCode.DatabaseMigrateError, "", $"Lack Migrations for {sys.DatabaseName}");
+                         }
 
-                        if (!CheckMigration(sys.Version, _databaseSettings.Version, curOrderedMigrations))
-                        {
-                            throw new DatabaseException($"Can not perform Migration on ${sys.DatabaseName}, because the migrations provided is not sufficient.");
-                        }
+                         if (!CheckMigration(sys.Version, _databaseSettings.Version, curOrderedMigrations))
+                         {
+                             throw new DatabaseException(ErrorCode.DatabaseMigrateError, "", $"Can not perform Migration on ${sys.DatabaseName}, because the migrations provided is not sufficient.");
+                         }
 
-                        curOrderedMigrations.ForEach(migration => _databaseEngine.ExecuteSqlNonQuery(transactionContext.Transaction, databaseName, migration.SqlStatement));
+                         await curOrderedMigrations.ForEachAsync(async migration =>
+                         {
+                             IDbCommand command = _databaseEngine.CreateEmptyCommand();
+                             command.CommandType = CommandType.Text;
+                             command.CommandText = migration.SqlStatement;
+                             await _databaseEngine.ExecuteCommandNonQueryAsync(transactionContext.Transaction, databaseName, command).ConfigureAwait(false);
+                         }).ConfigureAwait(false);
 
-                        _databaseEngine.UpdateSystemVersion(sys.DatabaseName, _databaseSettings.Version, transactionContext.Transaction);
-                    }
+                         await UpdateSystemVersionAsync(sys.DatabaseName, _databaseSettings.Version, transactionContext.Transaction).ConfigureAwait(false);
+                     }
 
-                    Commit(transactionContext);
-                }
-                catch (Exception ex)
-                {
-                    Rollback(transactionContext);
-                    throw new DatabaseException($"Migration Failed at Database:{databaseName}", ex);
-                }
-            });
+                     await CommitAsync(transactionContext).ConfigureAwait(false);
+                 }
+                 catch (Exception ex)
+                 {
+                     await RollbackAsync(transactionContext).ConfigureAwait(false);
+                     //throw new DatabaseException(DatabaseError.MigrateError, "", $"Migration Failed at Database:{databaseName}", ex);
+
+                     if (ex is DatabaseException)
+                     {
+                         throw;
+                     }
+
+                     throw new DatabaseException(ErrorCode.DatabaseMigrateError, null, $"Database:{databaseName}", ex);
+                 }
+             }).ConfigureAwait(false);
         }
 
-        private bool CheckMigration(int startVersion, int endVersion, IOrderedEnumerable<Migration> curOrderedMigrations)
+        private static bool CheckMigration(int startVersion, int endVersion, IOrderedEnumerable<Migration> curOrderedMigrations)
         {
             int curVersion = curOrderedMigrations.ElementAt(0).OldVersion;
 
@@ -194,31 +261,148 @@ namespace HB.Framework.Database
 
         #endregion
 
-        #region Private methods
+        #region SystemInfo
 
-        //private static void bindCommandTransaction(TransactionContext transContext, IDbCommand command)
-        //{
-        //    if (transContext != null)
-        //    {
-        //        command.Transaction = transContext.Transaction;
-        //    }
-        //}
-
-        private static bool CheckEntities<T>(IEnumerable<T> items) where T : DatabaseEntity, new()
+        /// <summary>
+        /// IsTableExistsAsync
+        /// </summary>
+        /// <param name="databaseName"></param>
+        /// <param name="tableName"></param>
+        /// <param name="transaction"></param>
+        /// <returns></returns>
+        /// <exception cref="DatabaseException"></exception>
+        /// <exception cref="InvalidCastException">Ignore.</exception>
+        private async Task<bool> IsTableExistsAsync(string databaseName, string tableName, IDbTransaction transaction)
         {
-            if (items == null || items.Count() == 0)
+            using IDbCommand command = _sqlBuilder.CreateIsTableExistCommand(databaseName, tableName);
+
+            object result = await _databaseEngine.ExecuteCommandScalarAsync(transaction, databaseName, command, true).ConfigureAwait(false);
+
+            return Convert.ToBoolean(result, GlobalSettings.Culture);
+        }
+
+        /// <summary>
+        /// GetSystemInfoAsync
+        /// </summary>
+        /// <param name="databaseName"></param>
+        /// <param name="transaction"></param>
+        /// <returns></returns>
+        /// <exception cref="DatabaseException"></exception>
+        public async Task<SystemInfo> GetSystemInfoAsync(string databaseName, IDbTransaction transaction)
+        {
+            bool isExisted = await IsTableExistsAsync(databaseName, SystemInfoNames.SystemInfoTableName, transaction).ConfigureAwait(false);
+
+            if (!isExisted)
             {
-                return true;
+                return new SystemInfo(databaseName) { Version = 0 };
             }
 
-            return items.All(t => t.IsValid());
+            using IDbCommand command = _sqlBuilder.CreateRetrieveSystemInfoCommand();
+
+            using IDataReader reader = await _databaseEngine.ExecuteCommandReaderAsync(transaction, databaseName, command, false).ConfigureAwait(false);
+
+            SystemInfo systemInfo = new SystemInfo(databaseName);
+
+            while (reader.Read())
+            {
+                systemInfo.Set(reader["Name"].ToString(), reader["Value"].ToString());
+            }
+
+            return systemInfo;
         }
+
+
+        /// <summary>
+        /// UpdateSystemVersionAsync
+        /// </summary>
+        /// <param name="databaseName"></param>
+        /// <param name="version"></param>
+        /// <param name="transaction"></param>
+        /// <returns></returns>
+        /// <exception cref="DatabaseException"></exception>
+        public async Task UpdateSystemVersionAsync(string databaseName, int version, IDbTransaction transaction)
+        {
+            using IDbCommand command = _sqlBuilder.CreateUpdateSystemVersionCommand(databaseName, version);
+
+            await _databaseEngine.ExecuteCommandNonQueryAsync(transaction, databaseName, command).ConfigureAwait(false);
+        }
+
+        #endregion
+
+        #region 条件构造
+
+        public SelectExpression<T> Select<T>() where T : DatabaseEntity, new()
+        {
+            return _sqlBuilder.NewSelect<T>();
+        }
+
+        public FromExpression<T> From<T>() where T : DatabaseEntity, new()
+        {
+            return _sqlBuilder.NewFrom<T>();
+        }
+
+        public WhereExpression<T> Where<T>() where T : DatabaseEntity, new()
+        {
+            return _sqlBuilder.NewWhere<T>();
+        }
+
+        #endregion
+
+        #region 表创建SQL
+
+        //public string GetTableCreateCommand(Type type, bool addDropStatement)
+        //{
+
+        //    IDbCommand command = _databaseEngine.CreateEmptyCommand();
+        //    command.CommandType = CommandType.Text;
+        //    command.CommandText = _sqlBuilder.CreateTableCommand(type, addDropStatement);
+        //}
 
         #endregion
 
         #region 单表查询, Select, From, Where
 
-        public IList<TSelect> Retrieve<TSelect, TFrom, TWhere>(SelectExpression<TSelect> selectCondition, FromExpression<TFrom> fromCondition, WhereExpression<TWhere> whereCondition, TransactionContext transContext = null)
+        /// <summary>
+        /// ScalarAsync
+        /// </summary>
+        /// <param name="selectCondition"></param>
+        /// <param name="fromCondition"></param>
+        /// <param name="whereCondition"></param>
+        /// <param name="transContext"></param>
+        /// <returns></returns>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
+        public async Task<T?> ScalarAsync<T>(SelectExpression<T>? selectCondition, FromExpression<T>? fromCondition, WhereExpression<T>? whereCondition, TransactionContext? transContext)
+            where T : DatabaseEntity, new()
+        {
+            IEnumerable<T> lst = await RetrieveAsync<T>(selectCondition, fromCondition, whereCondition, transContext).ConfigureAwait(false);
+
+            if (lst.IsNullOrEmpty())
+            {
+                return null;
+            }
+
+            if (lst.Count() > 1)
+            {
+                string detail = $"Scalar retrieve return more than one result. Select:{selectCondition}, From:{fromCondition}, Where:{whereCondition}";
+                DatabaseException exception = new DatabaseException(ErrorCode.DatabaseFoundTooMuch, typeof(T).FullName, detail);
+                //_logger.LogException(exception);
+
+                throw exception;
+            }
+
+            return lst.ElementAt(0);
+        }
+
+        /// <summary>
+        /// RetrieveAsync
+        /// </summary>
+        /// <param name="selectCondition"></param>
+        /// <param name="fromCondition"></param>
+        /// <param name="whereCondition"></param>
+        /// <param name="transContext"></param>
+        /// <returns></returns>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
+        public async Task<IEnumerable<TSelect>> RetrieveAsync<TSelect, TFrom, TWhere>(SelectExpression<TSelect>? selectCondition, FromExpression<TFrom>? fromCondition, WhereExpression<TWhere>? whereCondition, TransactionContext? transContext = null)
             where TSelect : DatabaseEntity, new()
             where TFrom : DatabaseEntity, new()
             where TWhere : DatabaseEntity, new()
@@ -239,52 +423,49 @@ namespace HB.Framework.Database
 
             #endregion
 
-            IList<TSelect> result = null;
-            IDataReader reader = null;
+            IList<TSelect> result;
+            IDbCommand? command = null;
+            IDataReader? reader = null;
             DatabaseEntityDef selectDef = _entityDefFactory.GetDef<TSelect>();
 
             try
             {
-                IDbCommand command = _sqlBuilder.CreateRetrieveCommand(selectCondition, fromCondition, whereCondition);
-                reader = _databaseEngine.ExecuteCommandReader(transContext?.Transaction, selectDef.DatabaseName, command, transContext != null);
+                command = _sqlBuilder.CreateRetrieveCommand(selectCondition, fromCondition, whereCondition);
+
+                reader = await _databaseEngine.ExecuteCommandReaderAsync(transContext?.Transaction, selectDef.DatabaseName!, command, transContext != null).ConfigureAwait(false);
+
                 result = _modelMapper.ToList<TSelect>(reader);
             }
-            //catch (DbException ex)
-            //{
-            //    throw ex;
-            //}
+            catch (Exception ex) when (!(ex is DatabaseException))
+            {
+                //if (ex is DatabaseException)
+                //{
+                //    throw;
+                //}
+
+                string detail = $"select:{selectCondition}, from:{fromCondition}, where:{whereCondition}";
+                throw new DatabaseException(ErrorCode.DatabaseError, selectDef.EntityFullName, detail, ex);
+            }
             finally
             {
-                if (reader != null)
-                {
-                    reader.Dispose();
-                }
+                reader?.Dispose();
+                command?.Dispose();
             }
 
             return result;
         }
 
-        public T Scalar<T>(SelectExpression<T> selectCondition, FromExpression<T> fromCondition, WhereExpression<T> whereCondition, TransactionContext transContext)
-            where T : DatabaseEntity, new()
-        {
-            IList<T> result = Retrieve<T>(selectCondition, fromCondition, whereCondition, transContext);
 
-            if (result == null || result.Count == 0)
-            {
-                return null;
-            }
-
-            if (result.Count > 1)
-            {
-                //_logger.LogCritical(0, "retrieve result not one, but many." + typeof(T).FullName, null);
-
-                throw new DatabaseException($"Scalar retrieve return more than one result. Select:{selectCondition.ToString()}, From:{fromCondition.ToString()}, Where:{whereCondition.ToString()}");
-            }
-
-            return result[0];
-        }
-
-        public IList<T> Retrieve<T>(SelectExpression<T> selectCondition, FromExpression<T> fromCondition, WhereExpression<T> whereCondition, TransactionContext transContext)
+        /// <summary>
+        /// RetrieveAsync
+        /// </summary>
+        /// <param name="selectCondition"></param>
+        /// <param name="fromCondition"></param>
+        /// <param name="whereCondition"></param>
+        /// <param name="transContext"></param>
+        /// <returns></returns>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
+        public async Task<IEnumerable<T>> RetrieveAsync<T>(SelectExpression<T>? selectCondition, FromExpression<T>? fromCondition, WhereExpression<T>? whereCondition, TransactionContext? transContext)
             where T : DatabaseEntity, new()
         {
             #region Argument Adjusting
@@ -303,33 +484,39 @@ namespace HB.Framework.Database
 
             #endregion
 
-            IList<T> result = null;
-            IDataReader reader = null;
+            IList<T> result;
+            IDbCommand? command = null;
+            IDataReader? reader = null;
             DatabaseEntityDef entityDef = _entityDefFactory.GetDef<T>();
 
             try
             {
-                IDbCommand command = _sqlBuilder.CreateRetrieveCommand<T>(selectCondition, fromCondition, whereCondition);
-                reader = _databaseEngine.ExecuteCommandReader(transContext?.Transaction, entityDef.DatabaseName, command, transContext != null);
+                command = _sqlBuilder.CreateRetrieveCommand<T>(selectCondition, fromCondition, whereCondition);
+
+                reader = await _databaseEngine.ExecuteCommandReaderAsync(transContext?.Transaction, entityDef.DatabaseName!, command, transContext != null).ConfigureAwait(false);
                 result = _modelMapper.ToList<T>(reader);
             }
-            //catch (DbException ex)
-            //{
-            //    result = new List<T>();
-            //    _logger.LogCritical(ex.Message);
-            //}
+            catch (Exception ex) when (!(ex is DatabaseException))
+            {
+                //if (ex is DatabaseException)
+                //{
+                //    throw;
+                //}
+
+                string detail = $"select:{selectCondition}, from:{fromCondition}, where:{whereCondition}";
+
+                throw new DatabaseException(ErrorCode.DatabaseError, entityDef.EntityFullName, detail, ex);
+            }
             finally
             {
-                if (reader != null)
-                {
-                    reader.Dispose();
-                }
+                reader?.Dispose();
+                command?.Dispose();
             }
 
             return result;
         }
 
-        public IList<T> Page<T>(SelectExpression<T> selectCondition, FromExpression<T> fromCondition, WhereExpression<T> whereCondition, long pageNumber, long perPageCount, TransactionContext transContext)
+        public Task<IEnumerable<T>> PageAsync<T>(SelectExpression<T>? selectCondition, FromExpression<T>? fromCondition, WhereExpression<T>? whereCondition, long pageNumber, long perPageCount, TransactionContext? transContext)
             where T : DatabaseEntity, new()
         {
             #region Argument Adjusting
@@ -350,10 +537,19 @@ namespace HB.Framework.Database
 
             whereCondition.Limit((pageNumber - 1) * perPageCount, perPageCount);
 
-            return Retrieve<T>(selectCondition, fromCondition, whereCondition, transContext);
+            return RetrieveAsync<T>(selectCondition, fromCondition, whereCondition, transContext);
         }
 
-        public long Count<T>(SelectExpression<T> selectCondition, FromExpression<T> fromCondition, WhereExpression<T> whereCondition, TransactionContext transContext)
+        /// <summary>
+        /// CountAsync
+        /// </summary>
+        /// <param name="selectCondition"></param>
+        /// <param name="fromCondition"></param>
+        /// <param name="whereCondition"></param>
+        /// <param name="transContext"></param>
+        /// <returns></returns>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
+        public async Task<long> CountAsync<T>(SelectExpression<T>? selectCondition, FromExpression<T>? fromCondition, WhereExpression<T>? whereCondition, TransactionContext? transContext)
             where T : DatabaseEntity, new()
         {
             #region Argument Adjusting
@@ -378,12 +574,13 @@ namespace HB.Framework.Database
             try
             {
                 IDbCommand command = _sqlBuilder.CreateCountCommand(fromCondition, whereCondition);
-                object countObj = _databaseEngine.ExecuteCommandScalar(transContext?.Transaction, entityDef.DatabaseName, command, transContext != null);
+                object countObj = await _databaseEngine.ExecuteCommandScalarAsync(transContext?.Transaction, entityDef.DatabaseName!, command, transContext != null).ConfigureAwait(false);
                 count = Convert.ToInt32(countObj, GlobalSettings.Culture);
             }
-            catch (DbException ex)
+            catch (Exception ex) when (!(ex is DatabaseException))
             {
-                throw ex;// _logger.LogCritical(ex.Message);
+                string detail = $"select:{selectCondition}, from:{fromCondition}, where:{whereCondition}";
+                throw new DatabaseException(ErrorCode.DatabaseError, entityDef.EntityFullName, detail, ex);
             }
 
             return count;
@@ -393,126 +590,200 @@ namespace HB.Framework.Database
 
         #region 单表查询, From, Where
 
-        public T Scalar<T>(FromExpression<T> fromCondition, WhereExpression<T> whereCondition, TransactionContext transContext)
+        /// <summary>
+        /// ScalarAsync
+        /// </summary>
+        /// <param name="fromCondition"></param>
+        /// <param name="whereCondition"></param>
+        /// <param name="transContext"></param>
+        /// <returns></returns>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
+        public Task<T?> ScalarAsync<T>(FromExpression<T>? fromCondition, WhereExpression<T>? whereCondition, TransactionContext? transContext)
             where T : DatabaseEntity, new()
         {
-            return Scalar(null, fromCondition, whereCondition, transContext);
+            return ScalarAsync(null, fromCondition, whereCondition, transContext);
         }
 
-        public IList<T> Retrieve<T>(FromExpression<T> fromCondition, WhereExpression<T> whereCondition, TransactionContext transContext)
+        /// <summary>
+        /// RetrieveAsync
+        /// </summary>
+        /// <param name="fromCondition"></param>
+        /// <param name="whereCondition"></param>
+        /// <param name="transContext"></param>
+        /// <returns></returns>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
+        public Task<IEnumerable<T>> RetrieveAsync<T>(FromExpression<T>? fromCondition, WhereExpression<T>? whereCondition, TransactionContext? transContext)
             where T : DatabaseEntity, new()
         {
-            return Retrieve(null, fromCondition, whereCondition, transContext);
+            return RetrieveAsync(null, fromCondition, whereCondition, transContext);
         }
 
-        public IList<T> Page<T>(FromExpression<T> fromCondition, WhereExpression<T> whereCondition, long pageNumber, long perPageCount, TransactionContext transContext)
+        public Task<IEnumerable<T>> PageAsync<T>(FromExpression<T>? fromCondition, WhereExpression<T>? whereCondition, long pageNumber, long perPageCount, TransactionContext? transContext)
             where T : DatabaseEntity, new()
         {
-            return Page(null, fromCondition, whereCondition, pageNumber, perPageCount, transContext);
+            return PageAsync(null, fromCondition, whereCondition, pageNumber, perPageCount, transContext);
         }
 
-        public long Count<T>(FromExpression<T> fromCondition, WhereExpression<T> whereCondition, TransactionContext transContext)
+        /// <summary>
+        /// CountAsync
+        /// </summary>
+        /// <param name="fromCondition"></param>
+        /// <param name="whereCondition"></param>
+        /// <param name="transContext"></param>
+        /// <returns></returns>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
+        public Task<long> CountAsync<T>(FromExpression<T>? fromCondition, WhereExpression<T>? whereCondition, TransactionContext? transContext)
             where T : DatabaseEntity, new()
         {
-            return Count(null, fromCondition, whereCondition, transContext);
+            return CountAsync(null, fromCondition, whereCondition, transContext);
         }
 
         #endregion
 
         #region 单表查询, Where
 
-        public IList<T> RetrieveAll<T>(TransactionContext transContext)
+        public Task<IEnumerable<T>> RetrieveAllAsync<T>(TransactionContext? transContext)
             where T : DatabaseEntity, new()
         {
-            return Retrieve<T>(null, null, null, transContext);
+            return RetrieveAsync<T>(null, null, null, transContext);
         }
 
-        public T Scalar<T>(WhereExpression<T> whereCondition, TransactionContext transContext)
+        /// <summary>
+        /// ScalarAsync
+        /// </summary>
+        /// <param name="whereCondition"></param>
+        /// <param name="transContext"></param>
+        /// <returns></returns>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
+        public Task<T?> ScalarAsync<T>(WhereExpression<T>? whereCondition, TransactionContext? transContext)
             where T : DatabaseEntity, new()
         {
-            return Scalar(null, null, whereCondition, transContext);
+            return ScalarAsync(null, null, whereCondition, transContext);
         }
 
-        public IList<T> Retrieve<T>(WhereExpression<T> whereCondition, TransactionContext transContext)
+        /// <summary>
+        /// RetrieveAsync
+        /// </summary>
+        /// <param name="whereCondition"></param>
+        /// <param name="transContext"></param>
+        /// <returns></returns>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
+        public Task<IEnumerable<T>> RetrieveAsync<T>(WhereExpression<T>? whereCondition, TransactionContext? transContext)
             where T : DatabaseEntity, new()
         {
-            return Retrieve(null, null, whereCondition, transContext);
+            return RetrieveAsync(null, null, whereCondition, transContext);
         }
 
-        public IList<T> Page<T>(WhereExpression<T> whereCondition, long pageNumber, long perPageCount, TransactionContext transContext)
+        public Task<IEnumerable<T>> PageAsync<T>(WhereExpression<T>? whereCondition, long pageNumber, long perPageCount, TransactionContext? transContext)
             where T : DatabaseEntity, new()
         {
-            return Page(null, null, whereCondition, pageNumber, perPageCount, transContext);
+            return PageAsync(null, null, whereCondition, pageNumber, perPageCount, transContext);
         }
 
-        public IList<T> Page<T>(long pageNumber, long perPageCount, TransactionContext transContext)
+        public Task<IEnumerable<T>> PageAsync<T>(long pageNumber, long perPageCount, TransactionContext? transContext)
             where T : DatabaseEntity, new()
         {
-            return Page<T>(null, null, null, pageNumber, perPageCount, transContext);
+            return PageAsync<T>(null, null, null, pageNumber, perPageCount, transContext);
         }
 
-        public long Count<T>(WhereExpression<T> condition, TransactionContext transContext)
+        /// <summary>
+        /// CountAsync
+        /// </summary>
+        /// <param name="condition"></param>
+        /// <param name="transContext"></param>
+        /// <returns></returns>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
+        public Task<long> CountAsync<T>(WhereExpression<T>? condition, TransactionContext? transContext)
             where T : DatabaseEntity, new()
         {
-            return Count(null, null, condition, transContext);
+            return CountAsync(null, null, condition, transContext);
         }
 
-        public long Count<T>(TransactionContext transContext)
+        public Task<long> CountAsync<T>(TransactionContext? transContext)
             where T : DatabaseEntity, new()
         {
-            return Count<T>(null, null, null, transContext);
+            return CountAsync<T>(null, null, null, transContext);
         }
 
         #endregion
 
         #region 单表查询, Expression Where
 
-        public T Scalar<T>(long id, TransactionContext transContext)
+        public Task<T?> ScalarAsync<T>(long id, TransactionContext? transContext)
             where T : DatabaseEntity, new()
         {
-            return Scalar<T>(t => t.Id == id && t.Deleted == false, transContext);
+            return ScalarAsync<T>(t => t.Id == id && t.Deleted == false, transContext);
         }
 
-        public T Scalar<T>(Expression<Func<T, bool>> whereExpr, TransactionContext transContext)
+        //public Task<T> RetrieveScalaAsyncr<T>(Expression<Func<T, bool>> whereExpr, DatabaseTransactionContext transContext = false) where T : DatabaseEntity, new();
+        /// <summary>
+        /// ScalarAsync
+        /// </summary>
+        /// <param name="whereExpr"></param>
+        /// <param name="transContext"></param>
+        /// <returns></returns>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
+        public Task<T?> ScalarAsync<T>(Expression<Func<T, bool>> whereExpr, TransactionContext? transContext) where T : DatabaseEntity, new()
+        {
+            WhereExpression<T> whereCondition = Where<T>();
+            whereCondition.Where(whereExpr);
+
+            return ScalarAsync(null, null, whereCondition, transContext);
+        }
+
+        /// <summary>
+        /// RetrieveAsync
+        /// </summary>
+        /// <param name="whereExpr"></param>
+        /// <param name="transContext"></param>
+        /// <returns></returns>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
+        public Task<IEnumerable<T>> RetrieveAsync<T>(Expression<Func<T, bool>> whereExpr, TransactionContext? transContext)
             where T : DatabaseEntity, new()
         {
             WhereExpression<T> whereCondition = Where<T>();
             whereCondition.Where(whereExpr);
 
-            return Scalar(null, null, whereCondition, transContext);
+            return RetrieveAsync(null, null, whereCondition, transContext);
         }
 
-        public IList<T> Retrieve<T>(Expression<Func<T, bool>> whereExpr, TransactionContext transContext)
+        public Task<IEnumerable<T>> PageAsync<T>(Expression<Func<T, bool>> whereExpr, long pageNumber, long perPageCount, TransactionContext? transContext)
+            where T : DatabaseEntity, new()
+        {
+            WhereExpression<T> whereCondition = Where<T>();
+
+            return PageAsync(null, null, whereCondition, pageNumber, perPageCount, transContext);
+        }
+
+        /// <summary>
+        /// CountAsync
+        /// </summary>
+        /// <param name="whereExpr"></param>
+        /// <param name="transContext"></param>
+        /// <returns></returns>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
+        public Task<long> CountAsync<T>(Expression<Func<T, bool>> whereExpr, TransactionContext? transContext)
             where T : DatabaseEntity, new()
         {
             WhereExpression<T> whereCondition = Where<T>();
             whereCondition.Where(whereExpr);
 
-            return Retrieve(null, null, whereCondition, transContext);
-        }
-
-        public IList<T> Page<T>(Expression<Func<T, bool>> whereExpr, long pageNumber, long perPageCount, TransactionContext transContext)
-            where T : DatabaseEntity, new()
-        {
-            WhereExpression<T> whereCondition = Where<T>().Where(whereExpr);
-
-            return Page(null, null, whereCondition, pageNumber, perPageCount, transContext);
-        }
-
-        public long Count<T>(Expression<Func<T, bool>> whereExpr, TransactionContext transContext)
-            where T : DatabaseEntity, new()
-        {
-            WhereExpression<T> whereCondition = Where<T>();
-            whereCondition.Where(whereExpr);
-
-            return Count(null, null, whereCondition, transContext);
+            return CountAsync(null, null, whereCondition, transContext);
         }
 
         #endregion
 
         #region 双表查询
 
-        public IList<Tuple<TSource, TTarget>> Retrieve<TSource, TTarget>(FromExpression<TSource> fromCondition, WhereExpression<TSource> whereCondition, TransactionContext transContext)
+        /// <summary>
+        /// RetrieveAsync
+        /// </summary>
+        /// <param name="fromCondition"></param>
+        /// <param name="whereCondition"></param>
+        /// <param name="transContext"></param>
+        /// <returns></returns>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
+        public async Task<IEnumerable<Tuple<TSource, TTarget?>>> RetrieveAsync<TSource, TTarget>(FromExpression<TSource> fromCondition, WhereExpression<TSource>? whereCondition, TransactionContext? transContext)
             where TSource : DatabaseEntity, new()
             where TTarget : DatabaseEntity, new()
         {
@@ -539,34 +810,36 @@ namespace HB.Framework.Database
                     break;
             }
 
-            IList<Tuple<TSource, TTarget>> result = null;
-            IDataReader reader = null;
+            IList<Tuple<TSource, TTarget?>> result;
+            IDbCommand? command = null;
+            IDataReader? reader = null;
             DatabaseEntityDef entityDef = _entityDefFactory.GetDef<TSource>();
 
             try
             {
-                IDbCommand command = _sqlBuilder.CreateRetrieveCommand<TSource, TTarget>(fromCondition, whereCondition);
-                reader = _databaseEngine.ExecuteCommandReader(transContext?.Transaction, entityDef.DatabaseName, command, transContext != null);
+                command = _sqlBuilder.CreateRetrieveCommand<TSource, TTarget>(fromCondition, whereCondition);
+                reader = await _databaseEngine.ExecuteCommandReaderAsync(transContext?.Transaction, entityDef.DatabaseName!, command, transContext != null).ConfigureAwait(false);
                 result = _modelMapper.ToList<TSource, TTarget>(reader);
             }
-            //catch (DbException ex)
-            //{
-            //    result = new List<Tuple<TSource, TTarget>>();
+            catch (Exception ex) when (!(ex is DatabaseException))
+            {
+                string detail = $"from:{fromCondition}, where:{whereCondition}";
+                DatabaseException exception = new DatabaseException(ErrorCode.DatabaseError, entityDef.EntityFullName, detail, ex);
 
-            //    _logger.LogCritical(ex.Message);
-            //}
+                //_logger.LogException(exception);
+
+                throw exception;
+            }
             finally
             {
-                if (reader != null)
-                {
-                    reader.Dispose();
-                }
+                reader?.Dispose();
+                command?.Dispose();
             }
 
             return result;
         }
 
-        public IList<Tuple<TSource, TTarget>> Page<TSource, TTarget>(FromExpression<TSource> fromCondition, WhereExpression<TSource> whereCondition, long pageNumber, long perPageCount, TransactionContext transContext)
+        public Task<IEnumerable<Tuple<TSource, TTarget?>>> PageAsync<TSource, TTarget>(FromExpression<TSource> fromCondition, WhereExpression<TSource>? whereCondition, long pageNumber, long perPageCount, TransactionContext? transContext)
             where TSource : DatabaseEntity, new()
             where TTarget : DatabaseEntity, new()
         {
@@ -577,35 +850,53 @@ namespace HB.Framework.Database
 
             whereCondition.Limit((pageNumber - 1) * perPageCount, perPageCount);
 
-            return Retrieve<TSource, TTarget>(fromCondition, whereCondition, transContext);
+            return RetrieveAsync<TSource, TTarget>(fromCondition, whereCondition, transContext);
         }
 
-        public Tuple<TSource, TTarget> Scalar<TSource, TTarget>(FromExpression<TSource> fromCondition, WhereExpression<TSource> whereCondition, TransactionContext transContext)
+        /// <summary>
+        /// ScalarAsync
+        /// </summary>
+        /// <param name="fromCondition"></param>
+        /// <param name="whereCondition"></param>
+        /// <param name="transContext"></param>
+        /// <returns></returns>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
+        public async Task<Tuple<TSource, TTarget?>?> ScalarAsync<TSource, TTarget>(FromExpression<TSource> fromCondition, WhereExpression<TSource>? whereCondition, TransactionContext? transContext)
             where TSource : DatabaseEntity, new()
             where TTarget : DatabaseEntity, new()
         {
-            IList<Tuple<TSource, TTarget>> result = Retrieve<TSource, TTarget>(fromCondition, whereCondition, transContext);
+            IEnumerable<Tuple<TSource, TTarget?>> lst = await RetrieveAsync<TSource, TTarget>(fromCondition, whereCondition, transContext).ConfigureAwait(false);
 
-            if (result == null || result.Count == 0)
+            if (lst.IsNullOrEmpty())
             {
                 return null;
             }
 
-            if (result.Count > 1)
+            if (lst.Count() > 1)
             {
-                throw new DatabaseException($"Scalar retrieve return more than one result. From:{fromCondition.ToString()}, Where:{whereCondition.ToString()}");
-                //_logger.LogCritical(0, "retrieve result not one, but many." + typeof(TSource).FullName, null);
-                //return null;
+                string message = $"Scalar retrieve return more than one result. From:{fromCondition}, Where:{whereCondition}";
+                DatabaseException exception = new DatabaseException(ErrorCode.DatabaseFoundTooMuch, typeof(TSource).FullName, message);
+                //_logger.LogException(exception);
+
+                throw exception;
             }
 
-            return result[0];
+            return lst.ElementAt(0);
         }
 
         #endregion
 
         #region 三表查询
 
-        public IList<Tuple<TSource, TTarget1, TTarget2>> Retrieve<TSource, TTarget1, TTarget2>(FromExpression<TSource> fromCondition, WhereExpression<TSource> whereCondition, TransactionContext transContext)
+        /// <summary>
+        /// RetrieveAsync
+        /// </summary>
+        /// <param name="fromCondition"></param>
+        /// <param name="whereCondition"></param>
+        /// <param name="transContext"></param>
+        /// <returns></returns>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
+        public async Task<IEnumerable<Tuple<TSource, TTarget1?, TTarget2?>>> RetrieveAsync<TSource, TTarget1, TTarget2>(FromExpression<TSource> fromCondition, WhereExpression<TSource>? whereCondition, TransactionContext? transContext)
             where TSource : DatabaseEntity, new()
             where TTarget1 : DatabaseEntity, new()
             where TTarget2 : DatabaseEntity, new()
@@ -634,35 +925,33 @@ namespace HB.Framework.Database
             }
 
 
-            IList<Tuple<TSource, TTarget1, TTarget2>> result = null;
-            IDataReader reader = null;
+            IList<Tuple<TSource, TTarget1?, TTarget2?>> result;
+            IDbCommand? command = null;
+            IDataReader? reader = null;
             DatabaseEntityDef entityDef = _entityDefFactory.GetDef<TSource>();
 
             try
             {
-                IDbCommand command = _sqlBuilder.CreateRetrieveCommand<TSource, TTarget1, TTarget2>(fromCondition, whereCondition);
-                reader = _databaseEngine.ExecuteCommandReader(transContext?.Transaction, entityDef.DatabaseName, command, transContext != null);
+                command = _sqlBuilder.CreateRetrieveCommand<TSource, TTarget1, TTarget2>(fromCondition, whereCondition);
+                reader = await _databaseEngine.ExecuteCommandReaderAsync(transContext?.Transaction, entityDef.DatabaseName!, command, transContext != null).ConfigureAwait(false);
                 result = _modelMapper.ToList<TSource, TTarget1, TTarget2>(reader);
             }
-            //catch (DbException ex)
-            //{
-            //    result = new List<Tuple<TSource, TTarget1, TTarget2>>();
-
-            //    _logger.LogCritical(ex.Message);
-            //}
+            catch (Exception ex) when (!(ex is DatabaseException))
+            {
+                string detail = $"from:{fromCondition}, where:{whereCondition}";
+                throw new DatabaseException(ErrorCode.DatabaseError, entityDef.EntityFullName, detail, ex);
+            }
             finally
             {
-                if (reader != null)
-                {
-                    reader.Dispose();
-                }
+                reader?.Dispose();
+                command?.Dispose();
             }
 
 
             return result;
         }
 
-        public IList<Tuple<TSource, TTarget1, TTarget2>> Page<TSource, TTarget1, TTarget2>(FromExpression<TSource> fromCondition, WhereExpression<TSource> whereCondition, long pageNumber, long perPageCount, TransactionContext transContext)
+        public Task<IEnumerable<Tuple<TSource, TTarget1?, TTarget2?>>> PageAsync<TSource, TTarget1, TTarget2>(FromExpression<TSource> fromCondition, WhereExpression<TSource>? whereCondition, long pageNumber, long perPageCount, TransactionContext? transContext)
             where TSource : DatabaseEntity, new()
             where TTarget1 : DatabaseEntity, new()
             where TTarget2 : DatabaseEntity, new()
@@ -674,29 +963,39 @@ namespace HB.Framework.Database
 
             whereCondition.Limit((pageNumber - 1) * perPageCount, perPageCount);
 
-            return Retrieve<TSource, TTarget1, TTarget2>(fromCondition, whereCondition, transContext);
+            return RetrieveAsync<TSource, TTarget1, TTarget2>(fromCondition, whereCondition, transContext);
         }
 
-        public Tuple<TSource, TTarget1, TTarget2> Scalar<TSource, TTarget1, TTarget2>(FromExpression<TSource> fromCondition, WhereExpression<TSource> whereCondition, TransactionContext transContext)
+        /// <summary>
+        /// ScalarAsync
+        /// </summary>
+        /// <param name="fromCondition"></param>
+        /// <param name="whereCondition"></param>
+        /// <param name="transContext"></param>
+        /// <returns></returns>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
+        public async Task<Tuple<TSource, TTarget1?, TTarget2?>?> ScalarAsync<TSource, TTarget1, TTarget2>(FromExpression<TSource> fromCondition, WhereExpression<TSource>? whereCondition, TransactionContext? transContext)
             where TSource : DatabaseEntity, new()
             where TTarget1 : DatabaseEntity, new()
             where TTarget2 : DatabaseEntity, new()
         {
-            IList<Tuple<TSource, TTarget1, TTarget2>> result = Retrieve<TSource, TTarget1, TTarget2>(fromCondition, whereCondition, transContext);
+            IEnumerable<Tuple<TSource, TTarget1?, TTarget2?>> lst = await RetrieveAsync<TSource, TTarget1, TTarget2>(fromCondition, whereCondition, transContext).ConfigureAwait(false);
 
-            if (result == null || result.Count == 0)
+            if (lst.IsNullOrEmpty())
             {
                 return null;
             }
 
-            if (result.Count > 1)
+            if (lst.Count() > 1)
             {
-                throw new DatabaseException($"Scalar retrieve return more than one result. From:{fromCondition.ToString()}, Where:{whereCondition.ToString()}");
-                //_logger.LogCritical(0, "retrieve result not one, but many." + typeof(TSource).FullName, null);
-                //return null;
+                string message = $"Scalar retrieve return more than one result. From:{fromCondition}, Where:{whereCondition}";
+                DatabaseException exception = new DatabaseException(ErrorCode.DatabaseFoundTooMuch, typeof(TSource).FullName, message);
+                //_logger.LogException(exception);
+
+                throw exception;
             }
 
-            return result[0];
+            return lst.ElementAt(0);
         }
 
         #endregion
@@ -706,61 +1005,57 @@ namespace HB.Framework.Database
         /// <summary>
         /// 增加,并且item被重新赋值
         /// </summary>
-        public DatabaseResult Add<T>(T item, TransactionContext transContext) where T : DatabaseEntity, new()
+        /// <exception cref="HB.Framework.Common.ValidateErrorException"></exception>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
+        public async Task AddAsync<T>(T item, TransactionContext? transContext) where T : DatabaseEntity, new()
         {
-            if (!item.IsValid())
-            {
-                return DatabaseResult.Fail("entity check failed.");
-            }
+            ThrowIf.NotValid(item);
 
             DatabaseEntityDef entityDef = _entityDefFactory.GetDef<T>();
 
             if (!entityDef.DatabaseWriteable)
             {
-                return DatabaseResult.NotWriteable();
+                throw new DatabaseException(ErrorCode.DatabaseNotWriteable, entityDef.EntityFullName, $"Entity:{SerializeUtil.ToJson(item)}");
             }
 
-            IDataReader reader = null;
+            IDbCommand? dbCommand = null;
+            IDataReader? reader = null;
 
             try
             {
-                IDbCommand dbCommand = _sqlBuilder.CreateAddCommand(item, "default");
+                dbCommand = _sqlBuilder.CreateAddCommand(item, "default");
 
-                reader = _databaseEngine.ExecuteCommandReader(transContext?.Transaction, entityDef.DatabaseName, dbCommand, true);
+                reader = await _databaseEngine.ExecuteCommandReaderAsync(transContext?.Transaction, entityDef.DatabaseName!, dbCommand, true).ConfigureAwait(false);
 
                 _modelMapper.ToObject(reader, item);
-
-                return DatabaseResult.Succeeded();
             }
-            catch (DbException ex)
+            catch (Exception ex) when (!(ex is DatabaseException))
             {
-                //_logger.LogCritical(ex.Message);
-                return DatabaseResult.Fail(ex);
+                string detail = $"Item:{SerializeUtil.ToJson(item)}";
+
+                throw new DatabaseException(ErrorCode.DatabaseError, entityDef.EntityFullName, detail, ex); ;
             }
             finally
             {
-                if (reader != null)
-                {
-                    reader.Dispose();
-                }
+                reader?.Dispose();
+                dbCommand?.Dispose();
             }
         }
 
         /// <summary>
         /// 删除, Version控制
         /// </summary>
-        public DatabaseResult Delete<T>(T item, TransactionContext transContext) where T : DatabaseEntity, new()
+        /// <exception cref="HB.Framework.Common.ValidateErrorException"></exception>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
+        public async Task DeleteAsync<T>(T item, TransactionContext? transContext) where T : DatabaseEntity, new()
         {
-            if (!item.IsValid())
-            {
-                return DatabaseResult.Fail("entity check failed.");
-            }
+            ThrowIf.NotValid(item);
 
             DatabaseEntityDef entityDef = _entityDefFactory.GetDef<T>();
 
             if (!entityDef.DatabaseWriteable)
             {
-                return DatabaseResult.NotWriteable();
+                throw new DatabaseException(ErrorCode.DatabaseNotWriteable, entityDef.EntityFullName, $"Entity:{SerializeUtil.ToJson(item)}");
             }
 
             long id = item.Id;
@@ -771,23 +1066,23 @@ namespace HB.Framework.Database
             {
                 IDbCommand dbCommand = _sqlBuilder.CreateDeleteCommand(condition, "default");
 
-                long rows = _databaseEngine.ExecuteCommandNonQuery(transContext?.Transaction, entityDef.DatabaseName, dbCommand);
+                long rows = await _databaseEngine.ExecuteCommandNonQueryAsync(transContext?.Transaction, entityDef.DatabaseName!, dbCommand).ConfigureAwait(false);
 
                 if (rows == 1)
                 {
-                    return DatabaseResult.Succeeded();
+                    return;
                 }
                 else if (rows == 0)
                 {
-                    return DatabaseResult.NotFound();
+                    throw new DatabaseException(ErrorCode.DatabaseNotFound, entityDef.EntityFullName, $"Entity:{SerializeUtil.ToJson(item)}");
                 }
 
-                throw new Exception("Multiple Rows Affected instead of one. Something go wrong.");
+                throw new DatabaseException(ErrorCode.DatabaseFoundTooMuch, entityDef.EntityFullName, $"Multiple Rows Affected instead of one. Something go wrong. Entity:{SerializeUtil.ToJson(item)}");
             }
-            catch (DbException ex)
+            catch (Exception ex) when (!(ex is DatabaseException))
             {
-                //_logger.LogCritical(ex.Message);
-                return DatabaseResult.Fail(ex);
+                string detail = $"Item:{SerializeUtil.ToJson(item)}";
+                throw new DatabaseException(ErrorCode.DatabaseError, entityDef.EntityFullName, detail, ex);
             }
         }
 
@@ -795,18 +1090,17 @@ namespace HB.Framework.Database
         ///  修改，建议每次修改前先select，并放置在一个事务中。
         ///  版本控制，如果item中Version未赋值，会无法更改
         /// </summary>
-        public DatabaseResult Update<T>(T item, TransactionContext transContext) where T : DatabaseEntity, new()
+        /// <exception cref="HB.Framework.Common.ValidateErrorException"></exception>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
+        public async Task UpdateAsync<T>(T item, TransactionContext? transContext) where T : DatabaseEntity, new()
         {
-            if (!item.IsValid())
-            {
-                return DatabaseResult.Fail("entity check failed.");
-            }
+            ThrowIf.NotValid(item);
 
             DatabaseEntityDef entityDef = _entityDefFactory.GetDef<T>();
 
             if (!entityDef.DatabaseWriteable)
             {
-                return DatabaseResult.NotWriteable();
+                throw new DatabaseException(ErrorCode.DatabaseNotWriteable, entityDef.EntityFullName, $"Entity:{SerializeUtil.ToJson(item)}");
             }
 
             WhereExpression<T> condition = Where<T>();
@@ -822,25 +1116,24 @@ namespace HB.Framework.Database
             try
             {
                 IDbCommand dbCommand = _sqlBuilder.CreateUpdateCommand(condition, item, "default");
-
-                long rows = _databaseEngine.ExecuteCommandNonQuery(transContext?.Transaction, entityDef.DatabaseName, dbCommand);
+                long rows = await _databaseEngine.ExecuteCommandNonQueryAsync(transContext?.Transaction, entityDef.DatabaseName!, dbCommand).ConfigureAwait(false);
 
                 if (rows == 1)
                 {
                     item.Version++;
-                    return DatabaseResult.Succeeded();
+                    return;
                 }
                 else if (rows == 0)
                 {
-                    return DatabaseResult.NotFound();
+                    throw new DatabaseException(ErrorCode.DatabaseNotFound, entityDef.EntityFullName, $"Entity:{SerializeUtil.ToJson(item)}");
                 }
 
-                throw new Exception("Multiple Rows Affected instead of one. Something go wrong.");
+                throw new DatabaseException(ErrorCode.DatabaseFoundTooMuch, entityDef.EntityFullName, $"Multiple Rows Affected instead of one. Something go wrong. Entity:{SerializeUtil.ToJson(item)}");
             }
-            catch (DbException ex)
+            catch (Exception ex) when (!(ex is DatabaseException))
             {
-                //_logger.LogCritical(ex.Message);
-                return DatabaseResult.Fail(ex);
+                string detail = $"Item:{SerializeUtil.ToJson(item)}";
+                throw new DatabaseException(ErrorCode.DatabaseError, entityDef.EntityFullName, detail, ex);
             }
         }
 
@@ -848,73 +1141,72 @@ namespace HB.Framework.Database
 
         #region 批量更改(Write)
 
-
         /// <summary>
-        /// 批量添加,返回新产生的ID列表
+        /// BatchAddAsync
         /// </summary>
         /// <param name="items"></param>
+        /// <param name="transContext"></param>
         /// <returns></returns>
-        public DatabaseResult BatchAdd<T>(IEnumerable<T> items, string lastUser, TransactionContext transContext) where T : DatabaseEntity, new()
+        /// <exception cref="HB.Framework.Common.ValidateErrorException"></exception>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
+        public async Task<IEnumerable<long>> BatchAddAsync<T>(IEnumerable<T> items, TransactionContext transContext) where T : DatabaseEntity, new()
         {
-            if (transContext == null)
-            {
-                return DatabaseResult.Fail(new ArgumentNullException(nameof(transContext)));
-            }
+            ThrowIf.NotValid(items);
 
-            if (!CheckEntities<T>(items))
+            if (!items.Any())
             {
-                return DatabaseResult.Fail("entities not valid.");
+                return new List<long>();
             }
 
             DatabaseEntityDef entityDef = _entityDefFactory.GetDef<T>();
 
             if (!entityDef.DatabaseWriteable)
             {
-                return DatabaseResult.NotWriteable();
+                throw new DatabaseException(ErrorCode.DatabaseNotWriteable, entityDef.EntityFullName, $"Items:{SerializeUtil.ToJson(items)}");
             }
 
-            IDataReader reader = null;
+            IDbCommand? dbCommand = null;
+            IDataReader? reader = null;
 
             try
             {
-                DatabaseResult result = DatabaseResult.Succeeded();
+                IList<long> newIds = new List<long>();
 
-                IDbCommand dbCommand = _sqlBuilder.CreateBatchAddStatement(items, lastUser);
-
-                reader = _databaseEngine.ExecuteCommandReader(
+                dbCommand = _sqlBuilder.CreateBatchAddCommand(items, "default");
+                reader = await _databaseEngine.ExecuteCommandReaderAsync(
                     transContext.Transaction,
-                    entityDef.DatabaseName,
+                    entityDef.DatabaseName!,
                     dbCommand,
-                    true);
+                    true).ConfigureAwait(false);
 
                 while (reader.Read())
                 {
-                    int newId = reader.GetInt32(0);
+                    //int newId = reader.GetInt32(0);
 
-                    if (newId <= 0)
-                    {
-                        throw new DatabaseException("BatchAdd wrong new id return.");
-                    }
+                    //if (newId <= 0)
+                    //{
+                    //    return DatabaseResult.NewIdError(databaseName: entityDef.DatabaseName, operation: "BatchAddAsync", entityName: entityDef.EntityFullName, lastUser: lastUser);
+                    //}
 
-                    result.AddId(newId);
+                    newIds.Add(reader.GetInt64(0));
                 }
 
-                if (result.Ids.Count != items.Count())
-                    throw new DatabaseException("BatchAdd wrong new id number return.");
+                if (newIds.Count != items.Count())
+                {
+                    throw new DatabaseException(ErrorCode.DatabaseNotMatch, entityDef.EntityFullName, $"Items:{SerializeUtil.ToJson(items)}");
+                }
 
-                return result;
+                return newIds;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (!(ex is DatabaseException))
             {
-                //_logger.LogCritical(ex.Message);
-                return DatabaseResult.Fail(ex);
+                string detail = $"Items:{SerializeUtil.ToJson(items)}";
+                throw new DatabaseException(ErrorCode.DatabaseError, entityDef.EntityFullName, detail, ex);
             }
             finally
             {
-                if (reader != null)
-                {
-                    reader.Dispose();
-                }
+                reader?.Dispose();
+                dbCommand?.Dispose();
             }
         }
 
@@ -923,36 +1215,35 @@ namespace HB.Framework.Database
         /// </summary>
         /// <param name="items"></param>
         /// <returns></returns>
-        public DatabaseResult BatchUpdate<T>(IEnumerable<T> items, string lastUser, TransactionContext transContext) where T : DatabaseEntity, new()
+        /// <exception cref="HB.Framework.Common.ValidateErrorException"></exception>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
+        public async Task BatchUpdateAsync<T>(IEnumerable<T> items, TransactionContext transContext) where T : DatabaseEntity, new()
         {
-            if (transContext == null)
-            {
-                return DatabaseResult.Fail(new ArgumentNullException(nameof(transContext)));
-            }
+            ThrowIf.NotValid(items);
 
-            if (!CheckEntities<T>(items))
+            if (!items.Any())
             {
-                return DatabaseResult.Fail("entities not valid.");
+                return;
             }
 
             DatabaseEntityDef entityDef = _entityDefFactory.GetDef<T>();
 
             if (!entityDef.DatabaseWriteable)
             {
-                return DatabaseResult.NotWriteable();
+                throw new DatabaseException(ErrorCode.DatabaseNotWriteable, entityDef.EntityFullName, $"Items:{SerializeUtil.ToJson(items)}");
             }
 
-            IDataReader reader = null;
+            IDbCommand? dbCommand = null;
+            IDataReader? reader = null;
 
             try
             {
-                IDbCommand dbCommand = _sqlBuilder.CreateBatchUpdateStatement(items, lastUser);
-
-                reader = _databaseEngine.ExecuteCommandReader(
+                dbCommand = _sqlBuilder.CreateBatchUpdateCommand(items, "default");
+                reader = await _databaseEngine.ExecuteCommandReaderAsync(
                     transContext.Transaction,
-                    entityDef.DatabaseName,
+                    entityDef.DatabaseName!,
                     dbCommand,
-                    true);
+                    true).ConfigureAwait(false);
 
                 int count = 0;
 
@@ -962,61 +1253,63 @@ namespace HB.Framework.Database
 
                     if (matched != 1)
                     {
-                        throw new DatabaseException("BatchUpdate wrong, not find the {" + count + "}th data item. ");
+                        throw new DatabaseException(ErrorCode.DatabaseNotFound, entityDef.EntityFullName, $"BatchUpdate wrong, not found the {" + count + "}th data item. Items:{SerializeUtil.ToJson(items)}");
                     }
 
                     count++;
                 }
 
                 if (count != items.Count())
-                    throw new DatabaseException("BatchUpdate wrong number return. Some Rows not exists.");
-
-                return DatabaseResult.Succeeded();
+                    throw new DatabaseException(ErrorCode.DatabaseNotFound, entityDef.EntityFullName, $"BatchUpdate wrong number return. Some data item not found. Items:{SerializeUtil.ToJson(items)}");
             }
-            catch (Exception ex)
+            catch (Exception ex) when (!(ex is DatabaseException))
             {
-                //_logger.LogCritical(ex.Message);
-                return DatabaseResult.Fail(ex);
+                string detail = $"Items:{SerializeUtil.ToJson(items)}";
+                throw new DatabaseException(ErrorCode.DatabaseError, entityDef.EntityFullName, detail, ex);
             }
             finally
             {
-                if (reader != null)
-                {
-                    reader.Dispose();
-                }
+                reader?.Dispose();
+                dbCommand?.Dispose();
             }
         }
 
-        public DatabaseResult BatchDelete<T>(IEnumerable<T> items, string lastUser, TransactionContext transContext) where T : DatabaseEntity, new()
+        /// <summary>
+        /// BatchDeleteAsync
+        /// </summary>
+        /// <param name="items"></param>
+        /// <param name="transContext"></param>
+        /// <returns></returns>
+        /// <exception cref="HB.Framework.Common.ValidateErrorException"></exception>
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
+        /// <exception cref="IndexOutOfRangeException">Ignore.</exception>
+        public async Task BatchDeleteAsync<T>(IEnumerable<T> items, TransactionContext transContext) where T : DatabaseEntity, new()
         {
-            if (transContext == null)
-            {
-                return DatabaseResult.Fail(new ArgumentNullException(nameof(transContext)));
-            }
+            ThrowIf.NotValid(items);
 
-            if (!CheckEntities<T>(items))
+            if (!items.Any())
             {
-                return DatabaseResult.Fail("Entities not valid");
+                return;
             }
 
             DatabaseEntityDef entityDef = _entityDefFactory.GetDef<T>();
 
             if (!entityDef.DatabaseWriteable)
             {
-                return DatabaseResult.NotWriteable();
+                throw new DatabaseException(ErrorCode.DatabaseNotWriteable, entityDef.EntityFullName, $"Items:{SerializeUtil.ToJson(items)}");
             }
 
-            IDataReader reader = null;
+            IDbCommand? dbCommand = null;
+            IDataReader? reader = null;
 
             try
             {
-                IDbCommand dbCommand = _sqlBuilder.CreateBatchDeleteStatement(items, lastUser);
-
-                reader = _databaseEngine.ExecuteCommandReader(
+                dbCommand = _sqlBuilder.CreateBatchDeleteCommand(items, "default");
+                reader = await _databaseEngine.ExecuteCommandReaderAsync(
                     transContext.Transaction,
-                    entityDef.DatabaseName,
+                    entityDef.DatabaseName!,
                     dbCommand,
-                    true);
+                    true).ConfigureAwait(false);
 
                 int count = 0;
 
@@ -1026,89 +1319,68 @@ namespace HB.Framework.Database
 
                     if (affected != 1)
                     {
-                        throw new DatabaseException("BatchDelete wrong, not find the the {" + count + "}th data item. ");
+                        throw new DatabaseException(ErrorCode.DatabaseNotFound, entityDef.EntityFullName, $"BatchDelete wrong, not found the {" + count + "}th data item. Items:{SerializeUtil.ToJson(items)}");
                     }
 
                     count++;
                 }
 
                 if (count != items.Count())
-                    throw new DatabaseException("BatchDelete wrong number return. Some Rows not exists.");
-
-                return DatabaseResult.Succeeded();
+                {
+                    throw new DatabaseException(ErrorCode.DatabaseNotFound, entityDef.EntityFullName, $"BatchDelete wrong number return. Some data item not found. Items:{SerializeUtil.ToJson(items)}");
+                }
             }
-            catch (Exception ex)
+            catch (Exception ex) when (!(ex is DatabaseException))
             {
-                //_logger.LogCritical(ex.Message);
-                return DatabaseResult.Fail(ex);
+                string detail = $"Items:{SerializeUtil.ToJson(items)}";
+                throw new DatabaseException(ErrorCode.DatabaseError, entityDef.EntityFullName, detail, ex);
             }
             finally
             {
-                if (reader != null)
-                {
-                    reader.Dispose();
-                }
+                reader?.Dispose();
+                dbCommand?.Dispose();
             }
-        }
-
-        #endregion
-
-        #region 条件构造
-
-        public SelectExpression<T> Select<T>() where T : DatabaseEntity, new()
-        {
-            return _sqlBuilder.NewSelect<T>();
-        }
-
-        public FromExpression<T> From<T>() where T : DatabaseEntity, new()
-        {
-            return _sqlBuilder.NewFrom<T>();
-        }
-
-        public WhereExpression<T> Where<T>() where T : DatabaseEntity, new()
-        {
-            return _sqlBuilder.NewWhere<T>();
-        }
-
-        #endregion
-
-        #region 表创建SQL
-
-        public string GetTableCreateStatement(Type type, bool addDropStatement)
-        {
-            return _sqlBuilder.GetTableCreateStatement(type, addDropStatement);
         }
 
         #endregion
 
         #region 事务
 
-        public TransactionContext BeginTransaction(string databaseName, IsolationLevel isolationLevel)
+        public async Task<TransactionContext> BeginTransactionAsync(string databaseName, IsolationLevel isolationLevel)
         {
-            IDbTransaction dbTransaction = _databaseEngine.BeginTransaction(databaseName, isolationLevel);
+            IDbTransaction dbTransaction = await _databaseEngine.BeginTransactionAsync(databaseName, isolationLevel).ConfigureAwait(false);
 
-            return new TransactionContext() {
-                Transaction = dbTransaction,
-                Status = TransactionStatus.InTransaction
-            };
+            return new TransactionContext(dbTransaction, TransactionStatus.InTransaction);
         }
 
-        public TransactionContext BeginTransaction<T>(IsolationLevel isolationLevel) where T : DatabaseEntity
+        /// <summary>
+        /// BeginTransactionAsync
+        /// </summary>
+        /// <param name="isolationLevel"></param>
+        /// <returns></returns>
+        /// <exception cref="HB.Framework.Database.DatabaseException">Ignore.</exception>
+        public Task<TransactionContext> BeginTransactionAsync<T>(IsolationLevel isolationLevel) where T : DatabaseEntity
         {
             DatabaseEntityDef entityDef = _entityDefFactory.GetDef<T>();
 
-            return BeginTransaction(entityDef.DatabaseName, isolationLevel);
+            if (!entityDef.IsTableModel)
+            {
+                throw new DatabaseException(ErrorCode.DatabaseNotATableModel, entityDef.EntityFullName);
+            }
+
+            return BeginTransactionAsync(entityDef.DatabaseName!, isolationLevel);
         }
 
         /// <summary>
         /// 提交事务
         /// </summary>
-        public void Commit(TransactionContext context)
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
+        public async Task CommitAsync(TransactionContext context)
         {
-            if (context == null || context.Transaction == null)
-            {
-                throw new ArgumentNullException(nameof(context));
-            }
+            //if (context == null || context.Transaction == null)
+            //{
+            //    throw new ArgumentNullException(nameof(context));
+            //}
 
             if (context.Status == TransactionStatus.Commited)
             {
@@ -1117,14 +1389,16 @@ namespace HB.Framework.Database
 
             if (context.Status != TransactionStatus.InTransaction)
             {
-                throw new DatabaseException("use a already finished transactioncontenxt");
+                throw new DatabaseException(ErrorCode.DatabaseTransactionError, Resources.TransactionAlreadyFinishedMessage);
             }
 
             try
             {
                 IDbConnection conn = context.Transaction.Connection;
-                _databaseEngine.Commit(context.Transaction);
+
+                await _databaseEngine.CommitAsync(context.Transaction).ConfigureAwait(false);
                 //context.Transaction.Commit();
+
                 context.Transaction.Dispose();
 
                 if (conn != null && conn.State != ConnectionState.Closed)
@@ -1144,12 +1418,13 @@ namespace HB.Framework.Database
         /// <summary>
         /// 回滚事务
         /// </summary>
-        public void Rollback(TransactionContext context)
+        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
+        public async Task RollbackAsync(TransactionContext context)
         {
-            if (context == null || context.Transaction == null)
-            {
-                throw new ArgumentNullException(nameof(context));
-            }
+            //if (context == null || context.Transaction == null)
+            //{
+            //    throw new ArgumentNullException(nameof(context));
+            //}
 
             if (context.Status == TransactionStatus.Rollbacked)
             {
@@ -1158,16 +1433,16 @@ namespace HB.Framework.Database
 
             if (context.Status != TransactionStatus.InTransaction)
             {
-                throw new DatabaseException("use a already finished transactioncontenxt");
+                throw new DatabaseException(ErrorCode.DatabaseTransactionError, Resources.TransactionAlreadyFinishedMessage);
             }
 
             try
             {
                 IDbConnection conn = context.Transaction.Connection;
 
-                _databaseEngine.Rollback(context.Transaction);
-
+                await _databaseEngine.RollbackAsync(context.Transaction).ConfigureAwait(false);
                 //context.Transaction.Rollback();
+
                 context.Transaction.Dispose();
 
                 if (conn != null && conn.State != ConnectionState.Closed)

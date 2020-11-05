@@ -1,79 +1,29 @@
-﻿using System;
+﻿#nullable enable
+
+using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 
 //
 namespace HB.Framework.Database.Engine
 {
-    public enum DatabaseEngineType
-    {
-        MySQL,
-        SQLite,
-        MSSQLSERVER
-    }
     /// <summary>
     /// 数据库接口,是对数据库能力的表达. 
     /// 多线程复用..
     /// </summary>
-    public interface IDatabaseEngine : IDatabaseEngineAsync
+    public interface IDatabaseEngine
     {
         #region 管理功能
 
-        IDatabaseSettings DatabaseSettings { get; }
+        DatabaseCommonSettings DatabaseSettings { get; }
 
         DatabaseEngineType EngineType { get; }
 
         string FirstDefaultDatabaseName { get; }
 
         IEnumerable<string> GetDatabaseNames();
-
-        SystemInfo GetSystemInfo(string databaseName, IDbTransaction transaction);
-
-        void UpdateSystemVersion(string databaseName, int version, IDbTransaction transaction);
-
-        #endregion
-
-        #region SP执行功能
-
-        /// <summary>
-        /// 使用后必须Dispose，必须使用using
-        /// </summary>
-        /// <param name="trans"></param>
-        /// <param name="spName"></param>
-        /// <param name="dbParameters"></param>
-        /// <returns></returns>
-        IDataReader ExecuteSPReader(IDbTransaction trans, string dbName, string spName, IList<IDataParameter> dbParameters, bool useMaster);
-
-        object ExecuteSPScalar(IDbTransaction trans, string dbName, string spName, IList<IDataParameter> parameters, bool useMaster);
-
-        int ExecuteSPNonQuery(IDbTransaction trans, string dbName, string spName, IList<IDataParameter> parameters);
-
-        #endregion
-
-        #region Command执行功能
-
-        int ExecuteCommandNonQuery(IDbTransaction trans, string dbName, IDbCommand dbCommand);
-        
-        /// <summary>
-        /// 使用后必须Dispose，必须使用using
-        /// </summary>
-        IDataReader ExecuteCommandReader(IDbTransaction trans, string dbName, IDbCommand dbCommand, bool useMaster);
-
-        object ExecuteCommandScalar(IDbTransaction trans, string dbName, IDbCommand dbCommand, bool useMaster);
-
-        #endregion
-
-        #region SQL 执行能力
-
-        int ExecuteSqlNonQuery(IDbTransaction Transaction, string dbName, string SQL);
-
-        /// <summary>
-        /// 使用后必须Dispose，必须使用using.
-        /// </summary>
-        IDataReader ExecuteSqlReader(IDbTransaction Transaction, string dbName, string SQL, bool useMaster);
-
-        object ExecuteSqlScalar(IDbTransaction Transaction, string dbName, string SQL, bool useMaster);
 
         #endregion
 
@@ -99,20 +49,6 @@ namespace HB.Framework.Database.Engine
         /// <returns></returns>
         IDbCommand CreateEmptyCommand();
         
-
-        #endregion
-
-        #region 事务功能
-
-        /// <summary>
-        /// 创建 事务
-        /// </summary>
-        /// <param name="isolationLevel"></param>
-        /// <returns></returns>
-        IDbTransaction BeginTransaction(string dbName, IsolationLevel isolationLevel = IsolationLevel.ReadCommitted);
-
-        void Commit(IDbTransaction transaction);
-        void Rollback(IDbTransaction transaction);
 
         #endregion
 
@@ -168,34 +104,66 @@ namespace HB.Framework.Database.Engine
         /// </summary>
         /// <param name="value">类的值</param>
         /// <returns>数据库类的值的表达</returns>
-        string GetDbValueStatement(object value, bool needQuoted);
+        [return: NotNullIfNotNull("value")]
+        string? GetDbValueStatement(object? value, bool needQuoted);
         /// <summary>
         /// 类型对应的数据库类型的值是否需要引号化
         /// </summary>
         /// <param name="type"></param>
         /// <returns></returns>
         bool IsValueNeedQuoted(Type type);
-        
+
+        #endregion
+
+        #region SP执行功能
+
+        /// <summary>
+        /// 使用后必须Dispose，必须使用using
+        /// </summary>
+        /// <param name="trans"></param>
+        /// <param name="spName"></param>
+        /// <param name="dbParameters"></param>
+        /// <returns></returns>
+        /// <exception cref="DatabaseException"></exception>
+        Task<Tuple<IDbCommand, IDataReader>> ExecuteSPReaderAsync(IDbTransaction? trans, string dbName, string spName, IList<IDataParameter> dbParameters, bool useMaster);
+
+        /// <exception cref="DatabaseException"></exception>
+        Task<object> ExecuteSPScalarAsync(IDbTransaction? trans, string dbName, string spName, IList<IDataParameter> parameters, bool useMaster);
+
+        /// <exception cref="DatabaseException"></exception>
+        Task<int> ExecuteSPNonQueryAsync(IDbTransaction? trans, string dbName, string spName, IList<IDataParameter> parameters);
+
+        #endregion
+
+        #region Command执行功能
+
+        /// <exception cref="DatabaseException"></exception>
+        Task<int> ExecuteCommandNonQueryAsync(IDbTransaction? trans, string dbName, IDbCommand dbCommand);
+
+        /// <summary>
+        /// 使用后必须Dispose，必须使用using
+        /// </summary>
+        /// <exception cref="DatabaseException"></exception>
+        Task<IDataReader> ExecuteCommandReaderAsync(IDbTransaction? trans, string dbName, IDbCommand dbCommand, bool useMaster);
+
+        /// <exception cref="DatabaseException"></exception>
+        Task<object> ExecuteCommandScalarAsync(IDbTransaction? trans, string dbName, IDbCommand dbCommand, bool useMaster);
+
+        #endregion
+
+        #region 事务功能
+
+        /// <summary>
+        /// 创建 事务
+        /// </summary>
+        /// <param name="isolationLevel"></param>
+        /// <returns></returns>
+        Task<IDbTransaction> BeginTransactionAsync(string dbName, IsolationLevel isolationLevel = IsolationLevel.ReadCommitted);
+
+        Task CommitAsync(IDbTransaction transaction);
+
+        Task RollbackAsync(IDbTransaction transaction);
+
         #endregion
     }
 }
-///// <summary>
-///// 创建 空白DataTable
-///// </summary>
-///// <param name="tableName"></param>
-///// <returns></returns>
-////DataTable CreateEmptyDataTable(string dbName, string tableName);
-//#region SQL执行功能 - Unsafe
-
-///// <summary>
-///// 使用后必须Dispose，必须使用using. 在MySql中，IDataReader.Close工作不正常。解决之前不要用
-///// </summary>
-//IDataReader ExecuteSqlReader(IDbTransaction trans, string dbName, string SQL, bool useMaster);
-
-//object ExecuteSqlScalar(IDbTransaction trans, string dbName, string SQL, bool useMaster);
-
-//int ExecuteSqlNonQuery(IDbTransaction trans, string dbName, string SQL);
-
-//DataTable ExecuteSqlDataTable(IDbTransaction trans, string dbName, string SQL);
-
-//#endregion

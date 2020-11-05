@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace HB.Framework.Database.Entity
 {
@@ -23,14 +24,14 @@ namespace HB.Framework.Database.Entity
 
         #region 针对数据库描述
         /// <summary>
-        /// 是否是TableDomain
+        /// 是否是TableModel
         /// </summary>
         public bool IsTableModel { get; set; }
         /// <summary>
         /// 所属数据库
-        /// 在IsTableDomain为false时没有意义
+        /// 在IsTableModel为false时没有意义
         /// </summary>
-        public string DatabaseName { get; set; }
+        public string? DatabaseName { get; set; }
 
         /// <summary>
         /// 数据库是否可写
@@ -41,18 +42,18 @@ namespace HB.Framework.Database.Entity
         /// 数据库表名
         /// 在IsTableDomain为false时没有意义
         /// </summary>
-        public string TableName { get; set; }
+        public string? TableName { get; set; }
         /// <summary>
         /// 数据库专有化后的名称
         /// 在IsTableDomain为false时没有意义
         /// </summary>
-        public string DbTableReservedName { get; set; }
+        public string? DbTableReservedName { get; set; }
 
         /// <summary>
         /// 数据库表描述（备注）
         /// 在IsTableDomain为false时没有意义
         /// </summary>
-        public string DbTableDescription { get; set; }
+        public string? DbTableDescription { get; set; }
 
         public int FieldCount { get; set; }
 
@@ -67,16 +68,18 @@ namespace HB.Framework.Database.Entity
         /// <summary>
         /// 属性枚举
         /// </summary>
+
         public IEnumerable<DatabaseEntityPropertyDef> Properties { get { return PropertyDict.Values; } }
 
         #endregion
 
-        public DatabaseEntityDef()
+        public DatabaseEntityDef(Type entityType)
         {
-            FieldCount = 0;
+            EntityType = entityType;
+            EntityFullName = entityType.FullName;
         }
 
-        public DatabaseEntityPropertyDef GetProperty(string propertyName)
+        public DatabaseEntityPropertyDef? GetProperty(string propertyName)
         {
             if (PropertyDict.ContainsKey(propertyName))
             {

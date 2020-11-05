@@ -1,14 +1,16 @@
 ﻿using HB.Framework.Database;
+using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 
 namespace HB.Infrastructure.SQLite
 {
-    public class SQLiteOptions
+    public class SQLiteOptions : IOptions<SQLiteOptions>
     {
-        public DatabaseSettings DatabaseSettings { get; set; } = new DatabaseSettings();
+        public DatabaseCommonSettings CommonSettings { get; set; } = new DatabaseCommonSettings();
 
-        public IList<SchemaInfo> Schemas { get; } = new List<SchemaInfo>();
+        public IList<DatabaseConnectionSettings> Connections { get; private set; } = new List<DatabaseConnectionSettings>();
 
+        public SQLiteOptions Value => this;
     }
 }

@@ -1,7 +1,9 @@
 ﻿using HB.Framework.Database;
 using HB.Infrastructure.MySQL;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
+using System.Runtime.Loader;
 using System.Threading.Tasks;
 
 namespace DatabaseSample
@@ -10,6 +12,7 @@ namespace DatabaseSample
     {
         static async Task Main(string[] args)
         {
+            AssemblyLoadContext
             IDatabase database = GetDatabase();
 
             IList<BookEntity> books = MokeData.GetBooks();
@@ -35,17 +38,21 @@ namespace DatabaseSample
 
         private static IDatabase GetDatabase()
         {
-            MySQLOptions mySQLOptions = new MySQLOptions();
+            IServiceCollection services = new ServiceCollection();
 
-            mySQLOptions.DatabaseSettings.Version = 1;
-            mySQLOptions.Schemas.Add(new SchemaInfo {
-                SchemaName = "test_db",
-                IsMaster = true,
-                ConnectionString = "server=127.0.0.1;port=3306;user=admin;password=_admin;database=test_db;SslMode=None"
+            services.AddMySQL(mySQLOptions => {
+                mySQLOptions.DatabaseSettings.Version = 1;
+                mySQLOptions.Schemas.Add(new SchemaInfo
+                {
+                    SchemaName = "test_db",
+                    IsMaster = true,
+                    ConnectionString = "server=127.0.0.1;port=3306;user=admin;password=_admin;database=test_db;SslMode=None"
+                });
             });
 
+            IServiceProvider serviceProvider = services.BuildServiceProvider();
 
-            IDatabase database = new DatabaseBuilder(new MySQLBuilder(mySQLOptions).Build()).Build();
+            IDatabase database = serviceProvider.GetRequiredService<IDatabase>();
 
             database.Initialize();
 
