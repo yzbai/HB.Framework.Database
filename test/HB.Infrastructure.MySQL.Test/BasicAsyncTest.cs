@@ -62,7 +62,7 @@ namespace HB.Framework.DatabaseTests
 
             try
             {
-                await database.BatchAddAsync<PublisherEntity>(publishers, transactionContext);
+                await database.BatchAddAsync<PublisherEntity>(publishers, "lastUsre", transactionContext);
 
                 await database.CommitAsync(transactionContext);
             }
@@ -107,7 +107,7 @@ namespace HB.Framework.DatabaseTests
                 };
                 }
 
-                await database.BatchUpdateAsync<PublisherEntity>(lst, transContext);
+                await database.BatchUpdateAsync<PublisherEntity>(lst, "lastUsre", transContext);
 
                 await database.CommitAsync(transContext);
 
@@ -141,7 +141,7 @@ namespace HB.Framework.DatabaseTests
 
                 if (lst.Count != 0)
                 {
-                    await database.BatchDeleteAsync<PublisherEntity>(lst, transactionContext);
+                    await database.BatchDeleteAsync<PublisherEntity>(lst, "lastUsre", transactionContext);
 
                 }
 
@@ -178,7 +178,7 @@ namespace HB.Framework.DatabaseTests
                 {
                     PublisherEntity entity = Mocker.MockOne();
 
-                    await database.AddAsync(entity, tContext);
+                    await database.AddAsync(entity, "lastUsre", tContext);
 
                     lst.Add(entity);
                 }
@@ -224,7 +224,7 @@ namespace HB.Framework.DatabaseTests
                 entity.Books.Add("New Book2");
                 entity.BookAuthors.Add("New Book2", new Author() { Mobile = "15190208956", Name = "Yuzhaobai" });
 
-                await database.UpdateAsync(entity, tContext);
+                await database.UpdateAsync(entity, "lastUsre", tContext);
 
                 PublisherEntity? stored = await database.ScalarAsync<PublisherEntity>(entity.Id, tContext);
 
@@ -263,7 +263,7 @@ namespace HB.Framework.DatabaseTests
 
                 await testEntities.ForEachAsync(async entity =>
                 {
-                    await database.DeleteAsync(entity, tContext);
+                    await database.DeleteAsync(entity, "lastUsre", tContext);
 
                 });
 

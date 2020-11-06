@@ -13,19 +13,19 @@ namespace HB.Framework.Database
     {
         /// <exception cref="HB.Framework.Common.ValidateErrorException"></exception>
         /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
-        Task AddAsync<T>(T item, TransactionContext? transContext) where T : DatabaseEntity, new();
+        Task AddAsync<T>(T item, string lastUser, TransactionContext? transContext) where T : DatabaseEntity, new();
 
         /// <exception cref="HB.Framework.Common.ValidateErrorException"></exception>
         /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
-        Task<IEnumerable<long>> BatchAddAsync<T>(IEnumerable<T> items, TransactionContext transContext) where T : DatabaseEntity, new();
+        Task<IEnumerable<long>> BatchAddAsync<T>(IEnumerable<T> items, string lastUser, TransactionContext transContext) where T : DatabaseEntity, new();
 
         /// <exception cref="HB.Framework.Common.ValidateErrorException"></exception>
         /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
-        Task BatchDeleteAsync<T>(IEnumerable<T> items, TransactionContext transContext) where T : DatabaseEntity, new();
+        Task BatchDeleteAsync<T>(IEnumerable<T> items, string lastUser, TransactionContext transContext) where T : DatabaseEntity, new();
 
         /// <exception cref="HB.Framework.Common.ValidateErrorException"></exception>
         /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
-        Task BatchUpdateAsync<T>(IEnumerable<T> items, TransactionContext transContext) where T : DatabaseEntity, new();
+        Task BatchUpdateAsync<T>(IEnumerable<T> items, string lastUser, TransactionContext transContext) where T : DatabaseEntity, new();
 
 
         Task<TransactionContext> BeginTransactionAsync(string databaseName, IsolationLevel isolationLevel);
@@ -53,7 +53,7 @@ namespace HB.Framework.Database
 
         /// <exception cref="HB.Framework.Common.ValidateErrorException"></exception>
         /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
-        Task DeleteAsync<T>(T item, TransactionContext? transContext) where T : DatabaseEntity, new();
+        Task DeleteAsync<T>(T item, string lastUser, TransactionContext? transContext) where T : DatabaseEntity, new();
 
 
         FromExpression<T> From<T>() where T : DatabaseEntity, new();
@@ -159,7 +159,7 @@ namespace HB.Framework.Database
 
         /// <exception cref="HB.Framework.Common.ValidateErrorException"></exception>
         /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
-        Task UpdateAsync<T>(T item, TransactionContext? transContext) where T : DatabaseEntity, new();
+        Task UpdateAsync<T>(T item, string lastUser, TransactionContext? transContext) where T : DatabaseEntity, new();
 
 
         WhereExpression<T> Where<T>() where T : DatabaseEntity, new();

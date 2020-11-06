@@ -1007,7 +1007,7 @@ namespace HB.Framework.Database
         /// </summary>
         /// <exception cref="HB.Framework.Common.ValidateErrorException"></exception>
         /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
-        public async Task AddAsync<T>(T item, TransactionContext? transContext) where T : DatabaseEntity, new()
+        public async Task AddAsync<T>(T item, string lastUser, TransactionContext? transContext) where T : DatabaseEntity, new()
         {
             ThrowIf.NotValid(item);
 
@@ -1023,7 +1023,7 @@ namespace HB.Framework.Database
 
             try
             {
-                dbCommand = _sqlBuilder.CreateAddCommand(item, "default");
+                dbCommand = _sqlBuilder.CreateAddCommand(item, lastUser);
 
                 reader = await _databaseEngine.ExecuteCommandReaderAsync(transContext?.Transaction, entityDef.DatabaseName!, dbCommand, true).ConfigureAwait(false);
 
@@ -1047,7 +1047,7 @@ namespace HB.Framework.Database
         /// </summary>
         /// <exception cref="HB.Framework.Common.ValidateErrorException"></exception>
         /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
-        public async Task DeleteAsync<T>(T item, TransactionContext? transContext) where T : DatabaseEntity, new()
+        public async Task DeleteAsync<T>(T item, string lastUser, TransactionContext? transContext) where T : DatabaseEntity, new()
         {
             ThrowIf.NotValid(item);
 
@@ -1064,7 +1064,7 @@ namespace HB.Framework.Database
 
             try
             {
-                IDbCommand dbCommand = _sqlBuilder.CreateDeleteCommand(condition, "default");
+                IDbCommand dbCommand = _sqlBuilder.CreateDeleteCommand(condition, lastUser);
 
                 long rows = await _databaseEngine.ExecuteCommandNonQueryAsync(transContext?.Transaction, entityDef.DatabaseName!, dbCommand).ConfigureAwait(false);
 
@@ -1092,7 +1092,7 @@ namespace HB.Framework.Database
         /// </summary>
         /// <exception cref="HB.Framework.Common.ValidateErrorException"></exception>
         /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
-        public async Task UpdateAsync<T>(T item, TransactionContext? transContext) where T : DatabaseEntity, new()
+        public async Task UpdateAsync<T>(T item, string lastUser, TransactionContext? transContext) where T : DatabaseEntity, new()
         {
             ThrowIf.NotValid(item);
 
@@ -1115,7 +1115,7 @@ namespace HB.Framework.Database
 
             try
             {
-                IDbCommand dbCommand = _sqlBuilder.CreateUpdateCommand(condition, item, "default");
+                IDbCommand dbCommand = _sqlBuilder.CreateUpdateCommand(condition, item, lastUser);
                 long rows = await _databaseEngine.ExecuteCommandNonQueryAsync(transContext?.Transaction, entityDef.DatabaseName!, dbCommand).ConfigureAwait(false);
 
                 if (rows == 1)
@@ -1149,7 +1149,7 @@ namespace HB.Framework.Database
         /// <returns></returns>
         /// <exception cref="HB.Framework.Common.ValidateErrorException"></exception>
         /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
-        public async Task<IEnumerable<long>> BatchAddAsync<T>(IEnumerable<T> items, TransactionContext transContext) where T : DatabaseEntity, new()
+        public async Task<IEnumerable<long>> BatchAddAsync<T>(IEnumerable<T> items, string lastUser, TransactionContext transContext) where T : DatabaseEntity, new()
         {
             ThrowIf.NotValid(items);
 
@@ -1172,7 +1172,7 @@ namespace HB.Framework.Database
             {
                 IList<long> newIds = new List<long>();
 
-                dbCommand = _sqlBuilder.CreateBatchAddCommand(items, "default");
+                dbCommand = _sqlBuilder.CreateBatchAddCommand(items, lastUser);
                 reader = await _databaseEngine.ExecuteCommandReaderAsync(
                     transContext.Transaction,
                     entityDef.DatabaseName!,
@@ -1217,7 +1217,7 @@ namespace HB.Framework.Database
         /// <returns></returns>
         /// <exception cref="HB.Framework.Common.ValidateErrorException"></exception>
         /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
-        public async Task BatchUpdateAsync<T>(IEnumerable<T> items, TransactionContext transContext) where T : DatabaseEntity, new()
+        public async Task BatchUpdateAsync<T>(IEnumerable<T> items, string lastUser, TransactionContext transContext) where T : DatabaseEntity, new()
         {
             ThrowIf.NotValid(items);
 
@@ -1238,7 +1238,7 @@ namespace HB.Framework.Database
 
             try
             {
-                dbCommand = _sqlBuilder.CreateBatchUpdateCommand(items, "default");
+                dbCommand = _sqlBuilder.CreateBatchUpdateCommand(items, lastUser);
                 reader = await _databaseEngine.ExecuteCommandReaderAsync(
                     transContext.Transaction,
                     entityDef.DatabaseName!,
@@ -1283,7 +1283,7 @@ namespace HB.Framework.Database
         /// <exception cref="HB.Framework.Common.ValidateErrorException"></exception>
         /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
         /// <exception cref="IndexOutOfRangeException">Ignore.</exception>
-        public async Task BatchDeleteAsync<T>(IEnumerable<T> items, TransactionContext transContext) where T : DatabaseEntity, new()
+        public async Task BatchDeleteAsync<T>(IEnumerable<T> items, string lastUser, TransactionContext transContext) where T : DatabaseEntity, new()
         {
             ThrowIf.NotValid(items);
 
@@ -1304,7 +1304,7 @@ namespace HB.Framework.Database
 
             try
             {
-                dbCommand = _sqlBuilder.CreateBatchDeleteCommand(items, "default");
+                dbCommand = _sqlBuilder.CreateBatchDeleteCommand(items, lastUser);
                 reader = await _databaseEngine.ExecuteCommandReaderAsync(
                     transContext.Transaction,
                     entityDef.DatabaseName!,

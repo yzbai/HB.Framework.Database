@@ -15,6 +15,8 @@ namespace HB.Framework.Database.Entity
     //[Serializable]
     public class DatabaseEntity : ValidatableObject
     {
+        public const int LastUserMaxLength = 100;
+
         [AutoIncrementPrimaryKey]
         [EntityProperty("Id")]
         public long Id { get; set; } = -1;
@@ -22,7 +24,7 @@ namespace HB.Framework.Database.Entity
         [EntityProperty("Version")]
         public long Version { get; set; } = 0;
 
-        [EntityProperty("上一次更改者", Length = 10)]
+        [EntityProperty("上一次更改者", Length = LastUserMaxLength)]
         public string LastUser { get; set; } = string.Empty;
 
         [EntityProperty("上一次更改时间")]

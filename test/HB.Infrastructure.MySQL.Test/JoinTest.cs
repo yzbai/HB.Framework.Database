@@ -77,44 +77,43 @@ namespace HB.Framework.DatabaseTests
             C c5 = new C { AId = a2.Guid };
             C c6 = new C { AId = a3.Guid };
 
-            await _mysql.AddAsync(a2, null);
-            await _mysql.AddAsync(a1, null);
-            await _mysql.AddAsync(a3, null);
+            await _mysql.AddAsync(a2, "lastUsre", null);
+            await _mysql.AddAsync(a1, "lastUsre", null);
+            await _mysql.AddAsync(a3, "lastUsre", null);
 
-            await _mysql.AddAsync(b1, null);
-            await _mysql.AddAsync(b2, null);
+            await _mysql.AddAsync(b1, "lastUsre", null);
+            await _mysql.AddAsync(b2, "lastUsre", null);
 
-            await _mysql.AddAsync(a1b1, null);
-            await _mysql.AddAsync(a1b2, null);
-            await _mysql.AddAsync(a2b1, null);
-            await _mysql.AddAsync(a3b2, null);
+            await _mysql.AddAsync(a1b1, "lastUsre", null);
+            await _mysql.AddAsync(a1b2, "lastUsre", null);
+            await _mysql.AddAsync(a2b1, "lastUsre", null);
+            await _mysql.AddAsync(a3b2, "lastUsre", null);
 
-            await _mysql.AddAsync(c1, null);
-            await _mysql.AddAsync(c2, null);
-            await _mysql.AddAsync(c3, null);
-            await _mysql.AddAsync(c4, null);
-            await _mysql.AddAsync(c5, null);
-            await _mysql.AddAsync(c6, null);
+            await _mysql.AddAsync(c1, "lastUsre", null);
+            await _mysql.AddAsync(c2, "lastUsre", null);
+            await _mysql.AddAsync(c3, "lastUsre", null);
+            await _mysql.AddAsync(c4, "lastUsre", null);
+            await _mysql.AddAsync(c5, "lastUsre", null);
+            await _mysql.AddAsync(c6, "lastUsre", null);
 
+            await _sqlite.AddAsync(a2, "lastUsre", null);
+            await _sqlite.AddAsync(a1, "lastUsre", null);
+            await _sqlite.AddAsync(a3, "lastUsre", null);
 
-            await _sqlite.AddAsync(a2, null);
-            await _sqlite.AddAsync(a1, null);
-            await _sqlite.AddAsync(a3, null);
+            await _sqlite.AddAsync(b1, "lastUsre", null);
+            await _sqlite.AddAsync(b2, "lastUsre", null);
 
-            await _sqlite.AddAsync(b1, null);
-            await _sqlite.AddAsync(b2, null);
+            await _sqlite.AddAsync(a1b1, "lastUsre", null);
+            await _sqlite.AddAsync(a1b2, "lastUsre", null);
+            await _sqlite.AddAsync(a2b1, "lastUsre", null);
+            await _sqlite.AddAsync(a3b2, "lastUsre", null);
 
-            await _sqlite.AddAsync(a1b1, null);
-            await _sqlite.AddAsync(a1b2, null);
-            await _sqlite.AddAsync(a2b1, null);
-            await _sqlite.AddAsync(a3b2, null);
-
-            await _sqlite.AddAsync(c1, null);
-            await _sqlite.AddAsync(c2, null);
-            await _sqlite.AddAsync(c3, null);
-            await _sqlite.AddAsync(c4, null);
-            await _sqlite.AddAsync(c5, null);
-            await _sqlite.AddAsync(c6, null);
+            await _sqlite.AddAsync(c1, "lastUsre", null);
+            await _sqlite.AddAsync(c2, "lastUsre", null);
+            await _sqlite.AddAsync(c3, "lastUsre", null);
+            await _sqlite.AddAsync(c4, "lastUsre", null);
+            await _sqlite.AddAsync(c5, "lastUsre", null);
+            await _sqlite.AddAsync(c6, "lastUsre", null);
         }
 
         /// <summary>
