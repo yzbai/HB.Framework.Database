@@ -2,9 +2,9 @@
 
 using System;
 
-namespace HB.Framework.Database.Entity
+namespace HB.Framework.Database.Entities
 {
-    internal interface IDatabaseTypeConverterFactory
+    public interface IDatabaseTypeConverterFactory
     {
         DatabaseTypeConverter? GetTypeConverter(Type type);
     }

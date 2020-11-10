@@ -1,6 +1,6 @@
 ﻿#nullable enable
 
-namespace HB.Framework.Database.Entity
+namespace HB.Framework.Database.Entities
 {
     public static class EntityPropertyLength
     {

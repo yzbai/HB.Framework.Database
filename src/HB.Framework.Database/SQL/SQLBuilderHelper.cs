@@ -1,7 +1,7 @@
 ﻿#nullable enable
 
 using HB.Framework.Database.Engine;
-using HB.Framework.Database.Entity;
+using HB.Framework.Database.Entities;
 using System;
 using System.Text;
 

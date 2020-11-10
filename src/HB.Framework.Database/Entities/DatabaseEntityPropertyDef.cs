@@ -1,9 +1,10 @@
-﻿using System;
+﻿using HB.Framework.Common.Entities;
+using System;
 using System.Data;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
-namespace HB.Framework.Database.Entity
+namespace HB.Framework.Database.Entities
 {
     /// <summary>
     /// 实体内属性定义（一个）

@@ -3,7 +3,7 @@
 using System;
 using System.Data;
 
-namespace HB.Framework.Database.Entity
+namespace HB.Framework.Database.Entities
 {
     /// <summary>
     /// 把复杂类型变成字符串

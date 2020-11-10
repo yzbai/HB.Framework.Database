@@ -1,7 +1,8 @@
 ﻿#nullable enable
 
+using HB.Framework.Common.Entities;
 using HB.Framework.Database.Engine;
-using HB.Framework.Database.Entity;
+using HB.Framework.Database.Entities;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -39,8 +40,8 @@ namespace HB.Framework.Database.SQL
         }
 
         private IDbCommand AssembleCommand<TFrom, TWhere>(bool isRetrieve, string selectClause, FromExpression<TFrom>? fromCondition, WhereExpression<TWhere>? whereCondition, IList<IDataParameter>? parameters)
-            where TFrom : DatabaseEntity, new()
-            where TWhere : DatabaseEntity, new()
+            where TFrom : Entity, new()
+            where TWhere : Entity, new()
         {
             IDbCommand command = _databaseEngine.CreateEmptyCommand();
 
@@ -133,7 +134,7 @@ namespace HB.Framework.Database.SQL
         }
 
         public IDbCommand CreateRetrieveCommand<T>(SelectExpression<T>? selectCondition = null, FromExpression<T>? fromCondition = null, WhereExpression<T>? whereCondition = null)
-            where T : DatabaseEntity, new()
+            where T : Entity, new()
         {
             if (selectCondition == null)
             {
@@ -146,7 +147,7 @@ namespace HB.Framework.Database.SQL
         }
 
         public IDbCommand CreateCountCommand<T>(FromExpression<T>? fromCondition = null, WhereExpression<T>? whereCondition = null)
-            where T : DatabaseEntity, new()
+            where T : Entity, new()
         {
             return AssembleCommand(true, "SELECT COUNT(1) ", fromCondition, whereCondition, null);
         }
@@ -198,8 +199,8 @@ namespace HB.Framework.Database.SQL
         }
 
         public IDbCommand CreateRetrieveCommand<T1, T2>(FromExpression<T1> fromCondition, WhereExpression<T1> whereCondition)
-            where T1 : DatabaseEntity, new()
-            where T2 : DatabaseEntity, new()
+            where T1 : Entity, new()
+            where T2 : Entity, new()
         {
             return AssembleCommand(true, GetSelectClauseStatement<T1, T2>(), fromCondition, whereCondition, null);
         }
@@ -260,17 +261,17 @@ namespace HB.Framework.Database.SQL
         }
 
         public IDbCommand CreateRetrieveCommand<T1, T2, T3>(FromExpression<T1> fromCondition, WhereExpression<T1> whereCondition)
-            where T1 : DatabaseEntity, new()
-            where T2 : DatabaseEntity, new()
-            where T3 : DatabaseEntity, new()
+            where T1 : Entity, new()
+            where T2 : Entity, new()
+            where T3 : Entity, new()
         {
             return AssembleCommand(true, GetSelectClauseStatement<T1, T2, T3>(), fromCondition, whereCondition, null);
         }
 
         public IDbCommand CreateRetrieveCommand<TSelect, TFrom, TWhere>(SelectExpression<TSelect>? selectCondition, FromExpression<TFrom>? fromCondition, WhereExpression<TWhere>? whereCondition)
-            where TSelect : DatabaseEntity, new()
-            where TFrom : DatabaseEntity, new()
-            where TWhere : DatabaseEntity, new()
+            where TSelect : Entity, new()
+            where TFrom : Entity, new()
+            where TWhere : Entity, new()
         {
             if (selectCondition == null)
             {
@@ -286,7 +287,7 @@ namespace HB.Framework.Database.SQL
 
         #region 单体更改
 
-        public IDbCommand CreateAddCommand<T>(T entity, string lastUser) where T : DatabaseEntity, new()
+        public IDbCommand CreateAddCommand<T>(T entity, string lastUser) where T : Entity, new()
         {
             DatabaseEntityDef modelDef = _entityDefFactory.GetDef<T>();
             List<IDataParameter> parameters = new List<IDataParameter>();
@@ -331,7 +332,7 @@ namespace HB.Framework.Database.SQL
             return AssembleCommand<T, T>(false, addTemplate, null, null, parameters);
         }
 
-        public IDbCommand CreateAddOrUpdateCommand<T>(T entity, string lastUser) where T : DatabaseEntity, new()
+        public IDbCommand CreateAddOrUpdateCommand<T>(T entity, string lastUser) where T : Entity, new()
         {
             DatabaseEntityDef modelDef = _entityDefFactory.GetDef<T>();
             List<IDataParameter> parameters = new List<IDataParameter>();
@@ -381,7 +382,7 @@ namespace HB.Framework.Database.SQL
             return modelDef.DatabaseName + ":" + modelDef.TableName + ":ADDORUPDATE";
         }
 
-        public IDbCommand CreateUpdateCommand<T>(WhereExpression<T> condition, T entity, string lastUser) where T : DatabaseEntity, new()
+        public IDbCommand CreateUpdateCommand<T>(WhereExpression<T> condition, T entity, string lastUser) where T : Entity, new()
         {
             DatabaseEntityDef definition = _entityDefFactory.GetDef<T>();
             List<IDataParameter> parameters = new List<IDataParameter>();
@@ -422,7 +423,7 @@ namespace HB.Framework.Database.SQL
             return AssembleCommand<T, T>(false, updateTemplate, null, condition, parameters);
         }
 
-        public IDbCommand CreateDeleteCommand<T>(WhereExpression<T> condition, string lastUser) where T : DatabaseEntity, new()
+        public IDbCommand CreateDeleteCommand<T>(WhereExpression<T> condition, string lastUser) where T : Entity, new()
         {
             DatabaseEntityDef definition = _entityDefFactory.GetDef<T>();
 
@@ -448,7 +449,7 @@ namespace HB.Framework.Database.SQL
 
         #region Batch
 
-        public IDbCommand CreateBatchAddOrUpdateCommand<T>(IEnumerable<T> entities, string lastUser) where T : DatabaseEntity, new()
+        public IDbCommand CreateBatchAddOrUpdateCommand<T>(IEnumerable<T> entities, string lastUser) where T : Entity, new()
         {
             ThrowIf.Empty(entities, nameof(entities));
 
@@ -545,7 +546,7 @@ namespace HB.Framework.Database.SQL
             return AssembleCommand<T, T>(false, sql, null, null, parameters);
         }
 
-        public IDbCommand CreateBatchAddCommand<T>(IEnumerable<T> entities, string lastUser) where T : DatabaseEntity, new()
+        public IDbCommand CreateBatchAddCommand<T>(IEnumerable<T> entities, string lastUser) where T : Entity, new()
         {
             ThrowIf.Empty(entities, nameof(entities));
 
@@ -622,7 +623,7 @@ namespace HB.Framework.Database.SQL
             return AssembleCommand<T, T>(false, sql, null, null, parameters);
         }
 
-        public IDbCommand CreateBatchUpdateCommand<T>(IEnumerable<T> entities, string lastUser) where T : DatabaseEntity, new()
+        public IDbCommand CreateBatchUpdateCommand<T>(IEnumerable<T> entities, string lastUser) where T : Entity, new()
         {
             ThrowIf.Empty(entities, nameof(entities));
 
@@ -680,7 +681,7 @@ namespace HB.Framework.Database.SQL
             return AssembleCommand<T, T>(false, sql, null, null, parameters);
         }
 
-        public IDbCommand CreateBatchDeleteCommand<T>(IEnumerable<T> entities, string lastUser) where T : DatabaseEntity, new()
+        public IDbCommand CreateBatchDeleteCommand<T>(IEnumerable<T> entities, string lastUser) where T : Entity, new()
         {
             ThrowIf.Empty(entities, nameof(entities));
 
@@ -994,17 +995,17 @@ INSERT INTO ""tb_sys_info""(""Name"", ""Value"") VALUES('DatabaseName', @databas
 
         #region Create SelectCondition, FromCondition, WhereCondition
 
-        public SelectExpression<T> NewSelect<T>() where T : DatabaseEntity, new()
+        public SelectExpression<T> NewSelect<T>() where T : Entity, new()
         {
             return new SelectExpression<T>(_databaseEngine, _entityDefFactory);
         }
 
-        public FromExpression<T> NewFrom<T>() where T : DatabaseEntity, new()
+        public FromExpression<T> NewFrom<T>() where T : Entity, new()
         {
             return new FromExpression<T>(_databaseEngine, _entityDefFactory);
         }
 
-        public WhereExpression<T> NewWhere<T>() where T : DatabaseEntity, new()
+        public WhereExpression<T> NewWhere<T>() where T : Entity, new()
         {
             return new WhereExpression<T>(_databaseEngine, _entityDefFactory);
         }
