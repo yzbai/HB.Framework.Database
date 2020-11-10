@@ -886,7 +886,7 @@ CREATE TABLE {definition.DbTableReservedName} (
                 "`Deleted` bit(1) NOT NULL DEFAULT b'0'," + Environment.NewLine +
                 "`LastUser` varchar(100) DEFAULT NULL," + Environment.NewLine +
                 "`LastTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP," + Environment.NewLine +
-                "`Version` bigint(20) NOT NULL DEFAULT '0'," + Environment.NewLine +
+                "`Version` int(11) NOT NULL DEFAULT '0'," + Environment.NewLine +
                 " {1} " +
                 " PRIMARY KEY (`Id`) " + Environment.NewLine +
                 " ) ENGINE=InnoDB   DEFAULT CHARSET=utf8mb4;",
