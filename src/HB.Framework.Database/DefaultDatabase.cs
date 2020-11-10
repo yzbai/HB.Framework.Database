@@ -1002,6 +1002,12 @@ namespace HB.Framework.Database
 
         #region 单体更改(Write)
 
+        public Task AddOrUpdateAsync<T>(T item, string lastUser, TransactionContext transContext) where T : DatabaseEntity, new()
+        {
+            throw new NotImplementedException();
+        }
+
+
         /// <summary>
         /// 增加,并且item被重新赋值
         /// </summary>
@@ -1140,6 +1146,11 @@ namespace HB.Framework.Database
         #endregion
 
         #region 批量更改(Write)
+
+        public Task BatchAddOrUpdateAsync<T>(IEnumerable<T> items, string lastUser, TransactionContext transaction) where T : DatabaseEntity, new()
+        {
+            throw new NotImplementedException();
+        }
 
         /// <summary>
         /// BatchAddAsync
