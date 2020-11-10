@@ -17,13 +17,18 @@ namespace HB.Framework.DatabaseTests
         private readonly IDatabase _sqlite;
         private readonly ITestOutputHelper _output;
         private readonly IsolationLevel _isolationLevel = IsolationLevel.Serializable;
-        private IDatabase? GetDatabase(string databaseType) =>
-            databaseType switch
+
+        private IDatabase? GetDatabase(string databaseType)
+        {
+
+            return databaseType switch
             {
                 "MySQL" => _mysql,
                 "SQLite" => _sqlite,
                 _ => null
             };
+        }
+
 
         /// <summary>
         /// ctor
@@ -31,6 +36,7 @@ namespace HB.Framework.DatabaseTests
         /// <param name="testOutputHelper"></param>
         /// <param name="serviceFixture"></param>
         /// <exception cref="DatabaseException">Ignore.</exception>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "VSTHRD002:Avoid problematic synchronous waits", Justification = "<Pending>")]
         public BasicAsyncTest(ITestOutputHelper testOutputHelper, ServiceFixture serviceFixture)
         {
             _output = testOutputHelper;
@@ -38,8 +44,8 @@ namespace HB.Framework.DatabaseTests
             _mysql = serviceFixture.MySQL;
             _sqlite = serviceFixture.SQLite;
 
-            _ = _mysql.InitializeAsync();
-            _ = _sqlite.InitializeAsync();
+            _mysql.InitializeAsync().Wait();
+            _sqlite.InitializeAsync().Wait();
         }
 
         /// <summary>
@@ -272,6 +278,45 @@ namespace HB.Framework.DatabaseTests
                 await database.CommitAsync(tContext);
 
                 Assert.True(count == 0);
+            }
+            catch (Exception ex)
+            {
+                await database.RollbackAsync(tContext);
+                _output.WriteLine(ex.Message);
+                throw ex;
+            }
+        }
+
+        [Theory]
+        [InlineData("MySQL")]
+        [InlineData("SQLite")]
+        public async Task Test_7_AddOrUpdate_PublisherEntityAsync(string databaseType)
+        {
+            IDatabase database = GetDatabase(databaseType)!;
+            TransactionContext tContext = await database.BeginTransactionAsync<PublisherEntity>(_isolationLevel);
+
+            try
+            {
+
+                var publishers = Mocker.GetPublishers();
+
+                var newIds = await database.BatchAddAsync(publishers, "xx", tContext);
+
+                for (int i = 0; i < publishers.Count; i += 2)
+                {
+                    publishers[i].Name = "GGGGG" + i.ToString();
+
+                }
+
+                var affectedIds = await database.BatchAddOrUpdateAsync(publishers, "AddOrUpdaterrrr", tContext);
+
+
+                publishers[0].Guid = SecurityUtil.CreateUniqueToken();
+
+                await database.AddOrUpdateAsync(publishers[0], "single", tContext);
+
+
+                await database.CommitAsync(tContext);
             }
             catch (Exception ex)
             {

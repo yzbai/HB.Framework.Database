@@ -25,6 +25,7 @@ namespace HB.Framework.DatabaseTests
                 _ => throw new ArgumentException(nameof(databaseType))
             };
 
+
         /// <summary>
         /// ctor
         /// </summary>
@@ -33,6 +34,7 @@ namespace HB.Framework.DatabaseTests
         /// <exception cref="DatabaseException">Ignore.</exception>
         /// <exception cref="ObjectDisposedException">Ignore.</exception>
         /// <exception cref="AggregateException">Ignore.</exception>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "VSTHRD002:Avoid problematic synchronous waits", Justification = "<Pending>")]
         public MutipleTableTest(ITestOutputHelper testOutputHelper, ServiceFixture serviceFixture)
         {
             _output = testOutputHelper;
@@ -40,8 +42,8 @@ namespace HB.Framework.DatabaseTests
             _mysql = serviceFixture.MySQL;
             _sqlite = serviceFixture.SQLite;
 
-            _ = _mysql.InitializeAsync();
-            _ = _sqlite.InitializeAsync();
+            _mysql.InitializeAsync().Wait();
+            _sqlite.InitializeAsync().Wait();
 
 #pragma warning disable VSTHRD002 // Avoid problematic synchronous waits
             AddSomeDataAsync().Wait();
