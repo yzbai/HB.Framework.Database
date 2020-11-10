@@ -9,13 +9,13 @@ namespace HB.Framework.Database.SQL
 {
     internal partial class SQLBuilder
     {
-        public static string CreateAddTemplate(DatabaseEntityDef definition, DatabaseEngineType engineType)
+        public static string CreateAddTemplate(DatabaseEntityDef modelDef, DatabaseEngineType engineType)
         {
             StringBuilder args = new StringBuilder();
             StringBuilder selectArgs = new StringBuilder();
             StringBuilder values = new StringBuilder();
 
-            foreach (DatabaseEntityPropertyDef info in definition.Properties)
+            foreach (DatabaseEntityPropertyDef info in modelDef.Properties)
             {
                 if (info.IsTableProperty)
                 {
@@ -48,9 +48,76 @@ namespace HB.Framework.Database.SQL
                 values.Remove(values.Length - 1, 1);
             }
 
-            DatabaseEntityPropertyDef idProperty = definition.GetProperty("Id")!;
+            DatabaseEntityPropertyDef idProperty = modelDef.GetProperty("Id")!;
 
-            return $"insert into {definition.DbTableReservedName}({args}) values({values});select {selectArgs} from {definition.DbTableReservedName} where {idProperty.DbReservedName} = {GetLastInsertIdStatement(engineType)};";
+            return $"insert into {modelDef.DbTableReservedName}({args}) values({values});select {selectArgs} from {modelDef.DbTableReservedName} where {idProperty.DbReservedName} = {GetLastInsertIdStatement(engineType)};";
+        }
+
+        public static string CreateAddOrUpdateTemplate(DatabaseEntityDef modelDef, DatabaseEngineType engineType)
+        {
+            StringBuilder args = new StringBuilder();
+            StringBuilder selectArgs = new StringBuilder();
+            StringBuilder values = new StringBuilder();
+            StringBuilder exceptGuidAndFixedVersionUpdatePairs = new StringBuilder();
+
+            foreach (DatabaseEntityPropertyDef info in modelDef.Properties)
+            {
+                if (info.IsTableProperty)
+                {
+                    selectArgs.AppendFormat(GlobalSettings.Culture, "{0},", info.DbReservedName);
+
+                    if (info.IsAutoIncrementPrimaryKey || info.PropertyName == "LastTime")
+                    {
+                        continue;
+                    }
+
+                    args.AppendFormat(GlobalSettings.Culture, "{0},", info.DbReservedName);
+
+                    values.AppendFormat(GlobalSettings.Culture, " {0},", info.DbParameterizedName);
+
+                }
+            }
+
+            foreach (DatabaseEntityPropertyDef info in modelDef.Properties)
+            {
+                if (info.IsTableProperty)
+                {
+                    if (info.IsAutoIncrementPrimaryKey || info.PropertyName == "Version" || info.PropertyName == "Guid" || info.PropertyName == "LastTime" || info.PropertyName == "Deleted")
+                    {
+                        continue;
+                    }
+
+                    exceptGuidAndFixedVersionUpdatePairs.Append($" {info.DbReservedName}={info.DbParameterizedName},");
+                }
+            }
+
+            DatabaseEntityPropertyDef versionPropertyDef = modelDef.GetProperty("Version")!;
+
+            exceptGuidAndFixedVersionUpdatePairs.Append($" {versionPropertyDef.DbReservedName}={versionPropertyDef.DbReservedName}+1,");
+
+            if (selectArgs.Length > 0)
+            {
+                selectArgs.Remove(selectArgs.Length - 1, 1);
+            }
+
+            if (args.Length > 0)
+            {
+                args.Remove(args.Length - 1, 1);
+            }
+
+            if (values.Length > 0)
+            {
+                values.Remove(values.Length - 1, 1);
+            }
+
+            if (exceptGuidAndFixedVersionUpdatePairs.Length > 0)
+            {
+                exceptGuidAndFixedVersionUpdatePairs.Remove(exceptGuidAndFixedVersionUpdatePairs.Length - 1, 1);
+            }
+
+            DatabaseEntityPropertyDef guidProperty = modelDef.GetProperty("Guid")!;
+
+            return $"insert into {modelDef.DbTableReservedName}({args}) values({values}) {OnDuplicateKeyUpdateStatement(engineType)} {exceptGuidAndFixedVersionUpdatePairs};select {selectArgs} from {modelDef.DbTableReservedName} where {guidProperty.DbReservedName} = {guidProperty.DbParameterizedName};";
         }
 
         public static string CreateUpdateTemplate(DatabaseEntityDef modelDef)
@@ -66,7 +133,7 @@ namespace HB.Framework.Database.SQL
                         continue;
                     }
 
-                    args.AppendFormat(GlobalSettings.Culture, " {0}={1},", info.DbReservedName, info.DbParameterizedName);
+                    args.Append($" {info.DbReservedName}={info.DbParameterizedName},");
                 }
             }
 
@@ -75,9 +142,7 @@ namespace HB.Framework.Database.SQL
                 args.Remove(args.Length - 1, 1);
             }
 
-            string statement = string.Format(GlobalSettings.Culture, "UPDATE {0} SET {1}", modelDef.DbTableReservedName, args.ToString());
-
-            return statement;
+            return $"UPDATE {modelDef.DbTableReservedName} SET {args}";
         }
 
         public static string CreateDeleteTemplate(DatabaseEntityDef modelDef)
@@ -150,6 +215,16 @@ namespace HB.Framework.Database.SQL
                 DatabaseEngineType.SQLite => "last_insert_rowid()",
                 DatabaseEngineType.MySQL => "last_insert_id()",
                 _ => "",
+            };
+        }
+
+        public static string OnDuplicateKeyUpdateStatement(DatabaseEngineType engineType)
+        {
+            return engineType switch
+            {
+                DatabaseEngineType.MySQL => "on duplicate key update",
+                DatabaseEngineType.SQLite => "on conflict(`Guid`) do update set",
+                _ => ""
             };
         }
     }

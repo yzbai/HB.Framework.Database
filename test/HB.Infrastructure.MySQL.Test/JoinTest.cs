@@ -183,8 +183,7 @@ namespace HB.Framework.DatabaseTests
 
     public class A : DatabaseEntity
     {
-        [UniqueGuidEntityProperty]
-        public string Guid { get; set; } = SecurityUtil.CreateUniqueToken();
+
 
         [EntityProperty]
         public string Name { get; set; } = default!;
@@ -192,8 +191,6 @@ namespace HB.Framework.DatabaseTests
 
     public class B : DatabaseEntity
     {
-        [UniqueGuidEntityProperty]
-        public string Guid { get; set; } = SecurityUtil.CreateUniqueToken();
 
         [EntityProperty]
         public string Name { get; set; } = default!;
@@ -201,8 +198,6 @@ namespace HB.Framework.DatabaseTests
 
     public class AB : DatabaseEntity
     {
-        [UniqueGuidEntityProperty]
-        public string Guid { get; set; } = SecurityUtil.CreateUniqueToken();
 
         [EntityProperty]
         public string AId { get; set; } = default!;
@@ -213,9 +208,6 @@ namespace HB.Framework.DatabaseTests
 
     public class C : DatabaseEntity
     {
-        [UniqueGuidEntityProperty]
-        public string Guid { get; set; } = SecurityUtil.CreateUniqueToken();
-
         [EntityProperty]
         public string Name { get; set; } = default!;
 

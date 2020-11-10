@@ -331,6 +331,56 @@ namespace HB.Framework.Database.SQL
             return AssembleCommand<T, T>(false, addTemplate, null, null, parameters);
         }
 
+        public IDbCommand CreateAddOrUpdateCommand<T>(T entity, string lastUser) where T : DatabaseEntity, new()
+        {
+            DatabaseEntityDef modelDef = _entityDefFactory.GetDef<T>();
+            List<IDataParameter> parameters = new List<IDataParameter>();
+
+            string cacheKey = GetCreateAddOrUpdateTemplateCacheKey(modelDef);
+
+            if (!_sqlStatementDict.TryGetValue(cacheKey, out string addOrUpdateTemplate))
+            {
+                addOrUpdateTemplate = CreateAddOrUpdateTemplate(modelDef, _databaseEngine.EngineType);
+                _sqlStatementDict.TryAdd(cacheKey, addOrUpdateTemplate);
+            }
+
+            foreach (DatabaseEntityPropertyDef info in modelDef.Properties)
+            {
+                if (info.IsTableProperty)
+                {
+                    if (info.IsAutoIncrementPrimaryKey || info.PropertyName == "LastTime")
+                    {
+                        continue;
+                    }
+
+                    //当IsTableProperty为true时，DbParameterizedName一定不为null
+                    if (info.PropertyName == "Version")
+                    {
+                        parameters.Add(_databaseEngine.CreateParameter(info.DbParameterizedName!, entity.Version + 1, info.DbFieldType));
+                    }
+                    else if (info.PropertyName == "Deleted")
+                    {
+                        parameters.Add(_databaseEngine.CreateParameter(info.DbParameterizedName!, 0, info.DbFieldType));
+                    }
+                    else if (info.PropertyName == "LastUser")
+                    {
+                        parameters.Add(_databaseEngine.CreateParameter(info.DbParameterizedName!, DbParameterValue_Statement(lastUser, info), info.DbFieldType));
+                    }
+                    else
+                    {
+                        parameters.Add(_databaseEngine.CreateParameter(info.DbParameterizedName!, DbParameterValue_Statement(info.GetValue(entity), info), info.DbFieldType));
+                    }
+                }
+            }
+
+            return AssembleCommand<T, T>(false, addOrUpdateTemplate, null, null, parameters);
+        }
+
+        private static string GetCreateAddOrUpdateTemplateCacheKey(DatabaseEntityDef modelDef)
+        {
+            return modelDef.DatabaseName + ":" + modelDef.TableName + ":ADDORUPDATE";
+        }
+
         public IDbCommand CreateUpdateCommand<T>(WhereExpression<T> condition, T entity, string lastUser) where T : DatabaseEntity, new()
         {
             DatabaseEntityDef definition = _entityDefFactory.GetDef<T>();
@@ -397,6 +447,103 @@ namespace HB.Framework.Database.SQL
         #endregion
 
         #region Batch
+
+        public IDbCommand CreateBatchAddOrUpdateCommand<T>(IEnumerable<T> entities, string lastUser) where T : DatabaseEntity, new()
+        {
+            ThrowIf.Empty(entities, nameof(entities));
+
+            DatabaseEntityDef modelDef = _entityDefFactory.GetDef<T>();
+            DatabaseEntityPropertyDef versionPropertyDef = modelDef.GetProperty("Version")!;
+
+            StringBuilder innerBuilder = new StringBuilder();
+
+            string tempTableName = "HBARU" + DateTimeOffset.UtcNow.Ticks.ToString(GlobalSettings.Culture);
+
+            IList<IDataParameter> parameters = new List<IDataParameter>();
+            int number = 0;
+
+            foreach (T entity in entities)
+            {
+                StringBuilder args = new StringBuilder();
+                StringBuilder values = new StringBuilder();
+                StringBuilder exceptGuidAndFixedVersionUpdatePairs = new StringBuilder();
+
+                foreach (DatabaseEntityPropertyDef info in modelDef.Properties)
+                {
+                    string parameterizedName = info.DbParameterizedName + number.ToString(GlobalSettings.Culture);
+
+                    if (info.IsTableProperty)
+                    {
+                        if (info.IsAutoIncrementPrimaryKey)
+                        {
+                            continue;
+                        }
+
+                        if (info.PropertyName == "LastTime")
+                        {
+                            continue;
+                        }
+
+                        args.AppendFormat(GlobalSettings.Culture, " {0},", info.DbReservedName);
+
+                        if (info.PropertyName == "Version")
+                        {
+                            values.AppendFormat(GlobalSettings.Culture, " {0},", parameterizedName);
+                            parameters.Add(_databaseEngine.CreateParameter(parameterizedName, entity.Version + 1, info.DbFieldType));
+                        }
+                        else if (info.PropertyName == "Deleted")
+                        {
+                            values.AppendFormat(GlobalSettings.Culture, " {0},", parameterizedName);
+                            parameters.Add(_databaseEngine.CreateParameter(parameterizedName, 0, info.DbFieldType));
+                        }
+                        else if (info.PropertyName == "LastUser")
+                        {
+                            values.AppendFormat(GlobalSettings.Culture, " {0},", parameterizedName);
+                            parameters.Add(_databaseEngine.CreateParameter(parameterizedName, DbParameterValue_Statement(lastUser, info), info.DbFieldType));
+                        }
+                        else
+                        {
+                            values.AppendFormat(GlobalSettings.Culture, " {0},", parameterizedName);
+                            parameters.Add(_databaseEngine.CreateParameter(parameterizedName, DbParameterValue_Statement(info.GetValue(entity), info), info.DbFieldType));
+                        }
+
+                        //update pairs
+                        if (info.PropertyName == "Version" || info.PropertyName == "Guid" || info.PropertyName == "Deleted")
+                        {
+                            continue;
+                        }
+
+                        exceptGuidAndFixedVersionUpdatePairs.Append($" {info.DbReservedName}={parameterizedName},");
+                    }
+                }
+
+                exceptGuidAndFixedVersionUpdatePairs.Append($" {versionPropertyDef.DbReservedName}={versionPropertyDef.DbReservedName}+1,");
+
+
+                if (args.Length > 0)
+                {
+                    args.Remove(args.Length - 1, 1);
+                }
+
+                if (values.Length > 0)
+                {
+                    values.Remove(values.Length - 1, 1);
+                }
+
+                if (exceptGuidAndFixedVersionUpdatePairs.Length > 0)
+                {
+                    exceptGuidAndFixedVersionUpdatePairs.Remove(exceptGuidAndFixedVersionUpdatePairs.Length - 1, 1);
+                }
+
+                innerBuilder.Append($"insert into {modelDef.DbTableReservedName}({args}) values ({values}) {OnDuplicateKeyUpdateStatement(_databaseEngine.EngineType)} {exceptGuidAndFixedVersionUpdatePairs};{TempTable_Insert(tempTableName, FoundChanges_Statement(_databaseEngine.EngineType), _databaseEngine.EngineType)}");
+
+                number++;
+            }
+
+            string sql = $"{TempTable_Drop(tempTableName, _databaseEngine.EngineType)}{TempTable_Create(tempTableName, _databaseEngine.EngineType)}{innerBuilder}{TempTable_Select_All(tempTableName, _databaseEngine.EngineType)}{TempTable_Drop(tempTableName, _databaseEngine.EngineType)}";
+
+            return AssembleCommand<T, T>(false, sql, null, null, parameters);
+        }
 
         public IDbCommand CreateBatchAddCommand<T>(IEnumerable<T> entities, string lastUser) where T : DatabaseEntity, new()
         {

@@ -11,7 +11,7 @@ namespace HB.Framework.Database.SQL
     {
         IDbCommand CreateAddCommand<T>(T entity, string lastUser) where T : DatabaseEntity, new();
         IDbCommand CreateCountCommand<T>(FromExpression<T>? fromCondition = null, WhereExpression<T>? whereCondition = null) where T : DatabaseEntity, new();
-        
+
         IDbCommand CreateUpdateCommand<T>(WhereExpression<T> condition, T entity, string lastUser) where T : DatabaseEntity, new();
         //IDbCommand CreateUpdateKeyCommand<T>(WhereExpression<T> condition, string[] keys, object[] values, string lastUser) where T : DatabaseEntity, new();
 
@@ -39,7 +39,7 @@ namespace HB.Framework.Database.SQL
         IDbCommand CreateTableCommand(Type type, bool addDropStatement);
         IDbCommand CreateDeleteCommand<T>(WhereExpression<T> condition, string lastUser) where T : DatabaseEntity, new();
 
-        IDbCommand CreateRetrieveCommand<T>(SelectExpression<T>? selectCondition = null, FromExpression<T>? fromCondition = null, WhereExpression<T>? whereCondition = null) 
+        IDbCommand CreateRetrieveCommand<T>(SelectExpression<T>? selectCondition = null, FromExpression<T>? fromCondition = null, WhereExpression<T>? whereCondition = null)
             where T : DatabaseEntity, new();
 
         IDbCommand CreateRetrieveCommand<T1, T2>(FromExpression<T1> fromCondition, WhereExpression<T1> whereCondition)
@@ -68,5 +68,7 @@ namespace HB.Framework.Database.SQL
         FromExpression<T> NewFrom<T>() where T : DatabaseEntity, new();
 
         WhereExpression<T> NewWhere<T>() where T : DatabaseEntity, new();
+        IDbCommand CreateAddOrUpdateCommand<T>(T item, string lastUser) where T : DatabaseEntity, new();
+        IDbCommand CreateBatchAddOrUpdateCommand<T>(IEnumerable<T> items, string lastUser) where T : DatabaseEntity, new();
     }
 }

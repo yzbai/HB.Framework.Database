@@ -15,9 +15,25 @@ namespace HB.Framework.Database
         /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
         Task AddAsync<T>(T item, string lastUser, TransactionContext? transContext) where T : DatabaseEntity, new();
 
-        Task AddOrUpdateAsync<T>(T item, string lastUser, TransactionContext transContext) where T : DatabaseEntity, new();
+        /// <summary>
+        /// Base on Guid字段
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="item"></param>
+        /// <param name="lastUser"></param>
+        /// <param name="transContext"></param>
+        /// <returns></returns>
+        Task AddOrUpdateAsync<T>(T item, string lastUser, TransactionContext? transContext) where T : DatabaseEntity, new();
 
-        Task BatchAddOrUpdateAsync<T>(IEnumerable<T> items, string lastUser, TransactionContext transaction) where T : DatabaseEntity, new();
+        /// <summary>
+        /// 返回每一个数据对应的row_count(). 在sqlite下都为1，在mysql下，新增为1，更新为2
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="items"></param>
+        /// <param name="lastUser"></param>
+        /// <param name="transaction"></param>
+        /// <returns></returns>
+        Task<IEnumerable<int>> BatchAddOrUpdateAsync<T>(IEnumerable<T> items, string lastUser, TransactionContext transaction) where T : DatabaseEntity, new();
 
         /// <exception cref="HB.Framework.Common.ValidateErrorException"></exception>
         /// <exception cref="HB.Framework.Database.DatabaseException"></exception>

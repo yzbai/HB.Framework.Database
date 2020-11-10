@@ -2,7 +2,7 @@
 
 using HB.Framework.Common;
 using System;
-
+using System.ComponentModel.DataAnnotations;
 
 namespace HB.Framework.Database.Entity
 {
@@ -20,6 +20,13 @@ namespace HB.Framework.Database.Entity
         [AutoIncrementPrimaryKey]
         [EntityProperty("Id")]
         public long Id { get; set; } = -1;
+
+        /// <summary>
+        /// 资源ID，全局不变
+        /// </summary>
+        [Required]
+        [UniqueGuidEntityProperty]
+        public string Guid { get; set; } = SecurityUtil.CreateUniqueToken();
 
         [EntityProperty("Version")]
         public long Version { get; set; } = 0;

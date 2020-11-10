@@ -1002,9 +1002,39 @@ namespace HB.Framework.Database
 
         #region 单体更改(Write)
 
-        public Task AddOrUpdateAsync<T>(T item, string lastUser, TransactionContext transContext) where T : DatabaseEntity, new()
+        public async Task AddOrUpdateAsync<T>(T item, string lastUser, TransactionContext? transContext) where T : DatabaseEntity, new()
         {
-            throw new NotImplementedException();
+            ThrowIf.NotValid(item);
+
+            DatabaseEntityDef entityDef = _entityDefFactory.GetDef<T>();
+
+            if (!entityDef.DatabaseWriteable)
+            {
+                throw new DatabaseException(ErrorCode.DatabaseNotWriteable, entityDef.EntityFullName, $"Entity:{SerializeUtil.ToJson(item)}");
+            }
+
+            IDbCommand? dbCommand = null;
+            IDataReader? reader = null;
+
+            try
+            {
+                dbCommand = _sqlBuilder.CreateAddOrUpdateCommand(item, lastUser);
+
+                reader = await _databaseEngine.ExecuteCommandReaderAsync(transContext?.Transaction, entityDef.DatabaseName!, dbCommand, true).ConfigureAwait(false);
+
+                _modelMapper.ToObject(reader, item);
+            }
+            catch (Exception ex) when (!(ex is DatabaseException))
+            {
+                string detail = $"Item:{SerializeUtil.ToJson(item)}";
+
+                throw new DatabaseException(ErrorCode.DatabaseError, entityDef.EntityFullName, detail, ex); ;
+            }
+            finally
+            {
+                reader?.Dispose();
+                dbCommand?.Dispose();
+            }
         }
 
 
@@ -1147,9 +1177,65 @@ namespace HB.Framework.Database
 
         #region 批量更改(Write)
 
-        public Task BatchAddOrUpdateAsync<T>(IEnumerable<T> items, string lastUser, TransactionContext transaction) where T : DatabaseEntity, new()
+        public async Task<IEnumerable<int>> BatchAddOrUpdateAsync<T>(IEnumerable<T> items, string lastUser, TransactionContext transContext) where T : DatabaseEntity, new()
         {
-            throw new NotImplementedException();
+            ThrowIf.NotValid(items);
+
+            if (!items.Any())
+            {
+                return new List<int>();
+            }
+
+            DatabaseEntityDef entityDef = _entityDefFactory.GetDef<T>();
+
+            if (!entityDef.DatabaseWriteable)
+            {
+                throw new DatabaseException(ErrorCode.DatabaseNotWriteable, entityDef.EntityFullName, $"Items:{SerializeUtil.ToJson(items)}");
+            }
+
+            IDbCommand? dbCommand = null;
+            IDataReader? reader = null;
+
+            try
+            {
+                dbCommand = _sqlBuilder.CreateBatchAddOrUpdateCommand(items, lastUser);
+                reader = await _databaseEngine.ExecuteCommandReaderAsync(
+                    transContext.Transaction,
+                    entityDef.DatabaseName!,
+                    dbCommand,
+                    true).ConfigureAwait(false);
+
+                IList<int> affectedCounts = new List<int>();
+
+                while (reader.Read())
+                {
+                    int affectedCount = reader.GetInt32(0);
+
+                    if (affectedCount != 1 && affectedCount != 2)
+                    {
+                        throw new DatabaseException(ErrorCode.DatabaseAffectedRowCountNotValid, entityDef.EntityFullName, $"Items:{SerializeUtil.ToJson(items)}");
+                    }
+
+                    affectedCounts.Add(affectedCount);
+                }
+
+                if (affectedCounts.Count != items.Count())
+                {
+                    throw new DatabaseException(ErrorCode.DatabaseNotFound, entityDef.EntityFullName, $"BatchAddOrUpdate wrong number return.  Items:{SerializeUtil.ToJson(items)}");
+                }
+
+                return affectedCounts;
+            }
+            catch (Exception ex) when (!(ex is DatabaseException))
+            {
+                string detail = $"Items:{SerializeUtil.ToJson(items)}";
+                throw new DatabaseException(ErrorCode.DatabaseError, entityDef.EntityFullName, detail, ex);
+            }
+            finally
+            {
+                reader?.Dispose();
+                dbCommand?.Dispose();
+            }
         }
 
         /// <summary>
