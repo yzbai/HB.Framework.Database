@@ -1,14 +1,15 @@
 ﻿#nullable enable
 
+using HB.Framework.Common.Entities;
 using HB.Framework.Database.Engine;
-using HB.Framework.Database.Entity;
+using HB.Framework.Database.Entities;
 using System;
 using System.Linq.Expressions;
 using System.Text;
 
 namespace HB.Framework.Database.SQL
 {
-    public class SelectExpression<T> where T : DatabaseEntity, new()
+    public class SelectExpression<T> where T : Entity, new()
     {
         private readonly StringBuilder _statementBuilder = new StringBuilder();
 

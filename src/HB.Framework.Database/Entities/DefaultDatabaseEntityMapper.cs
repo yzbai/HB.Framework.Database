@@ -1,10 +1,11 @@
 ﻿#nullable enable
 
+using HB.Framework.Common.Entities;
 using System;
 using System.Collections.Generic;
 using System.Data;
 
-namespace HB.Framework.Database.Entity
+namespace HB.Framework.Database.Entities
 {
     /// <summary>
     /// 单例
@@ -28,7 +29,7 @@ namespace HB.Framework.Database.Entity
         /// <exception cref="IndexOutOfRangeException">Ignore.</exception>
         /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
         public IList<T> ToList<T>(IDataReader reader)
-            where T : DatabaseEntity, new()
+            where T : Entity, new()
         {
             IList<T> lst = new List<T>();
 
@@ -94,8 +95,8 @@ namespace HB.Framework.Database.Entity
         /// <exception cref="IndexOutOfRangeException">Ignore.</exception>
         /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
         public IList<Tuple<TSource, TTarget?>> ToList<TSource, TTarget>(IDataReader reader)
-            where TSource : DatabaseEntity, new()
-            where TTarget : DatabaseEntity, new()
+            where TSource : Entity, new()
+            where TTarget : Entity, new()
         {
             IList<Tuple<TSource, TTarget?>> lst = new List<Tuple<TSource, TTarget?>>();
 
@@ -213,9 +214,9 @@ namespace HB.Framework.Database.Entity
         /// <exception cref="IndexOutOfRangeException">Ignore.</exception>
         /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
         public IList<Tuple<TSource, TTarget2?, TTarget3?>> ToList<TSource, TTarget2, TTarget3>(IDataReader reader)
-            where TSource : DatabaseEntity, new()
-            where TTarget2 : DatabaseEntity, new()
-            where TTarget3 : DatabaseEntity, new()
+            where TSource : Entity, new()
+            where TTarget2 : Entity, new()
+            where TTarget3 : Entity, new()
         {
             IList<Tuple<TSource, TTarget2?, TTarget3?>> lst = new List<Tuple<TSource, TTarget2?, TTarget3?>>();
 
@@ -369,7 +370,7 @@ namespace HB.Framework.Database.Entity
         /// <param name="item"></param>
         /// <exception cref="IndexOutOfRangeException">Ignore.</exception>
         /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
-        public void ToObject<T>(IDataReader reader, T item) where T : DatabaseEntity, new()
+        public void ToObject<T>(IDataReader reader, T item) where T : Entity, new()
         {
             if (reader == null)
             {

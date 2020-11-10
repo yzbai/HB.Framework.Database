@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq.Expressions;
 using System.Text;
-using HB.Framework.Database.Entity;
+using HB.Framework.Database.Entities;
 using System.Reflection;
 
 namespace HB.Framework.Database.SQL

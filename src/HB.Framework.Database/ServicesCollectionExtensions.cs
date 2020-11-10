@@ -1,7 +1,7 @@
 ﻿#nullable enable
 
 using HB.Framework.Database;
-using HB.Framework.Database.Entity;
+using HB.Framework.Database.Entities;
 using HB.Framework.Database.SQL;
 
 namespace Microsoft.Extensions.DependencyInjection

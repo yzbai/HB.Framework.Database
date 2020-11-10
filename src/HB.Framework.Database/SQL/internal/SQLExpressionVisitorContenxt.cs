@@ -1,8 +1,8 @@
 ﻿#nullable enable
 
 using System.Collections.Generic;
-using HB.Framework.Database.Entity;
 using HB.Framework.Database.Engine;
+using HB.Framework.Database.Entities;
 
 namespace HB.Framework.Database.SQL
 {

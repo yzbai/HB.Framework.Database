@@ -14,7 +14,8 @@ namespace HB.Framework.DatabaseTests.Data
 
             for (int i = 0; i < 5; ++i)
             {
-                books.Add(new BookEntity {
+                books.Add(new BookEntity
+                {
                     Guid = SecurityUtil.CreateUniqueToken(),
                     Name = "Book" + i.ToString(),
                     Price = _random.NextDouble()
@@ -48,8 +49,8 @@ namespace HB.Framework.DatabaseTests.Data
 
             for (int i = 0; i < 5; ++i)
             {
-                publisherEntities.Add(new PublisherEntity {
-                    Guid = SecurityUtil.CreateUniqueToken(),
+                publisherEntities.Add(new PublisherEntity
+                {
                     Books = new List<string> { "a", "v", "c" },
                     Type = PublisherType.Big,
                     Name = "Publisher" + i.ToString(),

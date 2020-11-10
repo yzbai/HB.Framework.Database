@@ -53,8 +53,8 @@ namespace HB.Framework.DatabaseTests
 
                     options.Connections.Add(new DatabaseConnectionSettings
                     {
-                        DatabaseName = "test.db",
-                        ConnectionString = "Data Source=test.db",
+                        DatabaseName = "test2.db",
+                        ConnectionString = "Data Source=test2.db",
                         IsMaster = true
                     });
                 });

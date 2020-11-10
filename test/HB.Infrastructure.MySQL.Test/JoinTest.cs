@@ -25,6 +25,7 @@ namespace HB.Framework.DatabaseTests
                 _ => throw new ArgumentException(nameof(databaseType))
             };
 
+
         /// <summary>
         /// ctor
         /// </summary>
@@ -33,6 +34,7 @@ namespace HB.Framework.DatabaseTests
         /// <exception cref="DatabaseException">Ignore.</exception>
         /// <exception cref="ObjectDisposedException">Ignore.</exception>
         /// <exception cref="AggregateException">Ignore.</exception>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "VSTHRD002:Avoid problematic synchronous waits", Justification = "<Pending>")]
         public MutipleTableTest(ITestOutputHelper testOutputHelper, ServiceFixture serviceFixture)
         {
             _output = testOutputHelper;
@@ -40,8 +42,8 @@ namespace HB.Framework.DatabaseTests
             _mysql = serviceFixture.MySQL;
             _sqlite = serviceFixture.SQLite;
 
-            _ = _mysql.InitializeAsync();
-            _ = _sqlite.InitializeAsync();
+            _mysql.InitializeAsync().Wait();
+            _sqlite.InitializeAsync().Wait();
 
 #pragma warning disable VSTHRD002 // Avoid problematic synchronous waits
             AddSomeDataAsync().Wait();
@@ -77,44 +79,43 @@ namespace HB.Framework.DatabaseTests
             C c5 = new C { AId = a2.Guid };
             C c6 = new C { AId = a3.Guid };
 
-            await _mysql.AddAsync(a2, null);
-            await _mysql.AddAsync(a1, null);
-            await _mysql.AddAsync(a3, null);
+            await _mysql.AddAsync(a2, "lastUsre", null);
+            await _mysql.AddAsync(a1, "lastUsre", null);
+            await _mysql.AddAsync(a3, "lastUsre", null);
 
-            await _mysql.AddAsync(b1, null);
-            await _mysql.AddAsync(b2, null);
+            await _mysql.AddAsync(b1, "lastUsre", null);
+            await _mysql.AddAsync(b2, "lastUsre", null);
 
-            await _mysql.AddAsync(a1b1, null);
-            await _mysql.AddAsync(a1b2, null);
-            await _mysql.AddAsync(a2b1, null);
-            await _mysql.AddAsync(a3b2, null);
+            await _mysql.AddAsync(a1b1, "lastUsre", null);
+            await _mysql.AddAsync(a1b2, "lastUsre", null);
+            await _mysql.AddAsync(a2b1, "lastUsre", null);
+            await _mysql.AddAsync(a3b2, "lastUsre", null);
 
-            await _mysql.AddAsync(c1, null);
-            await _mysql.AddAsync(c2, null);
-            await _mysql.AddAsync(c3, null);
-            await _mysql.AddAsync(c4, null);
-            await _mysql.AddAsync(c5, null);
-            await _mysql.AddAsync(c6, null);
+            await _mysql.AddAsync(c1, "lastUsre", null);
+            await _mysql.AddAsync(c2, "lastUsre", null);
+            await _mysql.AddAsync(c3, "lastUsre", null);
+            await _mysql.AddAsync(c4, "lastUsre", null);
+            await _mysql.AddAsync(c5, "lastUsre", null);
+            await _mysql.AddAsync(c6, "lastUsre", null);
 
+            await _sqlite.AddAsync(a2, "lastUsre", null);
+            await _sqlite.AddAsync(a1, "lastUsre", null);
+            await _sqlite.AddAsync(a3, "lastUsre", null);
 
-            await _sqlite.AddAsync(a2, null);
-            await _sqlite.AddAsync(a1, null);
-            await _sqlite.AddAsync(a3, null);
+            await _sqlite.AddAsync(b1, "lastUsre", null);
+            await _sqlite.AddAsync(b2, "lastUsre", null);
 
-            await _sqlite.AddAsync(b1, null);
-            await _sqlite.AddAsync(b2, null);
+            await _sqlite.AddAsync(a1b1, "lastUsre", null);
+            await _sqlite.AddAsync(a1b2, "lastUsre", null);
+            await _sqlite.AddAsync(a2b1, "lastUsre", null);
+            await _sqlite.AddAsync(a3b2, "lastUsre", null);
 
-            await _sqlite.AddAsync(a1b1, null);
-            await _sqlite.AddAsync(a1b2, null);
-            await _sqlite.AddAsync(a2b1, null);
-            await _sqlite.AddAsync(a3b2, null);
-
-            await _sqlite.AddAsync(c1, null);
-            await _sqlite.AddAsync(c2, null);
-            await _sqlite.AddAsync(c3, null);
-            await _sqlite.AddAsync(c4, null);
-            await _sqlite.AddAsync(c5, null);
-            await _sqlite.AddAsync(c6, null);
+            await _sqlite.AddAsync(c1, "lastUsre", null);
+            await _sqlite.AddAsync(c2, "lastUsre", null);
+            await _sqlite.AddAsync(c3, "lastUsre", null);
+            await _sqlite.AddAsync(c4, "lastUsre", null);
+            await _sqlite.AddAsync(c5, "lastUsre", null);
+            await _sqlite.AddAsync(c6, "lastUsre", null);
         }
 
         /// <summary>
@@ -184,8 +185,7 @@ namespace HB.Framework.DatabaseTests
 
     public class A : DatabaseEntity
     {
-        [UniqueGuidEntityProperty]
-        public string Guid { get; set; } = SecurityUtil.CreateUniqueToken();
+
 
         [EntityProperty]
         public string Name { get; set; } = default!;
@@ -193,8 +193,6 @@ namespace HB.Framework.DatabaseTests
 
     public class B : DatabaseEntity
     {
-        [UniqueGuidEntityProperty]
-        public string Guid { get; set; } = SecurityUtil.CreateUniqueToken();
 
         [EntityProperty]
         public string Name { get; set; } = default!;
@@ -202,8 +200,6 @@ namespace HB.Framework.DatabaseTests
 
     public class AB : DatabaseEntity
     {
-        [UniqueGuidEntityProperty]
-        public string Guid { get; set; } = SecurityUtil.CreateUniqueToken();
 
         [EntityProperty]
         public string AId { get; set; } = default!;
@@ -214,9 +210,6 @@ namespace HB.Framework.DatabaseTests
 
     public class C : DatabaseEntity
     {
-        [UniqueGuidEntityProperty]
-        public string Guid { get; set; } = SecurityUtil.CreateUniqueToken();
-
         [EntityProperty]
         public string Name { get; set; } = default!;
 

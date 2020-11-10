@@ -19,13 +19,13 @@ namespace ConsoleApp1
 
                 argumentNull.Data["KeyArgument"] = "Null Argument";
 
-                ServerException exception = new ServerException("a message from frameworkException", argumentNull);
+                FrameworkException exception = new FrameworkException("a message from frameworkException", argumentNull);
 
                 exception.Data["Key"] = "Some";
 
                 throw exception;
             }
-            catch (ServerException exception)
+            catch (FrameworkException exception)
             {
                 foreach (object item in exception.Data.Keys)
                 {

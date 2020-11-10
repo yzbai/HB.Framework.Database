@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
-namespace HB.Framework.Database.Entity
+namespace HB.Framework.Database.Entities
 {
     /// <summary>
     /// 实体定义

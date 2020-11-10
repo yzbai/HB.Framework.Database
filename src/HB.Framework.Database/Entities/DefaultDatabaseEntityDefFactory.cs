@@ -1,10 +1,11 @@
-﻿using HB.Framework.Database.Engine;
+﻿using HB.Framework.Common.Entities;
+using HB.Framework.Database.Engine;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
-namespace HB.Framework.Database.Entity
+namespace HB.Framework.Database.Entities
 {
     /// <summary>
     /// 实体定义集合
@@ -31,7 +32,7 @@ namespace HB.Framework.Database.Entity
 
             IEnumerable<Type> allEntityTypes;
 
-            static bool entityTypeCondition(Type t) => t.IsSubclassOf(typeof(DatabaseEntity)) && !t.IsAbstract;
+            static bool entityTypeCondition(Type t) => t.IsSubclassOf(typeof(Entity)) && !t.IsAbstract;
 
             if (_databaseSettings.AssembliesIncludeEntity.IsNullOrEmpty())
             {

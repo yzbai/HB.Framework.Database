@@ -4,6 +4,9 @@ using Xunit;
 
 namespace HB.Framework.DatabaseTests
 {
+    /// <summary>
+    // 
+    /// </summary>
     public class MySQLUseAffectedRowsTest : IClassFixture<ServiceFixture>
     {
         /// <summary>

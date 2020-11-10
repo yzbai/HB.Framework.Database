@@ -1,7 +1,8 @@
 ﻿#nullable enable
 
+using HB.Framework.Common.Entities;
 using HB.Framework.Database.Engine;
-using HB.Framework.Database.Entity;
+using HB.Framework.Database.Entities;
 using HB.Framework.Database.Properties;
 using System;
 using System.Collections.Generic;
@@ -23,7 +24,7 @@ namespace HB.Framework.Database.SQL
     /// 
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class FromExpression<T> where T : DatabaseEntity, new()
+    public class FromExpression<T> where T : Entity, new()
     {
         private readonly StringBuilder _statementBuilder = new StringBuilder();
 
@@ -61,7 +62,7 @@ namespace HB.Framework.Database.SQL
         }
 
         /// <exception cref="System.ArgumentException"></exception>
-        public FromExpression<T> InnerJoin<TTarget>(Expression<Func<T, TTarget, bool>> joinExpr) where TTarget : DatabaseEntity, new()
+        public FromExpression<T> InnerJoin<TTarget>(Expression<Func<T, TTarget, bool>> joinExpr) where TTarget : Entity, new()
         {
             if (JoinType != null && JoinType != SqlJoinType.INNER)
             {
@@ -75,8 +76,8 @@ namespace HB.Framework.Database.SQL
 
         /// <exception cref="System.ArgumentException"></exception>
         public FromExpression<T> InnerJoin<TLeft, TRight>(Expression<Func<TLeft, TRight, bool>> joinExpr)
-            where TLeft : DatabaseEntity, new()
-            where TRight : DatabaseEntity, new()
+            where TLeft : Entity, new()
+            where TRight : Entity, new()
         {
             if (JoinType != null && JoinType != SqlJoinType.INNER)
             {
@@ -89,7 +90,7 @@ namespace HB.Framework.Database.SQL
         }
 
         /// <exception cref="System.ArgumentException"></exception>
-        public FromExpression<T> LeftJoin<TTarget>(Expression<Func<T, TTarget, bool>> joinExpr) where TTarget : DatabaseEntity, new()
+        public FromExpression<T> LeftJoin<TTarget>(Expression<Func<T, TTarget, bool>> joinExpr) where TTarget : Entity, new()
         {
             if (JoinType != null && JoinType != SqlJoinType.LEFT)
             {
@@ -103,8 +104,8 @@ namespace HB.Framework.Database.SQL
 
         /// <exception cref="System.ArgumentException"></exception>
         public FromExpression<T> LeftJoin<TLeft, TRight>(Expression<Func<TLeft, TRight, bool>> joinExpr)
-            where TLeft : DatabaseEntity, new()
-            where TRight : DatabaseEntity, new()
+            where TLeft : Entity, new()
+            where TRight : Entity, new()
         {
             if (JoinType != null && JoinType != SqlJoinType.LEFT)
             {
@@ -117,7 +118,7 @@ namespace HB.Framework.Database.SQL
         }
 
         /// <exception cref="System.ArgumentException"></exception>
-        public FromExpression<T> RightJoin<TTarget>(Expression<Func<T, TTarget, bool>> joinExpr) where TTarget : DatabaseEntity, new()
+        public FromExpression<T> RightJoin<TTarget>(Expression<Func<T, TTarget, bool>> joinExpr) where TTarget : Entity, new()
         {
             if (JoinType != null && JoinType != SqlJoinType.RIGHT)
             {
@@ -131,8 +132,8 @@ namespace HB.Framework.Database.SQL
 
         /// <exception cref="System.ArgumentException"></exception>
         public FromExpression<T> RightJoin<TLeft, TRight>(Expression<Func<TLeft, TRight, bool>> joinExpr)
-            where TLeft : DatabaseEntity, new()
-            where TRight : DatabaseEntity, new()
+            where TLeft : Entity, new()
+            where TRight : Entity, new()
         {
             if (JoinType != null && JoinType != SqlJoinType.RIGHT)
             {
@@ -145,7 +146,7 @@ namespace HB.Framework.Database.SQL
         }
 
         /// <exception cref="System.ArgumentException"></exception>
-        public FromExpression<T> FullJoin<TTarget>(Expression<Func<T, TTarget, bool>> joinExpr) where TTarget : DatabaseEntity, new()
+        public FromExpression<T> FullJoin<TTarget>(Expression<Func<T, TTarget, bool>> joinExpr) where TTarget : Entity, new()
         {
             if (JoinType != null && JoinType != SqlJoinType.FULL)
             {
@@ -159,8 +160,8 @@ namespace HB.Framework.Database.SQL
 
         /// <exception cref="System.ArgumentException"></exception>
         public FromExpression<T> FullJoin<TLeft, TRight>(Expression<Func<TLeft, TRight, bool>> joinExpr)
-            where TLeft : DatabaseEntity, new()
-            where TRight : DatabaseEntity, new()
+            where TLeft : Entity, new()
+            where TRight : Entity, new()
         {
             if (JoinType != null && JoinType != SqlJoinType.FULL)
             {
@@ -173,7 +174,7 @@ namespace HB.Framework.Database.SQL
         }
 
         /// <exception cref="System.ArgumentException"></exception>
-        public FromExpression<T> CrossJoin<TTarget>(Expression<Func<T, TTarget, bool>> joinExpr) where TTarget : DatabaseEntity, new()
+        public FromExpression<T> CrossJoin<TTarget>(Expression<Func<T, TTarget, bool>> joinExpr) where TTarget : Entity, new()
         {
             if (JoinType != null && JoinType != SqlJoinType.CROSS)
             {
@@ -187,8 +188,8 @@ namespace HB.Framework.Database.SQL
 
         /// <exception cref="System.ArgumentException"></exception>
         public FromExpression<T> CrossJoin<TLeft, TRight>(Expression<Func<TLeft, TRight, bool>> joinExpr)
-            where TLeft : DatabaseEntity, new()
-            where TRight : DatabaseEntity, new()
+            where TLeft : Entity, new()
+            where TRight : Entity, new()
         {
             if (JoinType != null && JoinType != SqlJoinType.CROSS)
             {

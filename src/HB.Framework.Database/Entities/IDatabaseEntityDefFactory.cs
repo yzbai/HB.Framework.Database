@@ -3,7 +3,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace HB.Framework.Database.Entity
+namespace HB.Framework.Database.Entities
 {
     internal interface IDatabaseEntityDefFactory
     {
