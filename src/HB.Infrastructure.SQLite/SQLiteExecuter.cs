@@ -1,10 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Data;
 using System.Threading.Tasks;
 using HB.Framework.Database;
 using Microsoft.Data.Sqlite;
-
 
 namespace HB.Infrastructure.SQLite
 {
@@ -97,7 +95,7 @@ namespace HB.Infrastructure.SQLite
             }
         }
 
-        #endregion
+        #endregion Command Reader
 
         #region Command Scalar
 
@@ -169,7 +167,7 @@ namespace HB.Infrastructure.SQLite
             return rtObj;
         }
 
-        #endregion
+        #endregion Command Scalar
 
         #region Comand NonQuery
 
@@ -242,6 +240,6 @@ namespace HB.Infrastructure.SQLite
             return rtInt;
         }
 
-        #endregion
+        #endregion Comand NonQuery
     }
 }

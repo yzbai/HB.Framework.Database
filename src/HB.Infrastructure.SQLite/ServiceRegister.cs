@@ -1,9 +1,7 @@
-﻿using HB.Framework.Database;
+﻿using System;
 using HB.Framework.Database.Engine;
 using HB.Infrastructure.SQLite;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using System;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -19,6 +17,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
             return services;
         }
+
         public static IServiceCollection AddSQLite(this IServiceCollection services, Action<SQLiteOptions> databaseEngineOptionsSetup)
         {
             services.AddOptions();

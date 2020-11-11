@@ -172,7 +172,7 @@ namespace HB.Infrastructure.MySQL
                 return null;
             }
 
-            string valueStr = ValueConverterUtil.TypeValueToStringValue(value);
+            string valueStr = ValueConverterUtil.TypeValueToStringValue(value)!;
 
             if (needQuoted && IsValueNeedQuoted(value.GetType()))
             {

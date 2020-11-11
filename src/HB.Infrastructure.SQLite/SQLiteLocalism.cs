@@ -1,11 +1,7 @@
-﻿using HB.Framework.Common;
-using HB.Framework.Database.Entity;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
-using System.Reflection;
 
 namespace HB.Infrastructure.SQLite
 {
@@ -15,10 +11,12 @@ namespace HB.Infrastructure.SQLite
         /// 数据库类型
         /// </summary>
         public DbType DatabaseType { get; set; }
+
         /// <summary>
         /// 表达
         /// </summary>
         public string Statement { get; set; } = default!;
+
         /// <summary>
         /// 这个类型的值是否需要引号化
         /// </summary>
@@ -29,8 +27,10 @@ namespace HB.Infrastructure.SQLite
     {
         //参数化
         public const string ParameterizedChar = "@";
+
         //引号化
         public const string QuotedChar = "'";
+
         //保留化
         public const string ReservedChar = @"""";
 
@@ -170,10 +170,9 @@ namespace HB.Infrastructure.SQLite
                 return null;
             }
 
-            string valueStr = ValueConverterUtil.TypeValueToStringValue(value);
+            string valueStr = ValueConverterUtil.TypeValueToStringValue(value)!;
 
             valueStr = SafeDbStatement(valueStr);
-
 
             if (needQuoted && IsValueNeedQuoted(value.GetType()))
             {

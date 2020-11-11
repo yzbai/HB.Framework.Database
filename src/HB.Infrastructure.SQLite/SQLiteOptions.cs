@@ -1,7 +1,6 @@
-﻿using HB.Framework.Database;
+﻿using System.Collections.Generic;
+using HB.Framework.Database;
 using Microsoft.Extensions.Options;
-using System;
-using System.Collections.Generic;
 
 namespace HB.Infrastructure.SQLite
 {

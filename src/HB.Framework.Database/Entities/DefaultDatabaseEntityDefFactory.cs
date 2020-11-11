@@ -32,7 +32,7 @@ namespace HB.Framework.Database.Entities
 
             IEnumerable<Type> allEntityTypes;
 
-            static bool entityTypeCondition(Type t) => t.IsSubclassOf(typeof(Entity)) && !t.IsAbstract;
+
 
             if (_databaseSettings.AssembliesIncludeEntity.IsNullOrEmpty())
             {
@@ -46,6 +46,11 @@ namespace HB.Framework.Database.Entities
             _entitySchemaDict = ConstructeSchemaDict(allEntityTypes);
 
             WarmUp(allEntityTypes);
+
+            static bool entityTypeCondition(Type t)
+            {
+                return t.IsSubclassOf(typeof(Entity)) && !t.IsAbstract && t.GetCustomAttribute<DatabaseEntityAttribute>() != null;
+            }
         }
 
         private void WarmUp(IEnumerable<Type> allEntityTypes)
@@ -62,7 +67,7 @@ namespace HB.Framework.Database.Entities
             allEntityTypes.ForEach(type =>
             {
 
-                EntitySchemaAttribute attribute = type.GetCustomAttribute<EntitySchemaAttribute>();
+                DatabaseEntityAttribute attribute = type.GetCustomAttribute<DatabaseEntityAttribute>();
 
                 fileConfiguredDict.TryGetValue(type.FullName, out EntityInfo fileConfigured);
 
@@ -73,7 +78,7 @@ namespace HB.Framework.Database.Entities
 
                 if (attribute != null)
                 {
-                    entitySchema.DatabaseName = attribute.DatabaseName.IsNullOrEmpty() ? _databaseEngine.FirstDefaultDatabaseName : attribute.DatabaseName;
+                    entitySchema.DatabaseName = attribute.DatabaseName.IsNullOrEmpty() ? _databaseEngine.FirstDefaultDatabaseName : attribute.DatabaseName!;
 
                     if (attribute.TableName.IsNullOrEmpty())
                     {

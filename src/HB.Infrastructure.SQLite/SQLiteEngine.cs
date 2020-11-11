@@ -1,13 +1,13 @@
-﻿using HB.Framework.Database;
-using HB.Framework.Database.Engine;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
-using Microsoft.Data.Sqlite;
-using System.Linq;
-using Microsoft.Extensions.Options;
-using System.Threading.Tasks;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
+using System.Threading.Tasks;
+using HB.Framework.Database;
+using HB.Framework.Database.Engine;
+using Microsoft.Data.Sqlite;
+using Microsoft.Extensions.Options;
 
 namespace HB.Infrastructure.SQLite
 {
@@ -73,7 +73,7 @@ namespace HB.Infrastructure.SQLite
             return _options.Connections.Select(s => s.DatabaseName);
         }
 
-        #endregion
+        #endregion 自身 & 构建
 
         #region 创建功能
 
@@ -104,7 +104,7 @@ namespace HB.Infrastructure.SQLite
             return command;
         }
 
-        #endregion
+        #endregion 创建功能
 
         #region 方言
 
@@ -150,9 +150,10 @@ namespace HB.Infrastructure.SQLite
             return SQLiteLocalism.IsValueNeedQuoted(type);
         }
 
-        #endregion
+        #endregion 方言
 
         #region SP
+
         public Task<int> ExecuteSPNonQueryAsync(IDbTransaction? trans, string dbName, string spName, IList<IDataParameter> parameters)
         {
             throw new NotImplementedException();
@@ -168,7 +169,7 @@ namespace HB.Infrastructure.SQLite
             throw new NotImplementedException();
         }
 
-        #endregion
+        #endregion SP
 
         #region Command 能力
 
@@ -234,7 +235,7 @@ namespace HB.Infrastructure.SQLite
             }
         }
 
-        #endregion
+        #endregion Command 能力
 
         #region 事务
 
@@ -280,6 +281,6 @@ namespace HB.Infrastructure.SQLite
             }
         }
 
-        #endregion
+        #endregion 事务
     }
 }
