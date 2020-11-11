@@ -1003,6 +1003,15 @@ namespace HB.Framework.Database
 
         #region 单体更改(Write)
 
+        /// <summary>
+        /// item被重新赋值，反应Version变化。
+        /// 在Update时不做Version检查
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="item"></param>
+        /// <param name="lastUser"></param>
+        /// <param name="transContext"></param>
+        /// <returns></returns>
         public async Task AddOrUpdateAsync<T>(T item, string lastUser, TransactionContext? transContext) where T : Entity, new()
         {
             ThrowIf.NotValid(item);
@@ -1040,7 +1049,7 @@ namespace HB.Framework.Database
 
 
         /// <summary>
-        /// 增加,并且item被重新赋值
+        /// 增加,并且item被重新赋值，反应Version变化
         /// </summary>
         /// <exception cref="HB.Framework.Common.ValidateErrorException"></exception>
         /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
@@ -1080,7 +1089,7 @@ namespace HB.Framework.Database
         }
 
         /// <summary>
-        /// 删除, Version控制
+        /// Version控制
         /// </summary>
         /// <exception cref="HB.Framework.Common.ValidateErrorException"></exception>
         /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
@@ -1126,6 +1135,7 @@ namespace HB.Framework.Database
         /// <summary>
         ///  修改，建议每次修改前先select，并放置在一个事务中。
         ///  版本控制，如果item中Version未赋值，会无法更改
+        ///  反应Version变化
         /// </summary>
         /// <exception cref="HB.Framework.Common.ValidateErrorException"></exception>
         /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
@@ -1157,6 +1167,7 @@ namespace HB.Framework.Database
 
                 if (rows == 1)
                 {
+                    //反应Version变化
                     item.Version++;
                     return;
                 }
@@ -1178,6 +1189,16 @@ namespace HB.Framework.Database
 
         #region 批量更改(Write)
 
+        /// <summary>
+        /// 在Update时不做Version检查
+        /// 反应Version变化
+        /// 返回最新的Versions
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="items"></param>
+        /// <param name="lastUser"></param>
+        /// <param name="transContext"></param>
+        /// <returns></returns>
         public async Task<IEnumerable<int>> BatchAddOrUpdateAsync<T>(IEnumerable<T> items, string lastUser, TransactionContext transContext) where T : Entity, new()
         {
             ThrowIf.NotValid(items);
@@ -1206,26 +1227,27 @@ namespace HB.Framework.Database
                     dbCommand,
                     true).ConfigureAwait(false);
 
-                IList<int> affectedCounts = new List<int>();
+                IList<int> versions = new List<int>();
 
                 while (reader.Read())
                 {
-                    int affectedCount = reader.GetInt32(0);
+                    int version = reader.GetInt32(0);
 
-                    if (affectedCount != 1 && affectedCount != 2)
-                    {
-                        throw new DatabaseException(ErrorCode.DatabaseAffectedRowCountNotValid, entityDef.EntityFullName, $"Items:{SerializeUtil.ToJson(items)}");
-                    }
-
-                    affectedCounts.Add(affectedCount);
+                    versions.Add(version);
                 }
 
-                if (affectedCounts.Count != items.Count())
+                if (versions.Count != items.Count())
                 {
                     throw new DatabaseException(ErrorCode.DatabaseNotFound, entityDef.EntityFullName, $"BatchAddOrUpdate wrong number return.  Items:{SerializeUtil.ToJson(items)}");
                 }
 
-                return affectedCounts;
+                //反应Version变化
+                for (int i = 0; i < versions.Count; ++i)
+                {
+                    items.ElementAt(i).Version = versions[i];
+                }
+
+                return versions;
             }
             catch (Exception ex) when (!(ex is DatabaseException))
             {
@@ -1240,7 +1262,7 @@ namespace HB.Framework.Database
         }
 
         /// <summary>
-        /// BatchAddAsync
+        /// BatchAddAsync，反应Version变化
         /// </summary>
         /// <param name="items"></param>
         /// <param name="transContext"></param>
@@ -1294,6 +1316,12 @@ namespace HB.Framework.Database
                     throw new DatabaseException(ErrorCode.DatabaseNotMatch, entityDef.EntityFullName, $"Items:{SerializeUtil.ToJson(items)}");
                 }
 
+                //反应Version变化
+                foreach (T item in items)
+                {
+                    item.Version = 0;
+                }
+
                 return newIds;
             }
             catch (Exception ex) when (!(ex is DatabaseException))
@@ -1309,7 +1337,7 @@ namespace HB.Framework.Database
         }
 
         /// <summary>
-        /// 批量更改
+        /// 批量更改，反应Version变化
         /// </summary>
         /// <param name="items"></param>
         /// <returns></returns>
@@ -1359,6 +1387,12 @@ namespace HB.Framework.Database
 
                 if (count != items.Count())
                     throw new DatabaseException(ErrorCode.DatabaseNotFound, entityDef.EntityFullName, $"BatchUpdate wrong number return. Some data item not found. Items:{SerializeUtil.ToJson(items)}");
+
+                //反应Version变化
+                foreach (T item in items)
+                {
+                    item.Version++;
+                }
             }
             catch (Exception ex) when (!(ex is DatabaseException))
             {

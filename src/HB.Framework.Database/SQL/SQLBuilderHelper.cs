@@ -168,6 +168,16 @@ namespace HB.Framework.Database.SQL
             };
         }
 
+        public static string TempTable_Insert_Select(string tempTableName, DatabaseEngineType databaseEngineType)
+        {
+            return databaseEngineType switch
+            {
+                DatabaseEngineType.MySQL => $"insert into `{tempTableName}`(`id`) ",
+                DatabaseEngineType.SQLite => $"insert into temp.{tempTableName}(\"id\") ",
+                _ => "",
+            };
+        }
+
         public static string TempTable_Select_All(string tempTableName, DatabaseEngineType databaseEngineType)
         {
             return databaseEngineType switch

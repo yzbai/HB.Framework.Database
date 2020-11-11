@@ -312,7 +312,7 @@ namespace HB.Framework.Database.SQL
                     //当IsTableProperty为true时，DbParameterizedName一定不为null
                     if (info.PropertyName == "Version")
                     {
-                        parameters.Add(_databaseEngine.CreateParameter(info.DbParameterizedName!, entity.Version + 1, info.DbFieldType));
+                        parameters.Add(_databaseEngine.CreateParameter(info.DbParameterizedName!, /*entity.Version + 1*/0, info.DbFieldType));
                     }
                     else if (info.PropertyName == "Deleted")
                     {
@@ -357,7 +357,7 @@ namespace HB.Framework.Database.SQL
                     //当IsTableProperty为true时，DbParameterizedName一定不为null
                     if (info.PropertyName == "Version")
                     {
-                        parameters.Add(_databaseEngine.CreateParameter(info.DbParameterizedName!, entity.Version + 1, info.DbFieldType));
+                        parameters.Add(_databaseEngine.CreateParameter(info.DbParameterizedName!, /*entity.Version + 1*/0, info.DbFieldType));
                     }
                     else if (info.PropertyName == "Deleted")
                     {
@@ -455,10 +455,11 @@ namespace HB.Framework.Database.SQL
 
             DatabaseEntityDef modelDef = _entityDefFactory.GetDef<T>();
             DatabaseEntityPropertyDef versionPropertyDef = modelDef.GetProperty("Version")!;
+            DatabaseEntityPropertyDef guidPropertyDef = modelDef.GetProperty("Guid")!;
 
             StringBuilder innerBuilder = new StringBuilder();
 
-            string tempTableName = "HBARU" + DateTimeOffset.UtcNow.Ticks.ToString(GlobalSettings.Culture);
+            string tempTableName = SecurityUtil.CreateUniqueToken();
 
             IList<IDataParameter> parameters = new List<IDataParameter>();
             int number = 0;
@@ -536,7 +537,7 @@ namespace HB.Framework.Database.SQL
                     exceptGuidAndFixedVersionUpdatePairs.Remove(exceptGuidAndFixedVersionUpdatePairs.Length - 1, 1);
                 }
 
-                innerBuilder.Append($"insert into {modelDef.DbTableReservedName}({args}) values ({values}) {OnDuplicateKeyUpdateStatement(_databaseEngine.EngineType)} {exceptGuidAndFixedVersionUpdatePairs};{TempTable_Insert(tempTableName, FoundChanges_Statement(_databaseEngine.EngineType), _databaseEngine.EngineType)}");
+                innerBuilder.Append($"insert into {modelDef.DbTableReservedName}({args}) values ({values}) {OnDuplicateKeyUpdateStatement(_databaseEngine.EngineType)} {exceptGuidAndFixedVersionUpdatePairs};{TempTable_Insert_Select(tempTableName, _databaseEngine.EngineType)} select {versionPropertyDef.DbReservedName} from {modelDef.DbTableReservedName} where {guidPropertyDef.DbReservedName}={guidPropertyDef.DbParameterizedName}{number} ");
 
                 number++;
             }
@@ -552,7 +553,7 @@ namespace HB.Framework.Database.SQL
 
             StringBuilder innerBuilder = new StringBuilder();
             DatabaseEntityDef definition = _entityDefFactory.GetDef<T>();
-            string tempTableName = "HBA" + DateTimeOffset.UtcNow.Ticks.ToString(GlobalSettings.Culture);
+            string tempTableName = SecurityUtil.CreateUniqueToken();
 
             IList<IDataParameter> parameters = new List<IDataParameter>();
             int number = 0;
@@ -583,7 +584,7 @@ namespace HB.Framework.Database.SQL
                         if (info.PropertyName == "Version")
                         {
                             values.AppendFormat(GlobalSettings.Culture, " {0},", parameterizedName);
-                            parameters.Add(_databaseEngine.CreateParameter(parameterizedName, entity.Version + 1, info.DbFieldType));
+                            parameters.Add(_databaseEngine.CreateParameter(parameterizedName, /*entity.Version + 1*/0, info.DbFieldType));
                         }
                         else if (info.PropertyName == "Deleted")
                         {
@@ -629,7 +630,7 @@ namespace HB.Framework.Database.SQL
 
             StringBuilder innerBuilder = new StringBuilder();
             DatabaseEntityDef definition = _entityDefFactory.GetDef<T>();
-            string tempTableName = "HBU" + DateTimeOffset.UtcNow.Ticks.ToString(GlobalSettings.Culture);
+            string tempTableName = SecurityUtil.CreateUniqueToken();
             IList<IDataParameter> parameters = new List<IDataParameter>();
             int number = 0;
 
@@ -687,7 +688,7 @@ namespace HB.Framework.Database.SQL
 
             StringBuilder innerBuilder = new StringBuilder();
             DatabaseEntityDef definition = _entityDefFactory.GetDef<T>();
-            string tempTableName = "HBD" + DateTimeOffset.UtcNow.Ticks.ToString(GlobalSettings.Culture);
+            string tempTableName = SecurityUtil.CreateUniqueToken();
 
             foreach (T entity in entities)
             {

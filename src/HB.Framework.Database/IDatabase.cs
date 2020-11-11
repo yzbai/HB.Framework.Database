@@ -27,7 +27,7 @@ namespace HB.Framework.Database
         Task AddOrUpdateAsync<T>(T item, string lastUser, TransactionContext? transContext) where T : Entity, new();
 
         /// <summary>
-        /// 返回每一个数据对应的row_count(). 在sqlite下都为1，在mysql下，新增为1，更新为2
+        /// 返回每一个数据对应的Version
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="items"></param>
