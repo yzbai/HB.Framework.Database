@@ -14,18 +14,23 @@ namespace XamarinSample
     {
         public static IDatabase Database { get; private set; }
 
+        public static ITransaction Transaction { get; private set; }
+
         public App()
         {
             InitializeComponent();
 
             DependencyService.Register<MockDataStore>();
 
-            Database = GetDatabase();
+            (IDatabase, ITransaction) result  = GetDatabase();
+
+            Database = result.Item1;
+            Transaction = result.Item2;
 
             MainPage = new AppShell();
         }
 
-        private IDatabase GetDatabase()
+        private (IDatabase, ITransaction) GetDatabase()
         {
             IServiceCollection services = new ServiceCollection();
 
@@ -56,7 +61,9 @@ namespace XamarinSample
 
             database.InitializeAsync();
 
-            return database;
+            ITransaction transaction = serviceProvider.GetRequiredService<ITransaction>();
+
+            return (database, transaction);
         }
         protected override void OnStart()
         {

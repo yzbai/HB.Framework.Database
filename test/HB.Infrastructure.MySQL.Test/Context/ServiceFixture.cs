@@ -63,7 +63,9 @@ namespace HB.Framework.DatabaseTests
         }
 
         public IDatabase MySQL => _mySQLServices.GetRequiredService<IDatabase>();
+        public ITransaction MySQLTransaction => _mySQLServices.GetRequiredService<ITransaction>();
         public IDatabase SQLite => _sQLiteServices.GetRequiredService<IDatabase>();
+        public ITransaction SQLiteTransaction => _sQLiteServices.GetRequiredService<ITransaction>();
 
     }
 }

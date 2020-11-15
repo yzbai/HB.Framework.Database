@@ -1,11 +1,12 @@
-﻿using HB.Framework.Database.Entity;
+﻿using HB.Framework.Common.Entities;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace HB.Framework.DatabaseTests.Data
 {
-    public class BookEntity : DatabaseEntity
+    [DatabaseEntity]
+    public class BookEntity : Entity
     {
 
         [EntityProperty]

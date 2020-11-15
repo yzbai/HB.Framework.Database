@@ -32,21 +32,15 @@ namespace HB.Framework.Database
         private readonly IDatabaseEntityDefFactory _entityDefFactory;
         private readonly IDatabaseEntityMapper _modelMapper;
         private readonly ISQLBuilder _sqlBuilder;
+        private readonly ITransaction _transaction;
         private readonly ILogger _logger;
 
-        /// <summary>
-        /// ctor
-        /// </summary>
-        /// <param name="databaseEngine"></param>
-        /// <param name="modelDefFactory"></param>
-        /// <param name="modelMapper"></param>
-        /// <param name="sqlBuilder"></param>
-        /// <exception cref="System.ArgumentException"></exception>
         public DefaultDatabase(
             IDatabaseEngine databaseEngine,
             IDatabaseEntityDefFactory modelDefFactory,
             IDatabaseEntityMapper modelMapper,
             ISQLBuilder sqlBuilder,
+            ITransaction transaction,
             ILogger<DefaultDatabase> logger)
         {
             _databaseSettings = databaseEngine.DatabaseSettings;
@@ -54,6 +48,7 @@ namespace HB.Framework.Database
             _entityDefFactory = modelDefFactory;
             _modelMapper = modelMapper;
             _sqlBuilder = sqlBuilder;
+            _transaction = transaction;
             _logger = logger;
 
             if (_databaseSettings.Version < 0)
@@ -99,7 +94,7 @@ namespace HB.Framework.Database
             await _databaseEngine.GetDatabaseNames().ForEachAsync(
                 async databaseName =>
                 {
-                    TransactionContext transactionContext = await BeginTransactionAsync(databaseName, IsolationLevel.Serializable).ConfigureAwait(false);
+                    TransactionContext transactionContext = await _transaction.BeginTransactionAsync(databaseName, IsolationLevel.Serializable).ConfigureAwait(false);
 
                     try
                     {
@@ -109,7 +104,7 @@ namespace HB.Framework.Database
                         {
                             if (_databaseSettings.Version != 1)
                             {
-                                await RollbackAsync(transactionContext).ConfigureAwait(false);
+                                await _transaction.RollbackAsync(transactionContext).ConfigureAwait(false);
                                 throw new DatabaseException(ErrorCode.DatabaseTableCreateError,
                                                             "",
                                                             $"Database:{databaseName} does not exists, database Version must be 1");
@@ -120,11 +115,11 @@ namespace HB.Framework.Database
                             await UpdateSystemVersionAsync(databaseName, 1, transactionContext.Transaction).ConfigureAwait(false);
                         }
 
-                        await CommitAsync(transactionContext).ConfigureAwait(false);
+                        await _transaction.CommitAsync(transactionContext).ConfigureAwait(false);
                     }
                     catch (Exception ex)
                     {
-                        await RollbackAsync(transactionContext).ConfigureAwait(false);
+                        await _transaction.RollbackAsync(transactionContext).ConfigureAwait(false);
 
                         if (ex is DatabaseException)
                         {
@@ -186,7 +181,7 @@ namespace HB.Framework.Database
             await _databaseEngine.GetDatabaseNames().ForEachAsync(async databaseName =>
              {
 
-                 TransactionContext transactionContext = await BeginTransactionAsync(databaseName, IsolationLevel.Serializable).ConfigureAwait(false);
+                 TransactionContext transactionContext = await _transaction.BeginTransactionAsync(databaseName, IsolationLevel.Serializable).ConfigureAwait(false);
 
                  try
                  {
@@ -224,11 +219,11 @@ namespace HB.Framework.Database
                          await UpdateSystemVersionAsync(sys.DatabaseName, _databaseSettings.Version, transactionContext.Transaction).ConfigureAwait(false);
                      }
 
-                     await CommitAsync(transactionContext).ConfigureAwait(false);
+                     await _transaction.CommitAsync(transactionContext).ConfigureAwait(false);
                  }
                  catch (Exception ex)
                  {
-                     await RollbackAsync(transactionContext).ConfigureAwait(false);
+                     await _transaction.RollbackAsync(transactionContext).ConfigureAwait(false);
                      //throw new DatabaseException(DatabaseError.MigrateError, "", $"Migration Failed at Database:{databaseName}", ex);
 
                      if (ex is DatabaseException)
@@ -1471,123 +1466,6 @@ namespace HB.Framework.Database
             {
                 reader?.Dispose();
                 dbCommand?.Dispose();
-            }
-        }
-
-        #endregion
-
-        #region 事务
-
-        public async Task<TransactionContext> BeginTransactionAsync(string databaseName, IsolationLevel isolationLevel)
-        {
-            IDbTransaction dbTransaction = await _databaseEngine.BeginTransactionAsync(databaseName, isolationLevel).ConfigureAwait(false);
-
-            return new TransactionContext(dbTransaction, TransactionStatus.InTransaction);
-        }
-
-        /// <summary>
-        /// BeginTransactionAsync
-        /// </summary>
-        /// <param name="isolationLevel"></param>
-        /// <returns></returns>
-        /// <exception cref="HB.Framework.Database.DatabaseException">Ignore.</exception>
-        public Task<TransactionContext> BeginTransactionAsync<T>(IsolationLevel isolationLevel) where T : Entity
-        {
-            DatabaseEntityDef entityDef = _entityDefFactory.GetDef<T>();
-
-            if (!entityDef.IsTableModel)
-            {
-                throw new DatabaseException(ErrorCode.DatabaseNotATableModel, entityDef.EntityFullName);
-            }
-
-            return BeginTransactionAsync(entityDef.DatabaseName!, isolationLevel);
-        }
-
-        /// <summary>
-        /// 提交事务
-        /// </summary>
-        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
-        public async Task CommitAsync(TransactionContext context)
-        {
-            //if (context == null || context.Transaction == null)
-            //{
-            //    throw new ArgumentNullException(nameof(context));
-            //}
-
-            if (context.Status == TransactionStatus.Commited)
-            {
-                return;
-            }
-
-            if (context.Status != TransactionStatus.InTransaction)
-            {
-                throw new DatabaseException(ErrorCode.DatabaseTransactionError, Resources.TransactionAlreadyFinishedMessage);
-            }
-
-            try
-            {
-                IDbConnection conn = context.Transaction.Connection;
-
-                await _databaseEngine.CommitAsync(context.Transaction).ConfigureAwait(false);
-                //context.Transaction.Commit();
-
-                context.Transaction.Dispose();
-
-                if (conn != null && conn.State != ConnectionState.Closed)
-                {
-                    conn.Dispose();
-                }
-
-                context.Status = TransactionStatus.Commited;
-            }
-            catch
-            {
-                context.Status = TransactionStatus.Failed;
-                throw;
-            }
-        }
-
-        /// <summary>
-        /// 回滚事务
-        /// </summary>
-        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
-        public async Task RollbackAsync(TransactionContext context)
-        {
-            //if (context == null || context.Transaction == null)
-            //{
-            //    throw new ArgumentNullException(nameof(context));
-            //}
-
-            if (context.Status == TransactionStatus.Rollbacked)
-            {
-                return;
-            }
-
-            if (context.Status != TransactionStatus.InTransaction)
-            {
-                throw new DatabaseException(ErrorCode.DatabaseTransactionError, Resources.TransactionAlreadyFinishedMessage);
-            }
-
-            try
-            {
-                IDbConnection conn = context.Transaction.Connection;
-
-                await _databaseEngine.RollbackAsync(context.Transaction).ConfigureAwait(false);
-                //context.Transaction.Rollback();
-
-                context.Transaction.Dispose();
-
-                if (conn != null && conn.State != ConnectionState.Closed)
-                {
-                    conn.Dispose();
-                }
-
-                context.Status = TransactionStatus.Rollbacked;
-            }
-            catch
-            {
-                context.Status = TransactionStatus.Failed;
-                throw;
             }
         }
 

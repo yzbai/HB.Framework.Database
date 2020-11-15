@@ -1,5 +1,6 @@
 ﻿using HB.Framework.Common;
-using HB.Framework.Database.Entity;
+using HB.Framework.Common.Entities;
+using HB.Framework.Database.Entities;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -7,7 +8,8 @@ using System.Text;
 
 namespace HB.Framework.DatabaseTests.Data
 {
-    public class PublisherEntity : DatabaseEntity
+    [DatabaseEntity]
+    public class PublisherEntity : Entity
     {
 
         [EntityProperty]

@@ -1,15 +1,13 @@
-﻿using HB.Framework.Database.Entity;
+﻿using HB.Framework.Common.Entities;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace XamarinSample.Models
 {
-    public class BookEntity : DatabaseEntity
+    [DatabaseEntity]
+    public class BookEntity : Entity
     {
-        [UniqueGuidEntityProperty]
-        public string Guid { get; set; }
-
         [EntityProperty]
         public string Name { get; set; }
 

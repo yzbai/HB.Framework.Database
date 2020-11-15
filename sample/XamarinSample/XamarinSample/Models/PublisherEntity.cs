@@ -1,5 +1,6 @@
 ﻿using HB.Framework.Common;
-using HB.Framework.Database.Entity;
+using HB.Framework.Common.Entities;
+using HB.Framework.Database.Entities;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -7,10 +8,9 @@ using System.Text;
 
 namespace XamarinSample.Models
 {
-    public class PublisherEntity : DatabaseEntity
+    [DatabaseEntity]
+    public class PublisherEntity : Entity
     {
-        [UniqueGuidEntityProperty]
-        public string Guid { get; set; }
 
         [EntityProperty]
         public string Name { get; set; }

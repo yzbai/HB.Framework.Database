@@ -15,6 +15,8 @@ namespace HB.Framework.DatabaseTests
     {
         private readonly IDatabase _mysql;
         private readonly IDatabase _sqlite;
+        private readonly ITransaction _mysqlTransaction;
+        private readonly ITransaction _sqlIteTransaction;
         private readonly ITestOutputHelper _output;
         private readonly IsolationLevel _isolationLevel = IsolationLevel.Serializable;
 
@@ -25,6 +27,17 @@ namespace HB.Framework.DatabaseTests
             {
                 "MySQL" => _mysql,
                 "SQLite" => _sqlite,
+                _ => null
+            };
+        }
+
+        private ITransaction? GetTransaction(string databaseType)
+        {
+
+            return databaseType switch
+            {
+                "MySQL" => _mysqlTransaction,
+                "SQLite" => _sqlIteTransaction,
                 _ => null
             };
         }
@@ -42,7 +55,10 @@ namespace HB.Framework.DatabaseTests
             _output = testOutputHelper;
 
             _mysql = serviceFixture.MySQL;
+            _mysqlTransaction = serviceFixture.MySQLTransaction;
+            
             _sqlite = serviceFixture.SQLite;
+            _sqlIteTransaction = serviceFixture.SQLiteTransaction;
 
             _mysql.InitializeAsync().Wait();
             _sqlite.InitializeAsync().Wait();
@@ -61,21 +77,22 @@ namespace HB.Framework.DatabaseTests
         public async Task Test_1_Batch_Add_PublisherEntityAsync(string databaseType)
         {
             IDatabase database = GetDatabase(databaseType)!;
+            ITransaction transaction = GetTransaction(databaseType)!;
 
             IList<PublisherEntity> publishers = Mocker.GetPublishers();
 
-            TransactionContext transactionContext = await database.BeginTransactionAsync<PublisherEntity>(_isolationLevel).ConfigureAwait(false);
+            TransactionContext transactionContext = await transaction.BeginTransactionAsync<PublisherEntity>(_isolationLevel).ConfigureAwait(false);
 
             try
             {
                 await database.BatchAddAsync<PublisherEntity>(publishers, "lastUsre", transactionContext);
 
-                await database.CommitAsync(transactionContext);
+                await transaction.CommitAsync(transactionContext);
             }
             catch (Exception ex)
             {
                 _output.WriteLine(ex.Message);
-                await database.RollbackAsync(transactionContext);
+                await transaction.RollbackAsync(transactionContext);
                 throw ex;
             }
         }
@@ -92,8 +109,8 @@ namespace HB.Framework.DatabaseTests
         public async Task Test_2_Batch_Update_PublisherEntityAsync(string databaseType)
         {
             IDatabase database = GetDatabase(databaseType)!;
-
-            TransactionContext transContext = await database.BeginTransactionAsync<PublisherEntity>(_isolationLevel);
+            ITransaction transaction = GetTransaction(databaseType)!;
+            TransactionContext transContext = await transaction.BeginTransactionAsync<PublisherEntity>(_isolationLevel);
 
             try
             {
@@ -115,13 +132,13 @@ namespace HB.Framework.DatabaseTests
 
                 await database.BatchUpdateAsync<PublisherEntity>(lst, "lastUsre", transContext);
 
-                await database.CommitAsync(transContext);
+                await transaction.CommitAsync(transContext);
 
             }
             catch (Exception ex)
             {
                 _output.WriteLine(ex.Message);
-                await database.RollbackAsync(transContext);
+                await transaction.RollbackAsync(transContext);
                 throw ex;
             }
         }
@@ -139,7 +156,8 @@ namespace HB.Framework.DatabaseTests
         public async Task Test_3_Batch_Delete_PublisherEntityAsync(string databaseType)
         {
             IDatabase database = GetDatabase(databaseType)!;
-            TransactionContext transactionContext = await database.BeginTransactionAsync<PublisherEntity>(_isolationLevel);
+            ITransaction transaction = GetTransaction(databaseType)!;
+            TransactionContext transactionContext = await transaction.BeginTransactionAsync<PublisherEntity>(_isolationLevel);
 
             try
             {
@@ -151,12 +169,12 @@ namespace HB.Framework.DatabaseTests
 
                 }
 
-                await database.CommitAsync(transactionContext);
+                await transaction.CommitAsync(transactionContext);
             }
             catch (Exception ex)
             {
                 _output.WriteLine(ex.Message);
-                await database.RollbackAsync(transactionContext);
+                await transaction.RollbackAsync(transactionContext);
                 throw ex;
             }
         }
@@ -174,7 +192,8 @@ namespace HB.Framework.DatabaseTests
         public async Task Test_4_Add_PublisherEntityAsync(string databaseType)
         {
             IDatabase database = GetDatabase(databaseType)!;
-            TransactionContext tContext = await database.BeginTransactionAsync<PublisherEntity>(_isolationLevel);
+            ITransaction transaction = GetTransaction(databaseType)!;
+            TransactionContext tContext = await transaction.BeginTransactionAsync<PublisherEntity>(_isolationLevel);
 
             try
             {
@@ -189,14 +208,14 @@ namespace HB.Framework.DatabaseTests
                     lst.Add(entity);
                 }
 
-                await database.CommitAsync(tContext);
+                await transaction.CommitAsync(tContext);
 
                 Assert.True(lst.All(p => p.Id > 0));
             }
             catch (Exception ex)
             {
                 _output.WriteLine(ex.Message);
-                await database.RollbackAsync(tContext);
+                await transaction.RollbackAsync(tContext);
                 throw ex;
             }
         }
@@ -214,7 +233,8 @@ namespace HB.Framework.DatabaseTests
         public async Task Test_5_Update_PublisherEntityAsync(string databaseType)
         {
             IDatabase database = GetDatabase(databaseType)!;
-            TransactionContext tContext = await database.BeginTransactionAsync<PublisherEntity>(_isolationLevel);
+            ITransaction transaction = GetTransaction(databaseType)!;
+            TransactionContext tContext = await transaction.BeginTransactionAsync<PublisherEntity>(_isolationLevel);
 
             try
             {
@@ -234,7 +254,7 @@ namespace HB.Framework.DatabaseTests
 
                 PublisherEntity? stored = await database.ScalarAsync<PublisherEntity>(entity.Id, tContext);
 
-                await database.CommitAsync(tContext);
+                await transaction.CommitAsync(tContext);
 
                 Assert.True(stored?.Books.Contains("New Book2"));
                 Assert.True(stored?.BookAuthors["New Book2"].Mobile == "15190208956");
@@ -243,7 +263,7 @@ namespace HB.Framework.DatabaseTests
             catch (Exception ex)
             {
                 _output.WriteLine(ex.Message);
-                await database.RollbackAsync(tContext);
+                await transaction.RollbackAsync(tContext);
                 throw ex;
             }
         }
@@ -261,7 +281,8 @@ namespace HB.Framework.DatabaseTests
         public async Task Test_6_Delete_PublisherEntityAsync(string databaseType)
         {
             IDatabase database = GetDatabase(databaseType)!;
-            TransactionContext tContext = await database.BeginTransactionAsync<PublisherEntity>(_isolationLevel);
+            ITransaction transaction = GetTransaction(databaseType)!;
+            TransactionContext tContext = await transaction.BeginTransactionAsync<PublisherEntity>(_isolationLevel);
 
             try
             {
@@ -275,13 +296,13 @@ namespace HB.Framework.DatabaseTests
 
                 long count = await database.CountAsync<PublisherEntity>(tContext);
 
-                await database.CommitAsync(tContext);
+                await transaction.CommitAsync(tContext);
 
                 Assert.True(count == 0);
             }
             catch (Exception ex)
             {
-                await database.RollbackAsync(tContext);
+                await transaction.RollbackAsync(tContext);
                 _output.WriteLine(ex.Message);
                 throw ex;
             }
@@ -293,7 +314,8 @@ namespace HB.Framework.DatabaseTests
         public async Task Test_7_AddOrUpdate_PublisherEntityAsync(string databaseType)
         {
             IDatabase database = GetDatabase(databaseType)!;
-            TransactionContext tContext = await database.BeginTransactionAsync<PublisherEntity>(_isolationLevel);
+            ITransaction transaction = GetTransaction(databaseType)!;
+            TransactionContext tContext = await transaction.BeginTransactionAsync<PublisherEntity>(_isolationLevel);
 
             try
             {
@@ -316,11 +338,11 @@ namespace HB.Framework.DatabaseTests
                 await database.AddOrUpdateAsync(publishers[0], "single", tContext);
 
 
-                await database.CommitAsync(tContext);
+                await transaction.CommitAsync(tContext);
             }
             catch (Exception ex)
             {
-                await database.RollbackAsync(tContext);
+                await transaction.RollbackAsync(tContext);
                 _output.WriteLine(ex.Message);
                 throw ex;
             }

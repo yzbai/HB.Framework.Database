@@ -19,6 +19,7 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddSingleton<IDatabaseEntityDefFactory, DefaultDatabaseEntityDefFactory>();
             services.AddSingleton<IDatabaseEntityMapper, DefaultDatabaseEntityMapper>();
             services.AddSingleton<ISQLBuilder, SQLBuilder>();
+            services.AddSingleton<ITransaction, DefaultTransaction>();
             services.AddSingleton<IDatabase, DefaultDatabase>();
 
             return services;

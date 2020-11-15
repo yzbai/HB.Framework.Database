@@ -23,20 +23,20 @@ namespace XamarinSample.Views
         {
             IList<PublisherEntity> publisherEntities = Mocker.GetPublishers();
 
-            TransactionContext transactionContext = await App.Database.BeginTransactionAsync<PublisherEntity>(System.Data.IsolationLevel.ReadCommitted);
+            TransactionContext transactionContext = await App.Transaction.BeginTransactionAsync<PublisherEntity>(System.Data.IsolationLevel.ReadCommitted);
 
             try
             {
                 await App.Database.BatchAddAsync<PublisherEntity>(publisherEntities, "lastUser", transactionContext);
 
-                await App.Database.CommitAsync(transactionContext);
+                await App.Transaction.CommitAsync(transactionContext);
 
                 await DisplayList();
             }
 
             catch (Exception ex)
             {
-                await App.Database.RollbackAsync(transactionContext);
+                await App.Transaction.RollbackAsync(transactionContext);
                 await DisplayAlert("Error", ex.Message, "Close");
             }
 

@@ -1,5 +1,5 @@
-﻿using HB.Framework.Database;
-using HB.Framework.Database.Entity;
+﻿using HB.Framework.Common.Entities;
+using HB.Framework.Database;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -183,7 +183,8 @@ namespace HB.Framework.DatabaseTests
         }
     }
 
-    public class A : DatabaseEntity
+    [DatabaseEntity]
+    public class A : Entity
     {
 
 
@@ -191,14 +192,16 @@ namespace HB.Framework.DatabaseTests
         public string Name { get; set; } = default!;
     }
 
-    public class B : DatabaseEntity
+    [DatabaseEntity]
+    public class B : Entity
     {
 
         [EntityProperty]
         public string Name { get; set; } = default!;
     }
 
-    public class AB : DatabaseEntity
+    [DatabaseEntity]
+    public class AB : Entity
     {
 
         [EntityProperty]
@@ -208,7 +211,8 @@ namespace HB.Framework.DatabaseTests
         public string BId { get; set; } = default!;
     }
 
-    public class C : DatabaseEntity
+    [DatabaseEntity]
+    public class C : Entity
     {
         [EntityProperty]
         public string Name { get; set; } = default!;
