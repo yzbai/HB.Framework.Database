@@ -1002,11 +1002,6 @@ namespace HB.Framework.Database
         /// item被重新赋值，反应Version变化。
         /// 在Update时不做Version检查
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="item"></param>
-        /// <param name="lastUser"></param>
-        /// <param name="transContext"></param>
-        /// <returns></returns>
         public async Task AddOrUpdateAsync<T>(T item, string lastUser, TransactionContext? transContext) where T : Entity, new()
         {
             ThrowIf.NotValid(item);
@@ -1023,7 +1018,10 @@ namespace HB.Framework.Database
 
             try
             {
-                dbCommand = _sqlBuilder.CreateAddOrUpdateCommand(item, lastUser);
+                item.LastUser = lastUser;
+                item.LastTime = DateTimeOffset.UtcNow;
+
+                dbCommand = _sqlBuilder.CreateAddOrUpdateCommand(item);
 
                 reader = await _databaseEngine.ExecuteCommandReaderAsync(transContext?.Transaction, entityDef.DatabaseName!, dbCommand, true).ConfigureAwait(false);
 
@@ -1046,8 +1044,6 @@ namespace HB.Framework.Database
         /// <summary>
         /// 增加,并且item被重新赋值，反应Version变化
         /// </summary>
-        /// <exception cref="HB.Framework.Common.ValidateErrorException"></exception>
-        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
         public async Task AddAsync<T>(T item, string lastUser, TransactionContext? transContext) where T : Entity, new()
         {
             ThrowIf.NotValid(item);
@@ -1064,7 +1060,10 @@ namespace HB.Framework.Database
 
             try
             {
-                dbCommand = _sqlBuilder.CreateAddCommand(item, lastUser);
+                item.LastUser = lastUser;
+                item.LastTime = DateTimeOffset.UtcNow;
+
+                dbCommand = _sqlBuilder.CreateAddCommand(item);
 
                 reader = await _databaseEngine.ExecuteCommandReaderAsync(transContext?.Transaction, entityDef.DatabaseName!, dbCommand, true).ConfigureAwait(false);
 
@@ -1086,8 +1085,6 @@ namespace HB.Framework.Database
         /// <summary>
         /// Version控制
         /// </summary>
-        /// <exception cref="HB.Framework.Common.ValidateErrorException"></exception>
-        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
         public async Task DeleteAsync<T>(T item, string lastUser, TransactionContext? transContext) where T : Entity, new()
         {
             ThrowIf.NotValid(item);
@@ -1105,6 +1102,9 @@ namespace HB.Framework.Database
 
             try
             {
+                item.LastUser = lastUser;
+                item.LastTime = DateTimeOffset.UtcNow;
+
                 IDbCommand dbCommand = _sqlBuilder.CreateDeleteCommand(condition, lastUser);
 
                 long rows = await _databaseEngine.ExecuteCommandNonQueryAsync(transContext?.Transaction, entityDef.DatabaseName!, dbCommand).ConfigureAwait(false);
@@ -1132,8 +1132,6 @@ namespace HB.Framework.Database
         ///  版本控制，如果item中Version未赋值，会无法更改
         ///  反应Version变化
         /// </summary>
-        /// <exception cref="HB.Framework.Common.ValidateErrorException"></exception>
-        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
         public async Task UpdateAsync<T>(T item, string lastUser, TransactionContext? transContext) where T : Entity, new()
         {
             ThrowIf.NotValid(item);
@@ -1157,7 +1155,10 @@ namespace HB.Framework.Database
 
             try
             {
-                IDbCommand dbCommand = _sqlBuilder.CreateUpdateCommand(condition, item, lastUser);
+                item.LastUser = lastUser;
+                item.LastTime = DateTimeOffset.UtcNow;
+
+                IDbCommand dbCommand = _sqlBuilder.CreateUpdateCommand(condition, item);
                 long rows = await _databaseEngine.ExecuteCommandNonQueryAsync(transContext?.Transaction, entityDef.DatabaseName!, dbCommand).ConfigureAwait(false);
 
                 if (rows == 1)
@@ -1187,20 +1188,15 @@ namespace HB.Framework.Database
         /// <summary>
         /// 在Update时不做Version检查
         /// 反应Version变化
-        /// 返回最新的Versions
+        /// 返回最新的ID:Versions
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="items"></param>
-        /// <param name="lastUser"></param>
-        /// <param name="transContext"></param>
-        /// <returns></returns>
-        public async Task<IEnumerable<int>> BatchAddOrUpdateAsync<T>(IEnumerable<T> items, string lastUser, TransactionContext transContext) where T : Entity, new()
+        public async Task<IEnumerable<Tuple<long, int>>> BatchAddOrUpdateAsync<T>(IEnumerable<T> items, string lastUser, TransactionContext transContext) where T : Entity, new()
         {
             ThrowIf.NotValid(items);
 
             if (!items.Any())
             {
-                return new List<int>();
+                return new List<Tuple<long, int>>();
             }
 
             DatabaseEntityDef entityDef = _entityDefFactory.GetDef<T>();
@@ -1215,34 +1211,43 @@ namespace HB.Framework.Database
 
             try
             {
-                dbCommand = _sqlBuilder.CreateBatchAddOrUpdateCommand(items, lastUser);
+                items.ForEach(item =>
+                {
+                    item.LastUser = lastUser;
+                    item.LastTime = DateTimeOffset.UtcNow;
+                });
+
+                dbCommand = _sqlBuilder.CreateBatchAddOrUpdateCommand(items);
                 reader = await _databaseEngine.ExecuteCommandReaderAsync(
                     transContext.Transaction,
                     entityDef.DatabaseName!,
                     dbCommand,
                     true).ConfigureAwait(false);
 
-                IList<int> versions = new List<int>();
+                IList<Tuple<long, int>> idAndVersions = new List<Tuple<long, int>>();
 
                 while (reader.Read())
                 {
-                    int version = reader.GetInt32(0);
+                    long id = reader.GetInt64(0);
+                    int version = reader.GetInt32(1);
 
-                    versions.Add(version);
+                    idAndVersions.Add(new Tuple<long, int>(id, version));
                 }
 
-                if (versions.Count != items.Count())
+                if (idAndVersions.Count != items.Count())
                 {
                     throw new DatabaseException(ErrorCode.DatabaseNotFound, entityDef.EntityFullName, $"BatchAddOrUpdate wrong number return.  Items:{SerializeUtil.ToJson(items)}");
                 }
 
                 //反应Version变化
-                for (int i = 0; i < versions.Count; ++i)
+                for (int i = 0; i < idAndVersions.Count; ++i)
                 {
-                    items.ElementAt(i).Version = versions[i];
+                    T item = items.ElementAt(i);
+                    item.Id = idAndVersions[i].Item1;
+                    item.Version = idAndVersions[i].Item2;
                 }
 
-                return versions;
+                return idAndVersions;
             }
             catch (Exception ex) when (!(ex is DatabaseException))
             {
@@ -1259,11 +1264,6 @@ namespace HB.Framework.Database
         /// <summary>
         /// BatchAddAsync，反应Version变化
         /// </summary>
-        /// <param name="items"></param>
-        /// <param name="transContext"></param>
-        /// <returns></returns>
-        /// <exception cref="HB.Framework.Common.ValidateErrorException"></exception>
-        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
         public async Task<IEnumerable<long>> BatchAddAsync<T>(IEnumerable<T> items, string lastUser, TransactionContext transContext) where T : Entity, new()
         {
             ThrowIf.NotValid(items);
@@ -1285,9 +1285,15 @@ namespace HB.Framework.Database
 
             try
             {
+                items.ForEach(item =>
+                {
+                    item.LastUser = lastUser;
+                    item.LastTime = DateTimeOffset.UtcNow;
+                });
+
                 IList<long> newIds = new List<long>();
 
-                dbCommand = _sqlBuilder.CreateBatchAddCommand(items, lastUser);
+                dbCommand = _sqlBuilder.CreateBatchAddCommand(items);
                 reader = await _databaseEngine.ExecuteCommandReaderAsync(
                     transContext.Transaction,
                     entityDef.DatabaseName!,
@@ -1312,9 +1318,12 @@ namespace HB.Framework.Database
                 }
 
                 //反应Version变化
-                foreach (T item in items)
+
+                for (int i = 0; i < items.Count(); ++i)
                 {
+                    T item = items.ElementAt(i);
                     item.Version = 0;
+                    item.Id = newIds[i];
                 }
 
                 return newIds;
@@ -1334,10 +1343,6 @@ namespace HB.Framework.Database
         /// <summary>
         /// 批量更改，反应Version变化
         /// </summary>
-        /// <param name="items"></param>
-        /// <returns></returns>
-        /// <exception cref="HB.Framework.Common.ValidateErrorException"></exception>
-        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
         public async Task BatchUpdateAsync<T>(IEnumerable<T> items, string lastUser, TransactionContext transContext) where T : Entity, new()
         {
             ThrowIf.NotValid(items);
@@ -1359,7 +1364,13 @@ namespace HB.Framework.Database
 
             try
             {
-                dbCommand = _sqlBuilder.CreateBatchUpdateCommand(items, lastUser);
+                items.ForEach(item =>
+                {
+                    item.LastUser = lastUser;
+                    item.LastTime = DateTimeOffset.UtcNow;
+                });
+
+                dbCommand = _sqlBuilder.CreateBatchUpdateCommand(items);
                 reader = await _databaseEngine.ExecuteCommandReaderAsync(
                     transContext.Transaction,
                     entityDef.DatabaseName!,
@@ -1404,12 +1415,6 @@ namespace HB.Framework.Database
         /// <summary>
         /// BatchDeleteAsync
         /// </summary>
-        /// <param name="items"></param>
-        /// <param name="transContext"></param>
-        /// <returns></returns>
-        /// <exception cref="HB.Framework.Common.ValidateErrorException"></exception>
-        /// <exception cref="HB.Framework.Database.DatabaseException"></exception>
-        /// <exception cref="IndexOutOfRangeException">Ignore.</exception>
         public async Task BatchDeleteAsync<T>(IEnumerable<T> items, string lastUser, TransactionContext transContext) where T : Entity, new()
         {
             ThrowIf.NotValid(items);
@@ -1431,7 +1436,13 @@ namespace HB.Framework.Database
 
             try
             {
-                dbCommand = _sqlBuilder.CreateBatchDeleteCommand(items, lastUser);
+                items.ForEach(item =>
+                {
+                    item.LastUser = lastUser;
+                    item.LastTime = DateTimeOffset.UtcNow;
+                });
+
+                dbCommand = _sqlBuilder.CreateBatchDeleteCommand(items);
                 reader = await _databaseEngine.ExecuteCommandReaderAsync(
                     transContext.Transaction,
                     entityDef.DatabaseName!,

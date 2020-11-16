@@ -22,7 +22,7 @@ namespace HB.Framework.Database
         /// <summary>
         /// 返回每一个数据对应的Version
         /// </summary>
-        Task<IEnumerable<int>> BatchAddOrUpdateAsync<T>(IEnumerable<T> items, string lastUser, TransactionContext transaction) where T : Entity, new();
+        Task<IEnumerable<Tuple<long, int>>> BatchAddOrUpdateAsync<T>(IEnumerable<T> items, string lastUser, TransactionContext transaction) where T : Entity, new();
 
         Task<IEnumerable<long>> BatchAddAsync<T>(IEnumerable<T> items, string lastUser, TransactionContext transContext) where T : Entity, new();
 
@@ -88,7 +88,7 @@ namespace HB.Framework.Database
             where TTarget1 : Entity, new()
             where TTarget2 : Entity, new();
 
-        
+
 
         Task<T?> ScalarAsync<T>(Expression<Func<T, bool>> whereExpr, TransactionContext? transContext) where T : Entity, new();
 

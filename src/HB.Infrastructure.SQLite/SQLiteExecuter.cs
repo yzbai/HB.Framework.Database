@@ -108,7 +108,9 @@ namespace HB.Infrastructure.SQLite
         /// <exception cref="DatabaseException"></exception>
         public static Task<object> ExecuteCommandScalarAsync(string connectString, IDbCommand dbCommand)
         {
-            using SqliteConnection conn = new SqliteConnection(connectString);
+#pragma warning disable CA2000 // Dispose objects before losing scope
+            SqliteConnection conn = new SqliteConnection(connectString);
+#pragma warning restore CA2000 // Dispose objects before losing scope
             return ExecuteCommandScalarAsync(conn, true, (SqliteCommand)dbCommand);
         }
 
@@ -180,7 +182,9 @@ namespace HB.Infrastructure.SQLite
         /// <exception cref="DatabaseException"></exception>
         public static Task<int> ExecuteCommandNonQueryAsync(string connectString, IDbCommand dbCommand)
         {
-            using SqliteConnection conn = new SqliteConnection(connectString);
+#pragma warning disable CA2000 // Dispose objects before losing scope
+            SqliteConnection conn = new SqliteConnection(connectString);
+#pragma warning restore CA2000 // Dispose objects before losing scope
 
             return ExecuteCommandNonQueryAsync(conn, true, (SqliteCommand)dbCommand);
         }

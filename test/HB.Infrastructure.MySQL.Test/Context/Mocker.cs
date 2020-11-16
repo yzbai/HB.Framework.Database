@@ -29,12 +29,12 @@ namespace HB.Framework.DatabaseTests.Data
         {
             PublisherEntity entity = new PublisherEntity
             {
-                Guid = SecurityUtil.CreateUniqueToken(),
                 Type = PublisherType.Online,
                 Name = "中文名字",
                 Books = new List<string>() { "Cat", "Dog" },
+                //BookNames = new Dictionary<string, string> { { "a", "b" }, { "c", "d" } },
                 BookAuthors = new Dictionary<string, Author>()
-            {
+                {
                     { "Cat", new Author() { Mobile="111", Name="BB" } },
                     { "Dog", new Author() { Mobile="222", Name="sx" } }
                 }

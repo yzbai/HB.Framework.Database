@@ -21,7 +21,7 @@ namespace HB.Framework.DatabaseTests
             using MySqlConnection mySqlConnection = new MySqlConnection(connectString);
             mySqlConnection.Open();
 
-            string commandText = $"update `tb_publisherentity` set  `Name`='{new Random().NextDouble()}', `Version`=2 WHERE `Id`=1 ;";
+            string commandText = $"update `tb_publisher` set  `Name`='{new Random().NextDouble()}', `Version`=2 WHERE `Id`=1 ;";
 
             using MySqlCommand mySqlCommand1 = new MySqlCommand(commandText, mySqlConnection);
 
@@ -46,7 +46,7 @@ namespace HB.Framework.DatabaseTests
             using MySqlConnection mySqlConnection = new MySqlConnection(connectString);
             mySqlConnection.Open();
 
-            string commandText = $"update `tb_publisherentity` set  `Name`='{new Random().NextDouble()}', `Version`=2 WHERE `Id`=1 ;";
+            string commandText = $"update `tb_publisher` set  `Name`='{new Random().NextDouble()}', `Version`=2 WHERE `Id`=1 ;";
 
             using MySqlCommand mySqlCommand1 = new MySqlCommand(commandText, mySqlConnection);
 

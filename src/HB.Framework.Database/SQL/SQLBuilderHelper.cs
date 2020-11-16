@@ -21,7 +21,7 @@ namespace HB.Framework.Database.SQL
                 {
                     selectArgs.AppendFormat(GlobalSettings.Culture, "{0},", info.DbReservedName);
 
-                    if (info.IsAutoIncrementPrimaryKey || info.PropertyName == "LastTime")
+                    if (info.IsAutoIncrementPrimaryKey)
                     {
                         continue;
                     }
@@ -66,7 +66,7 @@ namespace HB.Framework.Database.SQL
                 {
                     selectArgs.AppendFormat(GlobalSettings.Culture, "{0},", info.DbReservedName);
 
-                    if (info.IsAutoIncrementPrimaryKey || info.PropertyName == "LastTime")
+                    if (info.IsAutoIncrementPrimaryKey)
                     {
                         continue;
                     }
@@ -82,7 +82,7 @@ namespace HB.Framework.Database.SQL
             {
                 if (info.IsTableProperty)
                 {
-                    if (info.IsAutoIncrementPrimaryKey || info.PropertyName == "Version" || info.PropertyName == "Guid" || info.PropertyName == "LastTime" || info.PropertyName == "Deleted")
+                    if (info.IsAutoIncrementPrimaryKey || info.PropertyName == "Version" || info.PropertyName == "Guid" || info.PropertyName == "Deleted")
                     {
                         continue;
                     }
@@ -128,7 +128,7 @@ namespace HB.Framework.Database.SQL
             {
                 if (info.IsTableProperty)
                 {
-                    if (info.IsAutoIncrementPrimaryKey || info.PropertyName == "LastTime" || info.PropertyName == "Deleted")
+                    if (info.IsAutoIncrementPrimaryKey || info.PropertyName == "Deleted" || info.PropertyName == "Guid")
                     {
                         continue;
                     }
@@ -149,11 +149,13 @@ namespace HB.Framework.Database.SQL
         {
             DatabaseEntityPropertyDef deletedProperty = modelDef.GetProperty("Deleted")!;
             DatabaseEntityPropertyDef lastUserProperty = modelDef.GetProperty("LastUser")!;
+            DatabaseEntityPropertyDef lastTimeProperty = modelDef.GetProperty("LastTime")!;
 
             StringBuilder args = new StringBuilder();
 
             args.Append($"{deletedProperty.DbReservedName}=1,");
-            args.Append($"{lastUserProperty.DbReservedName}={lastUserProperty.DbParameterizedName}");
+            args.Append($"{lastUserProperty.DbReservedName}={lastUserProperty.DbParameterizedName},");
+            args.Append($"{lastTimeProperty.DbReservedName}={lastTimeProperty.DbParameterizedName}");
 
             return $"UPDATE {modelDef.DbTableReservedName} SET {args} ";
         }
@@ -172,8 +174,8 @@ namespace HB.Framework.Database.SQL
         {
             return databaseEngineType switch
             {
-                DatabaseEngineType.MySQL => $"insert into `{tempTableName}`(`id`) ",
-                DatabaseEngineType.SQLite => $"insert into temp.{tempTableName}(\"id\") ",
+                DatabaseEngineType.MySQL => $"insert into `{tempTableName}`(`id`,`version`) ",
+                DatabaseEngineType.SQLite => $"insert into temp.{tempTableName}(\"id\",\"version\") ",
                 _ => "",
             };
         }
@@ -184,6 +186,16 @@ namespace HB.Framework.Database.SQL
             {
                 DatabaseEngineType.MySQL => $"select `id` from `{tempTableName}`;",
                 DatabaseEngineType.SQLite => $"select id from temp.{tempTableName};",
+                _ => "",
+            };
+        }
+
+        public static string TempTable_Select_IdAndVersion(string tempTableName, DatabaseEngineType databaseEngineType)
+        {
+            return databaseEngineType switch
+            {
+                DatabaseEngineType.MySQL => $"select `id`,`version` from `{tempTableName}`;",
+                DatabaseEngineType.SQLite => $"select id, version from temp.{tempTableName};",
                 _ => "",
             };
         }
@@ -203,7 +215,17 @@ namespace HB.Framework.Database.SQL
             return databaseEngineType switch
             {
                 DatabaseEngineType.MySQL => $"create temporary table `{tempTableName}` ( `id` int not null);",
-                DatabaseEngineType.SQLite => $"create temporary table {tempTableName} (\"id\" integer not null);",
+                DatabaseEngineType.SQLite => $"create temporary table temp.{tempTableName} (\"id\" integer not null);",
+                _ => "",
+            };
+        }
+
+        public static string TempTable_Create_IdAndVersion(string tempTableName, DatabaseEngineType databaseEngineType)
+        {
+            return databaseEngineType switch
+            {
+                DatabaseEngineType.MySQL => $"create temporary table `{tempTableName}` ( `id` bigint not null, `version` int not null);",
+                DatabaseEngineType.SQLite => $"create temporary table temp.{tempTableName} (\"id\" integer not null,\"version\" integer not null);",
                 _ => "",
             };
         }

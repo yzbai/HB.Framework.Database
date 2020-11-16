@@ -110,7 +110,9 @@ namespace HB.Infrastructure.MySQL
         /// <exception cref="DatabaseException"></exception>
         public static Task<object> ExecuteCommandScalarAsync(string connectString, IDbCommand dbCommand)
         {
-            using MySqlConnection conn = new MySqlConnection(connectString);
+#pragma warning disable CA2000 // Dispose objects before losing scope
+            MySqlConnection conn = new MySqlConnection(connectString);
+#pragma warning restore CA2000 // Dispose objects before losing scope
             return ExecuteCommandScalarAsync(conn, true, (MySqlCommand)dbCommand);
         }
 
@@ -185,7 +187,9 @@ namespace HB.Infrastructure.MySQL
         /// <exception cref="DatabaseException"></exception>
         public static Task<int> ExecuteCommandNonQueryAsync(string connectString, IDbCommand dbCommand)
         {
-            using MySqlConnection conn = new MySqlConnection(connectString);
+#pragma warning disable CA2000 // Dispose objects before losing scope
+            MySqlConnection conn = new MySqlConnection(connectString);
+#pragma warning restore CA2000 // Dispose objects before losing scope
 
             return ExecuteCommandNonQueryAsync(conn, true, (MySqlCommand)dbCommand);
         }
@@ -209,11 +213,6 @@ namespace HB.Infrastructure.MySQL
         /// <summary>
         /// ExecuteCommandNonQueryAsync
         /// </summary>
-        /// <param name="conn"></param>
-        /// <param name="isOwnedConnection"></param>
-        /// <param name="command"></param>
-        /// <returns></returns>
-        /// <exception cref="DatabaseException"></exception>
         private static async Task<int> ExecuteCommandNonQueryAsync(MySqlConnection conn, bool isOwnedConnection, MySqlCommand command)
         {
             int rtInt = -1;

@@ -7,6 +7,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
+using System.Globalization;
 using System.Text;
 
 namespace HB.Framework.Database.SQL
@@ -103,7 +104,7 @@ namespace HB.Framework.Database.SQL
         private string GetSelectClauseStatement<T>()
         {
             DatabaseEntityDef modelDef = _entityDefFactory.GetDef<T>();
-            string cacheKey = string.Format(GlobalSettings.Culture, "{0}_{1}_SELECT", modelDef.DatabaseName, modelDef.TableName);
+            string cacheKey = string.Format(CultureInfo.InvariantCulture, "{0}_{1}_SELECT", modelDef.DatabaseName, modelDef.TableName);
 
             if (_sqlStatementDict.ContainsKey(cacheKey))
             {
@@ -116,7 +117,7 @@ namespace HB.Framework.Database.SQL
             {
                 if (info.IsTableProperty)
                 {
-                    argsBuilder.AppendFormat(GlobalSettings.Culture, "{0}.{1},", modelDef.DbTableReservedName, info.DbReservedName);
+                    argsBuilder.AppendFormat(CultureInfo.InvariantCulture, "{0}.{1},", modelDef.DbTableReservedName, info.DbReservedName);
                     //argsBuilder.AppendFormat("{0},", info.DbReservedName);
                 }
             }
@@ -126,7 +127,7 @@ namespace HB.Framework.Database.SQL
                 argsBuilder.Remove(argsBuilder.Length - 1, 1);
             }
 
-            string selectClause = string.Format(GlobalSettings.Culture, "SELECT {0} ", argsBuilder.ToString());
+            string selectClause = string.Format(CultureInfo.InvariantCulture, "SELECT {0} ", argsBuilder.ToString());
 
             _sqlStatementDict.TryAdd(cacheKey, selectClause);
 
@@ -161,7 +162,7 @@ namespace HB.Framework.Database.SQL
             DatabaseEntityDef modelDef1 = _entityDefFactory.GetDef<T1>();
             DatabaseEntityDef modelDef2 = _entityDefFactory.GetDef<T2>();
 
-            string cacheKey = string.Format(GlobalSettings.Culture, "{0}_{1}_{2}_SELECT", modelDef1.DatabaseName, modelDef1.TableName, modelDef2.TableName);
+            string cacheKey = string.Format(CultureInfo.InvariantCulture, "{0}_{1}_{2}_SELECT", modelDef1.DatabaseName, modelDef1.TableName, modelDef2.TableName);
 
             if (_sqlStatementDict.ContainsKey(cacheKey))
             {
@@ -174,7 +175,7 @@ namespace HB.Framework.Database.SQL
             {
                 if (info.IsTableProperty)
                 {
-                    argsBuilder.AppendFormat(GlobalSettings.Culture, "{0}.{1},", modelDef1.DbTableReservedName, info.DbReservedName);
+                    argsBuilder.AppendFormat(CultureInfo.InvariantCulture, "{0}.{1},", modelDef1.DbTableReservedName, info.DbReservedName);
                 }
             }
 
@@ -182,7 +183,7 @@ namespace HB.Framework.Database.SQL
             {
                 if (info.IsTableProperty)
                 {
-                    argsBuilder.AppendFormat(GlobalSettings.Culture, "{0}.{1},", modelDef2.DbTableReservedName, info.DbReservedName);
+                    argsBuilder.AppendFormat(CultureInfo.InvariantCulture, "{0}.{1},", modelDef2.DbTableReservedName, info.DbReservedName);
                 }
             }
 
@@ -191,7 +192,7 @@ namespace HB.Framework.Database.SQL
                 argsBuilder.Remove(argsBuilder.Length - 1, 1);
             }
 
-            string selectClause = string.Format(GlobalSettings.Culture, "SELECT {0} ", argsBuilder.ToString());
+            string selectClause = string.Format(CultureInfo.InvariantCulture, "SELECT {0} ", argsBuilder.ToString());
 
             _sqlStatementDict.TryAdd(cacheKey, selectClause);
 
@@ -215,7 +216,7 @@ namespace HB.Framework.Database.SQL
             DatabaseEntityDef modelDef2 = _entityDefFactory.GetDef<T2>();
             DatabaseEntityDef modelDef3 = _entityDefFactory.GetDef<T3>();
 
-            string cacheKey = string.Format(GlobalSettings.Culture, "{0}_{1}_{2}_{3}_SELECT", modelDef1.DatabaseName, modelDef1.TableName, modelDef2.TableName, modelDef3.TableName);
+            string cacheKey = string.Format(CultureInfo.InvariantCulture, "{0}_{1}_{2}_{3}_SELECT", modelDef1.DatabaseName, modelDef1.TableName, modelDef2.TableName, modelDef3.TableName);
 
             if (_sqlStatementDict.ContainsKey(cacheKey))
             {
@@ -228,7 +229,7 @@ namespace HB.Framework.Database.SQL
             {
                 if (info.IsTableProperty)
                 {
-                    argsBuilder.AppendFormat(GlobalSettings.Culture, "{0}.{1},", modelDef1.DbTableReservedName, info.DbReservedName);
+                    argsBuilder.AppendFormat(CultureInfo.InvariantCulture, "{0}.{1},", modelDef1.DbTableReservedName, info.DbReservedName);
                 }
             }
 
@@ -236,7 +237,7 @@ namespace HB.Framework.Database.SQL
             {
                 if (info.IsTableProperty)
                 {
-                    argsBuilder.AppendFormat(GlobalSettings.Culture, "{0}.{1},", modelDef2.DbTableReservedName, info.DbReservedName);
+                    argsBuilder.AppendFormat(CultureInfo.InvariantCulture, "{0}.{1},", modelDef2.DbTableReservedName, info.DbReservedName);
                 }
             }
 
@@ -244,7 +245,7 @@ namespace HB.Framework.Database.SQL
             {
                 if (info.IsTableProperty)
                 {
-                    argsBuilder.AppendFormat(GlobalSettings.Culture, "{0}.{1},", modelDef3.DbTableReservedName, info.DbReservedName);
+                    argsBuilder.AppendFormat(CultureInfo.InvariantCulture, "{0}.{1},", modelDef3.DbTableReservedName, info.DbReservedName);
                 }
             }
 
@@ -253,7 +254,7 @@ namespace HB.Framework.Database.SQL
                 argsBuilder.Remove(argsBuilder.Length - 1, 1);
             }
 
-            string selectClause = string.Format(GlobalSettings.Culture, "SELECT {0} ", argsBuilder.ToString());
+            string selectClause = string.Format(CultureInfo.InvariantCulture, "SELECT {0} ", argsBuilder.ToString());
 
             _sqlStatementDict.TryAdd(cacheKey, selectClause);
 
@@ -287,7 +288,7 @@ namespace HB.Framework.Database.SQL
 
         #region 单体更改
 
-        public IDbCommand CreateAddCommand<T>(T entity, string lastUser) where T : Entity, new()
+        public IDbCommand CreateAddCommand<T>(T entity) where T : Entity, new()
         {
             DatabaseEntityDef modelDef = _entityDefFactory.GetDef<T>();
             List<IDataParameter> parameters = new List<IDataParameter>();
@@ -304,7 +305,7 @@ namespace HB.Framework.Database.SQL
             {
                 if (info.IsTableProperty)
                 {
-                    if (info.IsAutoIncrementPrimaryKey || info.PropertyName == "LastTime")
+                    if (info.IsAutoIncrementPrimaryKey)
                     {
                         continue;
                     }
@@ -317,10 +318,6 @@ namespace HB.Framework.Database.SQL
                     else if (info.PropertyName == "Deleted")
                     {
                         parameters.Add(_databaseEngine.CreateParameter(info.DbParameterizedName!, 0, info.DbFieldType));
-                    }
-                    else if (info.PropertyName == "LastUser")
-                    {
-                        parameters.Add(_databaseEngine.CreateParameter(info.DbParameterizedName!, DbParameterValue_Statement(lastUser, info), info.DbFieldType));
                     }
                     else
                     {
@@ -332,12 +329,12 @@ namespace HB.Framework.Database.SQL
             return AssembleCommand<T, T>(false, addTemplate, null, null, parameters);
         }
 
-        public IDbCommand CreateAddOrUpdateCommand<T>(T entity, string lastUser) where T : Entity, new()
+        public IDbCommand CreateAddOrUpdateCommand<T>(T entity) where T : Entity, new()
         {
             DatabaseEntityDef modelDef = _entityDefFactory.GetDef<T>();
             List<IDataParameter> parameters = new List<IDataParameter>();
 
-            string cacheKey = GetCreateAddOrUpdateTemplateCacheKey(modelDef);
+            string cacheKey = modelDef.DatabaseName + ":" + modelDef.TableName + ":ADDORUPDATE";
 
             if (!_sqlStatementDict.TryGetValue(cacheKey, out string addOrUpdateTemplate))
             {
@@ -349,7 +346,7 @@ namespace HB.Framework.Database.SQL
             {
                 if (info.IsTableProperty)
                 {
-                    if (info.IsAutoIncrementPrimaryKey || info.PropertyName == "LastTime")
+                    if (info.IsAutoIncrementPrimaryKey)
                     {
                         continue;
                     }
@@ -363,10 +360,6 @@ namespace HB.Framework.Database.SQL
                     {
                         parameters.Add(_databaseEngine.CreateParameter(info.DbParameterizedName!, 0, info.DbFieldType));
                     }
-                    else if (info.PropertyName == "LastUser")
-                    {
-                        parameters.Add(_databaseEngine.CreateParameter(info.DbParameterizedName!, DbParameterValue_Statement(lastUser, info), info.DbFieldType));
-                    }
                     else
                     {
                         parameters.Add(_databaseEngine.CreateParameter(info.DbParameterizedName!, DbParameterValue_Statement(info.GetValue(entity), info), info.DbFieldType));
@@ -377,12 +370,7 @@ namespace HB.Framework.Database.SQL
             return AssembleCommand<T, T>(false, addOrUpdateTemplate, null, null, parameters);
         }
 
-        private static string GetCreateAddOrUpdateTemplateCacheKey(DatabaseEntityDef modelDef)
-        {
-            return modelDef.DatabaseName + ":" + modelDef.TableName + ":ADDORUPDATE";
-        }
-
-        public IDbCommand CreateUpdateCommand<T>(WhereExpression<T> condition, T entity, string lastUser) where T : Entity, new()
+        public IDbCommand CreateUpdateCommand<T>(WhereExpression<T> condition, T entity) where T : Entity, new()
         {
             DatabaseEntityDef definition = _entityDefFactory.GetDef<T>();
             List<IDataParameter> parameters = new List<IDataParameter>();
@@ -399,7 +387,7 @@ namespace HB.Framework.Database.SQL
             {
                 if (info.IsTableProperty)
                 {
-                    if (info.IsAutoIncrementPrimaryKey || info.PropertyName == "LastTime" || info.PropertyName == "Deleted")
+                    if (info.IsAutoIncrementPrimaryKey || info.PropertyName == "Deleted" || info.PropertyName == "Guid")
                     {
                         continue;
                     }
@@ -408,10 +396,6 @@ namespace HB.Framework.Database.SQL
                     if (info.PropertyName == "Version")
                     {
                         parameters.Add(_databaseEngine.CreateParameter(info.DbParameterizedName!, entity.Version + 1, info.DbFieldType));
-                    }
-                    else if (info.PropertyName == "LastUser")
-                    {
-                        parameters.Add(_databaseEngine.CreateParameter(info.DbParameterizedName!, DbParameterValue_Statement(lastUser, info), info.DbFieldType));
                     }
                     else
                     {
@@ -436,10 +420,12 @@ namespace HB.Framework.Database.SQL
             }
 
             DatabaseEntityPropertyDef lastUserProperty = definition.GetProperty("LastUser")!;
+            DatabaseEntityPropertyDef lastTimeProperty = definition.GetProperty("LastTime")!;
 
             List<IDataParameter> parameters = new List<IDataParameter>
             {
-                _databaseEngine.CreateParameter(lastUserProperty.DbParameterizedName!, DbParameterValue_Statement(lastUser, lastUserProperty), lastUserProperty.DbFieldType)
+                _databaseEngine.CreateParameter(lastUserProperty.DbParameterizedName!, DbParameterValue_Statement(lastUser, lastUserProperty), lastUserProperty.DbFieldType),
+                _databaseEngine.CreateParameter(lastTimeProperty.DbParameterizedName!, DbParameterValue_Statement(DateTimeOffset.UtcNow, lastTimeProperty), lastTimeProperty.DbFieldType)
             };
 
             return AssembleCommand<T, T>(false, deleteTemplate, null, condition, parameters);
@@ -449,17 +435,18 @@ namespace HB.Framework.Database.SQL
 
         #region Batch
 
-        public IDbCommand CreateBatchAddOrUpdateCommand<T>(IEnumerable<T> entities, string lastUser) where T : Entity, new()
+        public IDbCommand CreateBatchAddOrUpdateCommand<T>(IEnumerable<T> entities) where T : Entity, new()
         {
             ThrowIf.Empty(entities, nameof(entities));
 
             DatabaseEntityDef modelDef = _entityDefFactory.GetDef<T>();
             DatabaseEntityPropertyDef versionPropertyDef = modelDef.GetProperty("Version")!;
             DatabaseEntityPropertyDef guidPropertyDef = modelDef.GetProperty("Guid")!;
+            DatabaseEntityPropertyDef idPropertyDef = modelDef.GetProperty("Id")!;
 
             StringBuilder innerBuilder = new StringBuilder();
 
-            string tempTableName = SecurityUtil.CreateUniqueToken();
+            string tempTableName = "t" + SecurityUtil.CreateUniqueToken();
 
             IList<IDataParameter> parameters = new List<IDataParameter>();
             int number = 0;
@@ -472,7 +459,7 @@ namespace HB.Framework.Database.SQL
 
                 foreach (DatabaseEntityPropertyDef info in modelDef.Properties)
                 {
-                    string parameterizedName = info.DbParameterizedName + number.ToString(GlobalSettings.Culture);
+                    string parameterizedName = info.DbParameterizedName + number.ToString(CultureInfo.InvariantCulture);
 
                     if (info.IsTableProperty)
                     {
@@ -481,31 +468,21 @@ namespace HB.Framework.Database.SQL
                             continue;
                         }
 
-                        if (info.PropertyName == "LastTime")
-                        {
-                            continue;
-                        }
-
-                        args.AppendFormat(GlobalSettings.Culture, " {0},", info.DbReservedName);
+                        args.AppendFormat(CultureInfo.InvariantCulture, " {0},", info.DbReservedName);
 
                         if (info.PropertyName == "Version")
                         {
-                            values.AppendFormat(GlobalSettings.Culture, " {0},", parameterizedName);
+                            values.AppendFormat(CultureInfo.InvariantCulture, " {0},", parameterizedName);
                             parameters.Add(_databaseEngine.CreateParameter(parameterizedName, entity.Version + 1, info.DbFieldType));
                         }
                         else if (info.PropertyName == "Deleted")
                         {
-                            values.AppendFormat(GlobalSettings.Culture, " {0},", parameterizedName);
+                            values.AppendFormat(CultureInfo.InvariantCulture, " {0},", parameterizedName);
                             parameters.Add(_databaseEngine.CreateParameter(parameterizedName, 0, info.DbFieldType));
-                        }
-                        else if (info.PropertyName == "LastUser")
-                        {
-                            values.AppendFormat(GlobalSettings.Culture, " {0},", parameterizedName);
-                            parameters.Add(_databaseEngine.CreateParameter(parameterizedName, DbParameterValue_Statement(lastUser, info), info.DbFieldType));
                         }
                         else
                         {
-                            values.AppendFormat(GlobalSettings.Culture, " {0},", parameterizedName);
+                            values.AppendFormat(CultureInfo.InvariantCulture, " {0},", parameterizedName);
                             parameters.Add(_databaseEngine.CreateParameter(parameterizedName, DbParameterValue_Statement(info.GetValue(entity), info), info.DbFieldType));
                         }
 
@@ -537,23 +514,23 @@ namespace HB.Framework.Database.SQL
                     exceptGuidAndFixedVersionUpdatePairs.Remove(exceptGuidAndFixedVersionUpdatePairs.Length - 1, 1);
                 }
 
-                innerBuilder.Append($"insert into {modelDef.DbTableReservedName}({args}) values ({values}) {OnDuplicateKeyUpdateStatement(_databaseEngine.EngineType)} {exceptGuidAndFixedVersionUpdatePairs};{TempTable_Insert_Select(tempTableName, _databaseEngine.EngineType)} select {versionPropertyDef.DbReservedName} from {modelDef.DbTableReservedName} where {guidPropertyDef.DbReservedName}={guidPropertyDef.DbParameterizedName}{number} ");
+                innerBuilder.Append($"insert into {modelDef.DbTableReservedName}({args}) values ({values}) {OnDuplicateKeyUpdateStatement(_databaseEngine.EngineType)} {exceptGuidAndFixedVersionUpdatePairs};{TempTable_Insert_Select(tempTableName, _databaseEngine.EngineType)} select {idPropertyDef.DbReservedName}, {versionPropertyDef.DbReservedName} from {modelDef.DbTableReservedName} where {guidPropertyDef.DbReservedName}={guidPropertyDef.DbParameterizedName}{number}; ");
 
                 number++;
             }
 
-            string sql = $"{TempTable_Drop(tempTableName, _databaseEngine.EngineType)}{TempTable_Create(tempTableName, _databaseEngine.EngineType)}{innerBuilder}{TempTable_Select_All(tempTableName, _databaseEngine.EngineType)}{TempTable_Drop(tempTableName, _databaseEngine.EngineType)}";
+            string sql = $"{TempTable_Drop(tempTableName, _databaseEngine.EngineType)}{TempTable_Create_IdAndVersion(tempTableName, _databaseEngine.EngineType)}{innerBuilder}{TempTable_Select_IdAndVersion(tempTableName, _databaseEngine.EngineType)}{TempTable_Drop(tempTableName, _databaseEngine.EngineType)}";
 
             return AssembleCommand<T, T>(false, sql, null, null, parameters);
         }
 
-        public IDbCommand CreateBatchAddCommand<T>(IEnumerable<T> entities, string lastUser) where T : Entity, new()
+        public IDbCommand CreateBatchAddCommand<T>(IEnumerable<T> entities) where T : Entity, new()
         {
             ThrowIf.Empty(entities, nameof(entities));
 
             StringBuilder innerBuilder = new StringBuilder();
             DatabaseEntityDef definition = _entityDefFactory.GetDef<T>();
-            string tempTableName = SecurityUtil.CreateUniqueToken();
+            string tempTableName = "t" + SecurityUtil.CreateUniqueToken();
 
             IList<IDataParameter> parameters = new List<IDataParameter>();
             int number = 0;
@@ -565,7 +542,7 @@ namespace HB.Framework.Database.SQL
 
                 foreach (DatabaseEntityPropertyDef info in definition.Properties)
                 {
-                    string parameterizedName = info.DbParameterizedName + number.ToString(GlobalSettings.Culture);
+                    string parameterizedName = info.DbParameterizedName + number.ToString(CultureInfo.InvariantCulture);
 
                     if (info.IsTableProperty)
                     {
@@ -574,31 +551,21 @@ namespace HB.Framework.Database.SQL
                             continue;
                         }
 
-                        if (info.PropertyName == "LastTime")
-                        {
-                            continue;
-                        }
-
-                        args.AppendFormat(GlobalSettings.Culture, " {0},", info.DbReservedName);
+                        args.AppendFormat(CultureInfo.InvariantCulture, " {0},", info.DbReservedName);
 
                         if (info.PropertyName == "Version")
                         {
-                            values.AppendFormat(GlobalSettings.Culture, " {0},", parameterizedName);
+                            values.AppendFormat(CultureInfo.InvariantCulture, " {0},", parameterizedName);
                             parameters.Add(_databaseEngine.CreateParameter(parameterizedName, /*entity.Version + 1*/0, info.DbFieldType));
                         }
                         else if (info.PropertyName == "Deleted")
                         {
-                            values.AppendFormat(GlobalSettings.Culture, " {0},", parameterizedName);
+                            values.AppendFormat(CultureInfo.InvariantCulture, " {0},", parameterizedName);
                             parameters.Add(_databaseEngine.CreateParameter(parameterizedName, 0, info.DbFieldType));
-                        }
-                        else if (info.PropertyName == "LastUser")
-                        {
-                            values.AppendFormat(GlobalSettings.Culture, " {0},", parameterizedName);
-                            parameters.Add(_databaseEngine.CreateParameter(parameterizedName, DbParameterValue_Statement(lastUser, info), info.DbFieldType));
                         }
                         else
                         {
-                            values.AppendFormat(GlobalSettings.Culture, " {0},", parameterizedName);
+                            values.AppendFormat(CultureInfo.InvariantCulture, " {0},", parameterizedName);
                             parameters.Add(_databaseEngine.CreateParameter(parameterizedName, DbParameterValue_Statement(info.GetValue(entity), info), info.DbFieldType));
                         }
                     }
@@ -624,13 +591,13 @@ namespace HB.Framework.Database.SQL
             return AssembleCommand<T, T>(false, sql, null, null, parameters);
         }
 
-        public IDbCommand CreateBatchUpdateCommand<T>(IEnumerable<T> entities, string lastUser) where T : Entity, new()
+        public IDbCommand CreateBatchUpdateCommand<T>(IEnumerable<T> entities) where T : Entity, new()
         {
             ThrowIf.Empty(entities, nameof(entities));
 
             StringBuilder innerBuilder = new StringBuilder();
             DatabaseEntityDef definition = _entityDefFactory.GetDef<T>();
-            string tempTableName = SecurityUtil.CreateUniqueToken();
+            string tempTableName = "t" + SecurityUtil.CreateUniqueToken();
             IList<IDataParameter> parameters = new List<IDataParameter>();
             int number = 0;
 
@@ -640,30 +607,23 @@ namespace HB.Framework.Database.SQL
 
                 foreach (DatabaseEntityPropertyDef info in definition.Properties)
                 {
-                    string parameterizedName = info.DbParameterizedName + number.ToString(GlobalSettings.Culture);
+                    string parameterizedName = info.DbParameterizedName + number.ToString(CultureInfo.InvariantCulture);
 
                     if (info.IsTableProperty)
                     {
                         if (info.IsAutoIncrementPrimaryKey) continue;
 
-                        if (info.PropertyName == "LastTime") continue;
-
                         if (info.PropertyName == "Deleted") continue;
 
                         if (info.PropertyName == "Version")
                         {
-                            args.AppendFormat(GlobalSettings.Culture, " {0}={1},", info.DbReservedName, parameterizedName);
+                            args.AppendFormat(CultureInfo.InvariantCulture, " {0}={1},", info.DbReservedName, parameterizedName);
                             parameters.Add(_databaseEngine.CreateParameter(parameterizedName, entity.Version + 1, info.DbFieldType));
 
                         }
-                        else if (info.PropertyName == "LastUser")
-                        {
-                            args.AppendFormat(GlobalSettings.Culture, " {0}={1},", info.DbReservedName, parameterizedName);
-                            parameters.Add(_databaseEngine.CreateParameter(parameterizedName, DbParameterValue_Statement(lastUser, info), info.DbFieldType));
-                        }
                         else
                         {
-                            args.AppendFormat(GlobalSettings.Culture, " {0}={1},", info.DbReservedName, parameterizedName);
+                            args.AppendFormat(CultureInfo.InvariantCulture, " {0}={1},", info.DbReservedName, parameterizedName);
                             parameters.Add(_databaseEngine.CreateParameter(parameterizedName, DbParameterValue_Statement(info.GetValue(entity), info), info.DbFieldType));
                         }
                     }
@@ -682,18 +642,20 @@ namespace HB.Framework.Database.SQL
             return AssembleCommand<T, T>(false, sql, null, null, parameters);
         }
 
-        public IDbCommand CreateBatchDeleteCommand<T>(IEnumerable<T> entities, string lastUser) where T : Entity, new()
+        public IDbCommand CreateBatchDeleteCommand<T>(IEnumerable<T> entities) where T : Entity, new()
         {
             ThrowIf.Empty(entities, nameof(entities));
 
             StringBuilder innerBuilder = new StringBuilder();
             DatabaseEntityDef definition = _entityDefFactory.GetDef<T>();
-            string tempTableName = SecurityUtil.CreateUniqueToken();
+            string tempTableName = "t" + SecurityUtil.CreateUniqueToken();
 
             foreach (T entity in entities)
             {
-                string lastUserValue = lastUser == null ? "null" : _databaseEngine.GetDbValueStatement(lastUser, needQuoted: true);
-                string args = $"`Deleted` = 1, `LastUser` = {lastUserValue}, `Version` = {entity.Version + 1}";
+                string lastUserValue = _databaseEngine.GetDbValueStatement(entity.LastUser, needQuoted: true);
+                string lastTimeValue = _databaseEngine.GetDbValueStatement(entity.LastTime, true);
+
+                string args = $"`Deleted` = 1, `LastUser` = {lastUserValue}, `LastTime`={lastTimeValue}, `Version` = {entity.Version + 1}";
                 innerBuilder.Append(
                     $"UPDATE {definition.DbTableReservedName} set {args} WHERE `Id`={entity.Id} AND `Version`={entity.Version} and `Deleted`=0;{TempTable_Insert(tempTableName, FoundChanges_Statement(_databaseEngine.EngineType), _databaseEngine.EngineType)}");
             }
@@ -776,13 +738,13 @@ namespace HB.Framework.Database.SQL
             string dropStatement = addDropStatement ? $"Drop table if exists {definition.DbTableReservedName};" : string.Empty;
 
             return
-$@"{dropStatement}
+    $@"{dropStatement}
 CREATE TABLE {definition.DbTableReservedName} (
 	""Id""    INTEGER PRIMARY KEY AUTOINCREMENT,
 	{sql}
 	""Deleted""   NUMERIC NOT NULL DEFAULT 0,
 	""LastUser"" TEXT,
-	""LastTime"" NUMERIC,
+	""LastTime"" INTEGER NOT NULL,
 	""Version"" INTEGER NOT NULL
 );";
         }
@@ -861,7 +823,7 @@ CREATE TABLE {definition.DbTableReservedName} (
                     dbTypeStatement = "CHAR";
                 }
 
-                sql.AppendFormat(GlobalSettings.Culture, " {0} {1}{2} {6} {3} {4} {5},",
+                sql.AppendFormat(CultureInfo.InvariantCulture, " {0} {1}{2} {6} {3} {4} {5},",
                     info.DbReservedName,
                     dbTypeStatement,
                     (length == 0 || dbTypeStatement == "MEDIUMTEXT") ? "" : "(" + length + ")",
@@ -877,16 +839,17 @@ CREATE TABLE {definition.DbTableReservedName} (
 
             if (addDropStatement)
             {
-                dropStatement = string.Format(GlobalSettings.Culture, "Drop table if exists {0};" + Environment.NewLine, definition.DbTableReservedName);
+                dropStatement = string.Format(CultureInfo.InvariantCulture, "Drop table if exists {0};" + Environment.NewLine, definition.DbTableReservedName);
             }
 
-            return string.Format(GlobalSettings.Culture,
+            return string.Format(CultureInfo.InvariantCulture,
                 "{2}" +
                 "CREATE TABLE {0} (" + Environment.NewLine +
                 "`Id` bigint(20) NOT NULL AUTO_INCREMENT," + Environment.NewLine +
                 "`Deleted` bit(1) NOT NULL DEFAULT b'0'," + Environment.NewLine +
                 "`LastUser` varchar(100) DEFAULT NULL," + Environment.NewLine +
-                "`LastTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP," + Environment.NewLine +
+                //"`LastTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP," + Environment.NewLine +
+                "`LastTime` bigint(20) NOT NULL ," + Environment.NewLine +
                 "`Version` int(11) NOT NULL DEFAULT '0'," + Environment.NewLine +
                 " {1} " +
                 " PRIMARY KEY (`Id`) " + Environment.NewLine +
@@ -899,7 +862,7 @@ CREATE TABLE {definition.DbTableReservedName} (
         #region SystemInfo
 
         private const string _mysql_tbSysInfoCreate =
-@"CREATE TABLE `tb_sys_info` (
+    @"CREATE TABLE `tb_sys_info` (
 	`Id` int (11) NOT NULL AUTO_INCREMENT, 
 	`Name` varchar(100) DEFAULT NULL, 
 	`Value` varchar(1024) DEFAULT NULL,
@@ -916,7 +879,7 @@ INSERT INTO `tb_sys_info`(`Name`, `Value`) VALUES('DatabaseName', @databaseName)
         private const string _mysql_isTableExistsStatement = "SELECT count(1) FROM information_schema.TABLES WHERE table_name =@tableName and table_schema=@databaseName;";
 
         private const string _sqlite_tbSysInfoCreate =
-@"CREATE TABLE ""tb_sys_info"" (
+    @"CREATE TABLE ""tb_sys_info"" (
 	""Id"" INTEGER PRIMARY KEY AUTOINCREMENT,
 	""Name"" TEXT UNIQUE, 
 	""Value"" TEXT

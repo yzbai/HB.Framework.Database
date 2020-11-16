@@ -21,7 +21,7 @@
     </PackageReference>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="3.1.9" />
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="3.1.9" />
-    <PackageReference Include="MySqlConnector" Version="1.0.1" />
+    <PackageReference Include="MySqlConnector" Version="1.1.0" />
     <PackageReference Include="MySqlConnector.Logging.Microsoft.Extensions.Logging" Version="1.0.0" />
     <PackageReference Include="System.Security.AccessControl" Version="4.7.0" />
   </ItemGroup>

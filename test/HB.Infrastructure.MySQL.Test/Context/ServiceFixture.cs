@@ -39,7 +39,7 @@ namespace HB.Framework.DatabaseTests
                     options.Connections.Add(new DatabaseConnectionSettings
                     {
                         DatabaseName = "test_db",
-                        ConnectionString = "server=127.0.0.1;port=3306;user=admin;password=_admin;database=test_db;SslMode=None;DefaultCommandTimeout=3000;",
+                        ConnectionString = "server=rm-bp16d156f2r6b78438o.mysql.rds.aliyuncs.com;port=3306;user=brlite_test;password=EgvfXB2eWucbtm0C;database=test_db;SslMode=None;",
                         IsMaster = true
                     });
                 });

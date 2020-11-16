@@ -20,7 +20,7 @@ namespace HB.Framework.Database.SQL
         /// <param name="list"></param>
         /// <returns></returns>
         [SuppressMessage("Style", "IDE0059:Unnecessary assignment of a value", Justification = "<Pending>")]
-        public static bool In<T>(T value, bool returnByOrder, params object[] list)
+        public static bool In<T>(T value, bool returnByOrder, object[] list)
         {
             bool do_not_delete_used_in_expression_analysis = returnByOrder;
 

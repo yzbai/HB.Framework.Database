@@ -1,4 +1,5 @@
 using HB.Framework.Database;
+using HB.Framework.Database.SQL;
 using HB.Framework.DatabaseTests.Data;
 using System;
 using System.Collections.Generic;
@@ -56,7 +57,7 @@ namespace HB.Framework.DatabaseTests
 
             _mysql = serviceFixture.MySQL;
             _mysqlTransaction = serviceFixture.MySQLTransaction;
-            
+
             _sqlite = serviceFixture.SQLite;
             _sqlIteTransaction = serviceFixture.SQLiteTransaction;
 
@@ -248,7 +249,7 @@ namespace HB.Framework.DatabaseTests
                 PublisherEntity entity = testEntities[0];
 
                 entity.Books.Add("New Book2");
-                entity.BookAuthors.Add("New Book2", new Author() { Mobile = "15190208956", Name = "Yuzhaobai" });
+                //entity.BookAuthors.Add("New Book2", new Author() { Mobile = "15190208956", Name = "Yuzhaobai" });
 
                 await database.UpdateAsync(entity, "lastUsre", tContext);
 
@@ -346,6 +347,140 @@ namespace HB.Framework.DatabaseTests
                 _output.WriteLine(ex.Message);
                 throw ex;
             }
+        }
+
+        [Theory]
+        [InlineData("MySQL")]
+        [InlineData("SQLite")]
+        public async Task Test_8_LastTimeTestAsync(string databaseType)
+        {
+            IDatabase database = GetDatabase(databaseType)!;
+
+            PublisherEntity item = Mocker.MockOne();
+
+            await database.AddAsync(item, "xx", null).ConfigureAwait(false);
+
+            var fetched = await database.ScalarAsync<PublisherEntity>(item.Id, null);
+
+            Assert.Equal(item.LastTime, fetched!.LastTime);
+
+            fetched.Name = "ssssss";
+
+            await database.UpdateAsync(fetched, "xxx", null);
+
+            fetched = await database.ScalarAsync<PublisherEntity>(item.Id, null);
+
+            await database.AddOrUpdateAsync(item, "ss", null);
+
+            fetched = await database.ScalarAsync<PublisherEntity>(item.Id, null);
+
+
+
+            //Batch
+
+            var items = Mocker.GetPublishers();
+
+            ITransaction transaction = GetTransaction(databaseType)!;
+
+            TransactionContext trans = await transaction.BeginTransactionAsync<PublisherEntity>(_isolationLevel).ConfigureAwait(false);
+
+            try
+            {
+                await database.BatchAddAsync<PublisherEntity>(items, "xx", trans).ConfigureAwait(false);
+
+
+                var results = await database.RetrieveAsync<PublisherEntity>(item => SQLUtil.In(item.Guid, true, items.Select(item => item.Guid).ToArray()), trans).ConfigureAwait(false);
+
+                await database.BatchUpdateAsync<PublisherEntity>(items, "xx", trans);
+
+                var items2 = Mocker.GetPublishers();
+
+                await database.BatchAddOrUpdateAsync<PublisherEntity>(items2, "xx", trans);
+
+                results = await database.RetrieveAsync<PublisherEntity>(item => SQLUtil.In(item.Guid, true, items2.Select(item => item.Guid).ToArray()), trans);
+
+                await database.BatchUpdateAsync<PublisherEntity>(items2, "xx", trans);
+
+
+                await transaction.CommitAsync(trans);
+            }
+            catch
+            {
+                await transaction.RollbackAsync(trans);
+                throw;
+            }
+            finally
+            {
+
+            }
+
+        }
+
+        [Theory]
+        [InlineData("MySQL")]
+        [InlineData("SQLite")]
+        public async Task Test_9_UpdateLastTimeTestAsync(string databaseType)
+        {
+            IDatabase database = GetDatabase(databaseType)!;
+
+            ITransaction transaction = GetTransaction(databaseType)!;
+
+            //TransactionContext transactionContext = await transaction.BeginTransactionAsync<PublisherEntity>(_isolationLevel);
+            TransactionContext? transactionContext = null;
+
+            try
+            {
+
+                PublisherEntity item = Mocker.MockOne();
+
+
+                await database.AddAsync(item, "xx", transactionContext).ConfigureAwait(false);
+
+
+                await database.AddOrUpdateAsync(item, "sfas", transactionContext).ConfigureAwait(false);
+
+
+                await database.DeleteAsync(item, "xxx", transactionContext).ConfigureAwait(false);
+
+
+                IList<PublisherEntity> testEntities = (await database.PageAsync<PublisherEntity>(1, 1, transactionContext)).ToList();
+
+                if (testEntities.Count == 0)
+                {
+                    throw new Exception("No Entity to update");
+                }
+
+                PublisherEntity entity = testEntities[0];
+
+                entity.Books.Add("New Book2");
+                //entity.BookAuthors.Add("New Book2", new Author() { Mobile = "15190208956", Name = "Yuzhaobai" });
+
+                await database.UpdateAsync(entity, "lastUsre", transactionContext);
+
+                PublisherEntity? stored = await database.ScalarAsync<PublisherEntity>(entity.Id, transactionContext);
+
+
+
+                item = Mocker.MockOne();
+
+                await database.AddAsync(item, "xx", transactionContext).ConfigureAwait(false);
+
+                var fetched = await database.ScalarAsync<PublisherEntity>(item.Id, transactionContext);
+
+                Assert.Equal(item.LastTime, fetched!.LastTime);
+
+                fetched.Name = "ssssss";
+
+                await database.UpdateAsync(fetched, "xxx", transactionContext);
+
+                //await transaction.CommitAsync(transactionContext);
+            }
+            catch
+            {
+                //await transaction.RollbackAsync(transactionContext);
+                throw;
+            }
+
         }
     }
 }
